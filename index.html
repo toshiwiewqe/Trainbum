@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trailbound</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header-logo">Trailbound</div>
+      <nav class="site-header-nav">
+        <a href="#">Home</a>
+        <a href="#">Events</a>
+        <a href="#">About</a>
+        <a href="#">Contact</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="hero-fg-content">
+        <div class="hero-fg-img">
+          <video src="/img/vid2.mp4" autoplay muted loop playsinline></video>
+        </div>
+
+        <div class="hero-fg-header">
+          <h1>Trailbound</h1>
+        </div>
+
+        <div class="hero-fg-overlay-dark"></div>
+        <div class="hero-fg-overlay"></div>
+      </div>
+
+      <div class="hero-bg-content">
+        <div class="hero-bg-content-col">
+          <div class="hero-bg-content-copy">
+            <h3>Kapogian n</h3>
+            <p>
+              Pgoi si ni9kkko ultra ;pogi si nikko ganon
+              \wqewqewqewqewqewqeqewe.
+            </p>
+          </div>
+        </div>
+        <div class="hero-bg-content-col">
+          <div class="hero-bg-content-copy">
+            <h3>Nikko</h3>
+            <p>basta ang pogi ni nikko wqewqewqeqwewqewqeq</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-outro-content">
+        <div class="hero-outro-img">
+          <img src="/img/images(5).jpg" alt="" />
+        </div>
+        <div class="hero-outro-img">
+          <img src="/img/12.jpg" alt="" />
+        </div>
+        <div class="hero-outro-header">
+          <h3>wkwkwkwkwkwkwkwkwkwk.</h3>
+        </div>
+      </div>
+    </section>
+
+    <section class="about">
+      <h3>
+        Ang pogi ni nikkko sobra sabi nila jovel franzy etc...
+        qwewqewqeqeqeqewqewqeqe
+      </h3>
+    </section>
+
+    <!--
+      Handoff section: pinned for 3 "scrolls" worth of distance
+      (window.innerHeight * 3, set in script.js). Scrolling through it
+      fades .slider-wrap in and cycles the slides, tied to real scroll
+      progress — so scrolling back up reverses it. Add your next
+      section right after this one; there's spare pin distance saved
+      for it.
+    -->
+    <section class="slider-section">
+      <div class="slider-wrap">
+        <div class="slider">
+          <div class="column left"></div>
+          <div class="column right"></div>
+        </div>
+      </div>
+    </section>
+
+    <!--
+      Part 3: WonJYou marquee + horizontal scroll. Picks up right where
+      the slider's pin releases. Classes that would've collided with
+      earlier sections (.hero, .outro, .container) are namespaced with
+      a wonjyou- prefix / .wonjyou wrapper.
+    -->
+    <div class="wonjyou">
+      <section class="wonjyou-hero">
+        <h1>
+          Fragments of thought arranged in sequence become patterns. They
+          unfold step by step, shaping meaning as they move forward.
+        </h1>
+      </section>
+
+      <section class="marquee">
+        <div class="marquee-wrapper">
+          <div class="marquee-images">
+            <div class="marquee-img"><img src="/q1.jpg" /></div>
+            <div class="marquee-img"><img src="/q2.jpg" /></div>
+            <div class="marquee-img"><img src="/q3.jpg" /></div>
+            <div class="marquee-img"><img src="/q4.jpg" /></div>
+            <div class="marquee-img"><img src="/q5.png" /></div>
+            <div class="marquee-img"><img src="/q6.jpg" /></div>
+            <div class="marquee-img pin"><img src="/q7.jpg" /></div>
+            <div class="marquee-img"><img src="/q8.jpg" /></div>
+            <div class="marquee-img"><img src="/q9.jpg" /></div>
+            <div class="marquee-img"><img src="/q10.jpg" /></div>
+            <div class="marquee-img"><img src="/q11.jpg" /></div>
+            <div class="marquee-img"><img src="/q12.jpg" /></div>
+            <div class="marquee-img"><img src="/q13.jpg" /></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="horizontal-scroll">
+        <div class="horizontal-scroll-wrapper">
+          <div class="horizontal-slide horizontal-spacer"></div>
+
+          <div class="horizontal-slide">
+            <div class="col">
+              <h3>
+                A landscape in constant transition, where every shape, sound,
+                and shadow refuses to stay still. What seems stable begins to
+                dissolve, and what fades returns again in a new form.
+              </h3>
+            </div>
+            <div class="col">
+              <img src="/q11.jpg" />
+            </div>
+          </div>
+
+          <div class="horizontal-slide">
+            <div class="col">
+              <h3>
+                The rhythm of motion carries us forward into spaces that feel
+                familiar yet remain undefined. Each shift is subtle, yet
+                together they remind us that nothing we see is ever
+                permanent.
+              </h3>
+            </div>
+            <div class="col">
+              <img src="/q13.jpg" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="wonjyou-outro">
+        <h1>
+          Shadows fold into light. Shapes shift across the frame, reminding
+          us that stillness is only temporary.
+        </h1>
+      </section>
+    </div>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
