@@ -1,25 +1,27 @@
 /* ==========================================================
    Booking page (booking.html) — overrides/extends styles.css
+   Uses the site's own tokens (--base-100/200/300, PP Neue
+   Montreal, Inter, pill shapes) — no separate palette.
    ========================================================== */
 
 .booking-body {
   min-height: 100vh;
-}
+  background-color: #edf1e8;
+} 
 
-/* Header needs to be a normal static bar here (no hero video behind it) */
+/* Header markup/behavior is untouched. The only override needed here is
+   position + background, since this page has no hero video behind the
+   header for it to float over — same dark bar you see on the homepage
+   once scrolled past the hero. Nav pill colors, hover, and active states
+   all come straight from styles.css. */
 .site-header--static {
   position: static;
-  background-color: var(--base-300);
-  border-bottom: 1px solid rgba(220, 219, 213, 0.15);
-}
-
-.site-header--static .site-header-logo {
-  color: var(--base-100);
+  background-color: #edf1e8;
 }
 
 .booking-page {
-  background-color: var(--base-300);
-  padding: 3rem 3rem 6rem;
+  background-color: #edf1e8;
+  padding: 3.5rem 3rem 6rem;
   min-height: 100vh;
 }
 
@@ -28,21 +30,31 @@
   margin-bottom: 2.5rem;
 }
 
+.booking-eyebrow {
+  display: inline-block;
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--base-200);
+  margin-bottom: 0.6rem;
+}
+
 .booking-page-header h3 {
-  color: var(--base-100);
-  font-size: clamp(1.8rem, 4vw, 3rem);
+  color: var(--base-300);
 }
 
 .booking-page-header p {
-  color: var(--base-100);
-  opacity: 0.6;
+  color: var(--base-300);
+  opacity: 0.7;
   margin-top: 0.5rem;
 }
 
 .booking-layout {
   display: grid;
   grid-template-columns: 1.3fr 1fr;
-  gap: 2.5rem;
+  gap: 1.75rem;
   max-width: 1300px;
   margin: 0 auto;
   align-items: start;
@@ -57,13 +69,42 @@
 /* ---------- Form ---------- */
 
 .booking-form {
-  background-color: rgba(220, 219, 213, 0.05);
-  border: 1px solid rgba(220, 219, 213, 0.15);
+  background-color: var(--base-300);
   border-radius: 16px;
   padding: 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
+}
+
+.form-step {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.form-step-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--base-100);
+  opacity: 0.85;
+  margin-bottom: -0.2rem;
+}
+
+.form-step-number {
+  color: var(--base-200);
+}
+
+.trail-divider {
+  border: none;
+  border-top: 1px solid rgba(220, 219, 213, 0.15);
+  margin: 0.25rem 0;
 }
 
 .form-row {
@@ -98,10 +139,10 @@
 .form-group select {
   font-family: "Inter", sans-serif;
   font-size: 0.9rem;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  border: 1px solid rgba(220, 219, 213, 0.25);
-  background-color: var(--base-300);
+  padding: 0.75rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(220, 219, 213, 0.3);
+  background-color: rgba(220, 219, 213, 0.31);
   color: var(--base-100);
   outline: none;
 }
@@ -127,13 +168,21 @@
 
 .trail-info {
   display: flex;
+  align-items: center;
   gap: 1rem;
   background-color: rgba(220, 219, 213, 0.08);
   border-radius: 12px;
   padding: 1rem;
 }
 
+.trail-info-details {
+  flex: 1;
+  order: 1;
+}
+
+/* Image sits to the right of the details, not the left */
 .trail-info img {
+  order: 2;
   width: 90px;
   height: 90px;
   border-radius: 8px;
@@ -155,6 +204,19 @@
 }
 
 #trail-info-desc {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  line-height: 1.4;
+}
+
+#package-info-price {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--base-200);
+  margin-bottom: 0.3rem;
+}
+
+#package-info-includes {
   font-size: 0.8rem;
   opacity: 0.75;
   line-height: 1.4;
@@ -189,12 +251,17 @@
   background-color: var(--base-200);
   color: var(--base-100);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .booking-submit-btn:hover {
   background-color: #f5f0a8;
   color: var(--base-300);
+}
+
+.booking-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .booking-feedback {
@@ -213,8 +280,7 @@
 /* ---------- Booking history ---------- */
 
 .booking-history {
-  background-color: rgba(220, 219, 213, 0.05);
-  border: 1px solid rgba(220, 219, 213, 0.15);
+  background-color: var(--base-300);
   border-radius: 16px;
   padding: 2rem;
 }
@@ -329,4 +395,27 @@
 .booking-cancel-btn:hover {
   border-color: var(--base-200);
   color: var(--base-200);
+}
+
+/* ---------- Focus visibility (a11y) ---------- */
+
+.booking-submit-btn:focus-visible,
+.booking-cancel-btn:focus-visible,
+.form-group input:focus-visible,
+.form-group select:focus-visible {
+  outline: 2px solid var(--base-200);
+  outline-offset: 2px;
+}
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 640px) {
+  .booking-page {
+    padding: 2.5rem 1.2rem 4rem;
+  }
+
+  .booking-form,
+  .booking-history {
+    padding: 1.5rem;
+  }
 }
