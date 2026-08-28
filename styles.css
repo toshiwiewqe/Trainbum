@@ -91,6 +91,12 @@ section {
   text-transform: none;
 }
 
+.site-header-logo img {
+  height: 80px;
+  width: auto;
+}
+
+
 .site-header-nav {
   display: flex;
   gap: 0.5rem;
@@ -399,10 +405,11 @@ section {
   left: 50%;
   transform: translate(-50%, -50%);
   text-transform: uppercase;
-  font-size: clamp(2.5rem, 10vw, 15rem);
+  font-size: clamp(3rem, 12vw, 18rem);
   font-weight: 800;
   letter-spacing: -2%;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .slide-tags {

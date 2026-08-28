@@ -191,28 +191,28 @@ const settings = {
 
 const slides = [
   {
-    title: "Studioform",
-    tags: ["Studio & Movement", "Fitness & Method", "Space & Design"],
+    title: "Mt Pulag",
+    tags: ["Benguet, Ifugao, Nueva Vizcaya (Cordillera Region)"],
     accent: "#a9d0f5",
-    link: "/studioform/",
+    link: "/Mt Pulag/",
   },
   {
-    title: "Nightbloom",
-    tags: ["Editorial & Portrait", "Concept & Series", "Art & Direction"],
+    title: "Mt Batulao",
+    tags: ["Batangas (Calabarzon Region)"],
     accent: "#f5a97a",
-    link: "/nightbloom/",
+    link: "/Mt Batulao/",
   },
   {
-    title: "Stillpose",
-    tags: ["Movement & Wellness", "Body & Practice", "Brand & Identity"],
+    title: "Mt Ulap",
+    tags: ["Itogon, Benguet (Cordillera Region)"],
     accent: "#b7e0a0",
-    link: "/stillpose/",
+    link: "/Mt Ulap/",
   },
   {
-    title: "Blurface",
-    tags: ["Fashion & Portrait", "Motion & Study", "Brand & Identity"],
+    title: "Mt Pinatubo",
+    tags: ["Zambales / Tarlac (Central Luzon Region)"],
     accent: "#e8e8e8",
-    link: "/blurface/",
+    link: "/Mt Pinatubo/",
   },
 ];
 
