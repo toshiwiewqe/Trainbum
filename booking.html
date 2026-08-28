@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trailbound — Book Your Hike</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="booking.css" />
+  </head>
+  <body class="booking-body">
+    <header class="site-header site-header--static">
+      <div class="site-header-logo">Trailbound</div>
+      <nav class="site-header-nav">
+        <a href="index.html">Home</a>
+        <a href="index.html#trails">Trails</a>
+        <a href="booking.html" class="active">Book Now</a>
+        <a href="#">Contact</a>
+      </nav>
+    </header>
+
+    <main class="booking-page">
+      <div class="booking-page-header">
+        <h3>Book Your Hike</h3>
+        <p>Pick a trail, a date, and a certified guide to get started</p>
+      </div>
+
+      <div class="booking-layout">
+        <!-- Booking form -->
+        <form id="booking-form" class="booking-form">
+          <div class="form-group">
+            <label for="trail-select">Trail</label>
+            <select id="trail-select" required>
+              <option value="" disabled selected>Select a trail...</option>
+            </select>
+          </div>
+
+          <div id="trail-info" class="trail-info" hidden>
+            <img id="trail-info-img" src="" alt="" />
+            <div class="trail-info-details">
+              <p id="trail-info-meta"></p>
+              <p id="trail-info-desc"></p>
+            </div>
+          </div>
+
+          <div class="form-group">
+  <label for="package-select">Package</label>
+  <select id="package-select" required disabled>
+    <option value="" disabled selected>Select a trail first...</option>
+  </select>
+</div>
+
+<div id="package-info" class="trail-info" hidden>
+  <div class="trail-info-details">
+    <p id="package-info-price"></p>
+    <p id="package-info-includes"></p>
+  </div>
+</div>
+
+<div class="form-group" id="activity-group" hidden>
+  <label for="activity-select">Choose Your Activity</label>
+  <select id="activity-select">
+    <option value="" disabled selected>Select an activity...</option>
+    <option value="Waterfall Stop">Waterfall Stop</option>
+    <option value="Tree Planting">Tree Planting</option>
+  </select>
+</div>
+
+          <div class="form-group">
+            <label for="guide-select">Certified Guide</label>
+            <select id="guide-select" required disabled>
+              <option value="" disabled selected>Select a trail first...</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="booking-date">Hike Date</label>
+              <input type="date" id="booking-date" required />
+            </div>
+            <div class="form-group">
+              <label for="group-size">Group Size</label>
+              <input type="number" id="group-size" min="1" max="15" value="1" required />
+            </div>
+          </div>
+
+          <hr class="form-divider" />
+
+          <div class="form-group">
+            <label for="full-name">Full Name</label>
+            <input type="text" id="full-name" placeholder="Juan Dela Cruz" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" placeholder="you@email.com" required />
+            </div>
+            <div class="form-group">
+              <label for="contact-number">Contact Number</label>
+              <input type="tel" id="contact-number" placeholder="09XX XXX XXXX" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="emergency-name">Emergency Contact Name</label>
+              <input type="text" id="emergency-name" placeholder="Maria Dela Cruz" required />
+            </div>
+            <div class="form-group">
+              <label for="emergency-number">Emergency Contact Number</label>
+              <input type="tel" id="emergency-number" placeholder="09XX XXX XXXX" required />
+            </div>
+          </div>
+
+          <div class="price-summary">
+            <span>Total</span>
+            <span id="price-total">₱0</span>
+          </div>
+
+          <button type="submit" class="booking-submit-btn">Confirm Booking</button>
+
+          <p id="booking-feedback" class="booking-feedback" hidden></p>
+        </form>
+
+        <!-- Booking history -->
+        <div class="booking-history">
+          <h4>My Bookings</h4>
+          <div id="bookings-list" class="bookings-list">
+            <p class="bookings-empty">You have no bookings yet.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="booking.js"></script>
+  </body>
+</html>

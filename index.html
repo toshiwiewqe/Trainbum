@@ -10,11 +10,11 @@
     <header class="site-header">
       <div class="site-header-logo">Trailbound</div>
       <nav class="site-header-nav">
-        <a href="#">Home</a>
-        <a href="#">Events</a>
-        <a href="#">About</a>
-        <a href="#">Contact</a>
-      </nav>
+      <a href="index.html" class="active">Home</a>
+      <a href="#trails">Trails</a>
+      <a href="booking.html">Book Now</a>
+      <a href="#">Contact</a>
+</nav>
     </header>
     <section class="hero">
       <div class="hero-fg-content">
@@ -159,7 +159,35 @@
         </h1>
       </section>
     </div>
+<section class="trails-section" id="trails">
+  <div class="trails-header">
+    <h3>Find Your Trail</h3>
+    <p>Search hiking trails by difficulty, location, and price</p>
+  </div>
 
+  <div class="trails-filters">
+    <input type="text" id="trail-search" placeholder="SEARCH TRAILS OR LOCATION..." />
+
+    <select id="trail-difficulty-filter">
+      <option value="">All Difficulties</option>
+      <option value="Easy">Easy</option>
+      <option value="Moderate">Moderate</option>
+      <option value="Hard">Hard</option>
+    </select>
+
+    <select id="trail-sort">
+      <option value="name">Sort: Name (A-Z)</option>
+      <option value="price-asc">Sort: Price (Low to High)</option>
+      <option value="price-desc">Sort: Price (High to Low)</option>
+    </select>
+  </div>
+
+  <div class="trails-grid" id="trails-grid">
+    <p class="trails-status">Loading trails...</p>
+  </div>
+</section>
+
+<script type="module" src="trails.js"></script>
     <script type="module" src="script.js"></script>
   </body>
 </html>

@@ -1,0 +1,332 @@
+/* ==========================================================
+   Booking page (booking.html) — overrides/extends styles.css
+   ========================================================== */
+
+.booking-body {
+  min-height: 100vh;
+}
+
+/* Header needs to be a normal static bar here (no hero video behind it) */
+.site-header--static {
+  position: static;
+  background-color: var(--base-300);
+  border-bottom: 1px solid rgba(220, 219, 213, 0.15);
+}
+
+.site-header--static .site-header-logo {
+  color: var(--base-100);
+}
+
+.booking-page {
+  background-color: var(--base-300);
+  padding: 3rem 3rem 6rem;
+  min-height: 100vh;
+}
+
+.booking-page-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.booking-page-header h3 {
+  color: var(--base-100);
+  font-size: clamp(1.8rem, 4vw, 3rem);
+}
+
+.booking-page-header p {
+  color: var(--base-100);
+  opacity: 0.6;
+  margin-top: 0.5rem;
+}
+
+.booking-layout {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 2.5rem;
+  max-width: 1300px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .booking-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Form ---------- */
+
+.booking-form {
+  background-color: rgba(220, 219, 213, 0.05);
+  border: 1px solid rgba(220, 219, 213, 0.15);
+  border-radius: 16px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1rem;
+}
+
+@media (max-width: 550px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-group label {
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--base-100);
+  opacity: 0.75;
+}
+
+.form-group input,
+.form-group select {
+  font-family: "Inter", sans-serif;
+  font-size: 0.9rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(220, 219, 213, 0.25);
+  background-color: var(--base-300);
+  color: var(--base-100);
+  outline: none;
+}
+
+.form-group input::placeholder {
+  color: rgba(220, 219, 213, 0.4);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--base-200);
+}
+
+.form-group select:disabled {
+  opacity: 0.4;
+}
+
+.form-divider {
+  border: none;
+  border-top: 1px solid rgba(220, 219, 213, 0.15);
+  margin: 0.25rem 0;
+}
+
+.trail-info {
+  display: flex;
+  gap: 1rem;
+  background-color: rgba(220, 219, 213, 0.08);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.trail-info img {
+  width: 90px;
+  height: 90px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.trail-info-details p {
+  text-transform: none;
+  font-family: "Inter", sans-serif;
+  color: var(--base-100);
+}
+
+#trail-info-meta {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--base-200);
+  margin-bottom: 0.3rem;
+}
+
+#trail-info-desc {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  line-height: 1.4;
+}
+
+.price-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--base-100);
+  padding-top: 0.5rem;
+}
+
+#price-total {
+  color: var(--base-200);
+  font-size: 1.4rem;
+}
+
+.booking-submit-btn {
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 1rem;
+  border: none;
+  border-radius: 999px;
+  background-color: var(--base-200);
+  color: var(--base-100);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.booking-submit-btn:hover {
+  background-color: #f5f0a8;
+  color: var(--base-300);
+}
+
+.booking-feedback {
+  text-align: center;
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.85rem;
+  color: #8fd694;
+  padding-top: 0.25rem;
+}
+
+.booking-feedback--error {
+  color: var(--base-200);
+}
+
+/* ---------- Booking history ---------- */
+
+.booking-history {
+  background-color: rgba(220, 219, 213, 0.05);
+  border: 1px solid rgba(220, 219, 213, 0.15);
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+.booking-history h4 {
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  color: var(--base-100);
+  font-size: 1.1rem;
+  margin-bottom: 1.2rem;
+}
+
+.bookings-empty {
+  color: var(--base-100);
+  opacity: 0.5;
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.85rem;
+}
+
+.bookings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.booking-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background-color: rgba(220, 219, 213, 0.06);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+}
+
+.booking-item-main h5 {
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--base-100);
+  margin-bottom: 0.2rem;
+}
+
+.booking-item-main p {
+  text-transform: none;
+  font-family: "Inter", sans-serif;
+  font-size: 0.75rem;
+  color: var(--base-100);
+  opacity: 0.65;
+  margin-bottom: 0.35rem;
+}
+
+.booking-status {
+  display: inline-block;
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+}
+
+.booking-status--pending {
+  background-color: #f5f0a8;
+  color: var(--base-300);
+}
+
+.booking-status--cancelled {
+  background-color: rgba(220, 219, 213, 0.2);
+  color: var(--base-100);
+}
+
+.booking-status--confirmed {
+  background-color: #8fd694;
+  color: var(--base-300);
+}
+
+.booking-item-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.booking-item-price {
+  font-family: "PP Neue Montreal", sans-serif;
+  font-weight: 600;
+  color: var(--base-100);
+  font-size: 0.9rem;
+}
+
+.booking-cancel-btn {
+  font-family: "Inter", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: none;
+  border: 1px solid rgba(220, 219, 213, 0.3);
+  color: var(--base-100);
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.booking-cancel-btn:hover {
+  border-color: var(--base-200);
+  color: var(--base-200);
+}
