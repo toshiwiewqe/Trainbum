@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trailbound</title>
+    <link rel="stylesheet" href="login.css" />
+      <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header-logo">
+        <img src="finaltrailboundlogo.png" alt="Site Logo">
+      </div>
+      <nav class="site-header-nav">
+        <a href="index.html" class="active">Home</a>
+        <a href="index.html#trails">Trails</a>
+        <a href="booking.html">Book Now</a>
+        <a href="#">Contact</a>
+        <a href="login.html">Log In</a>
+      </nav>
+    </header>
+
+    <main class="login-page">
+    <video autoplay muted loop playsinline class="background-video">
+    <source src="202608301622.mp4" type="video/mp4"></video>
+      <div class="login-box">
+        <div class="login-page-header">
+          <span class="login-eyebrow">Welcome to</span>
+          <h3>Trailbound</h3>
+        </div>
+
+<div class="input-box">
+  <label for="email" class="input-label">Email</label>
+  <input type="text" id="email" class="input-field" placeholder="you@example.com" autocomplete="off" required>
+</div>
+<div class="input-box">
+  <label for="password" class="input-label">Password</label>
+  <input type="password" id="password" class="input-field" placeholder="••••••••" autocomplete="off" required>
+</div>
+
+        <div class="divider">
+        <span>or continue with</span>
+        </div>
+
+        <div class="social-login">
+        <button type="button" class="social-btn google-btn">
+        <img src="https://www.google.com/favicon.ico" alt="" class="social-icon">Google</button>
+        <button type="button" class="social-btn facebook-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="social-icon" fill="#1877F2">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          </svg>Facebook</button>
+        </div>
+
+        <div class="forgot">
+          <section>
+            <input type="checkbox" id="check">
+            <label for="check">Remember Me</label>
+          </section>
+          <section>
+            <a href="#">Forgot Password?</a>
+          </section>
+        </div>
+
+        <div class="input submit">
+          <button class="submit-btn" id="submit">Login</button>
+        </div>
+
+        <div class="sign-up-link">
+          <p>Don't have account? <a href="#">Sign Up</a></p>
+        </div>
+      </div>
+    </main>
+
+
+ <!-----pangkonek to sa firebase----->
+<script type="module">
+  import { auth } from "./firebase-init.js";
+  import {
+    GoogleAuthProvider,
+    FacebookAuthProvider,
+    signInWithPopup
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  window.signInWithGoogle = function () {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        console.log("Google login success:", result.user);
+        window.location.href = 'index.html';
+      })
+      .catch((err) => {
+        console.error("Google login error:", err.code, err.message);
+        alert("Google login failed (" + err.code + "): " + err.message);
+      });
+  };
+
+  window.signInWithFacebook = function () {
+    const provider = new FacebookAuthProvider();
+    provider.setCustomParameters({ auth_type: 'reauthenticate' });
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        console.log("Facebook login success:", result.user);
+        window.location.href = 'index.html';
+      })
+      .catch((err) => {
+        console.error("Facebook login error:", err.code, err.message);
+        alert("Facebook login failed (" + err.code + "): " + err.message);
+      });
+  };
+</script>
+<script src="login.js" defer></script>
+  </body>
+</html>

@@ -126,6 +126,35 @@ section {
   background-color: #f5f0a8;
 }
 
+.site-header-nav a.account-icon-link {
+    padding: 0.35rem;
+    background-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    overflow: hidden;
+}
+
+.site-header-nav a.account-icon-link.active {
+    background-color: #f5f0a8;
+}
+
+.nav-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.nav-avatar-icon {
+    width: 22px;
+    height: 22px;
+    color: var(--base-300);
+}
+
 @media (max-width: 800px) {
   .site-header-nav {
     display: none;

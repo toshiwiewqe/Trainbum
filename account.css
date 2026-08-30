@@ -1,0 +1,187 @@
+/* ==========================================================
+   Account Page (account.html)
+   Reuses design tokens (--base-100/200/300) defined in styles.css.
+   Load styles.css BEFORE this file so the variables exist.
+   ========================================================== */
+
+.account-page {
+    min-height: 100vh;
+    background-color: var(--base-100);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 8rem 1.5rem 4rem;
+}
+
+.account-card {
+    background-color: var(--base-300);
+    border-radius: 20px;
+    padding: 3rem 2.5rem;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.account-avatar-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+}
+
+.account-avatar,
+.account-avatar-fallback {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.account-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--base-200);
+    color: var(--base-100);
+    font-family: "PP Neue Montreal", sans-serif;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+#account-name {
+    color: var(--base-100);
+    font-size: 1.5rem;
+    margin-bottom: 0.35rem;
+    text-transform: none;
+}
+
+.account-email {
+    font-family: "Inter", sans-serif;
+    text-transform: none;
+    color: var(--base-100);
+    opacity: 0.7;
+    font-size: 0.85rem;
+    margin-bottom: 0.15rem;
+}
+
+.account-member-since {
+    font-family: "Inter", sans-serif;
+    text-transform: none;
+    color: var(--base-100);
+    opacity: 0.5;
+    font-size: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.account-section {
+    text-align: left;
+    margin-bottom: 2rem;
+}
+
+.account-section label {
+    display: block;
+    font-family: "Inter", sans-serif;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+    color: var(--base-100);
+    opacity: 0.6;
+    margin-bottom: 0.5rem;
+}
+
+.account-edit-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.account-input {
+    flex: 1;
+    font-family: "Inter", sans-serif;
+    padding: 0.65rem 0.9rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--base-100);
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.account-input:focus {
+    border-color: var(--base-200);
+}
+
+.account-save-btn {
+    font-family: "PP Neue Montreal", sans-serif;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 0.65rem 1.25rem;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--base-200);
+    color: var(--base-100);
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.account-save-btn:hover {
+    opacity: 0.85;
+}
+
+.account-save-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.account-feedback {
+    margin-top: 0.6rem;
+    font-family: "Inter", sans-serif;
+    font-size: 0.8rem;
+    color: #7ee19a;
+}
+
+.account-feedback--error {
+    color: #ff9d9d;
+}
+
+.account-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.account-link-btn,
+.account-logout-btn {
+    font-family: "PP Neue Montreal", sans-serif;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 0.75rem;
+    border-radius: 999px;
+    text-decoration: none;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.account-link-btn {
+    background-color: var(--base-100);
+    color: var(--base-300);
+    border: none;
+}
+
+.account-link-btn:hover {
+    background-color: #f5f0a8;
+}
+
+.account-logout-btn {
+    background-color: transparent;
+    color: var(--base-100);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.account-logout-btn:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
