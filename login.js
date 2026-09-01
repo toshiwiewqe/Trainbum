@@ -1,6 +1,11 @@
 // ==========================================================
 // Trailbound Login Page — Functionality
 // ==========================================================
+import { auth } from "./firebase-init.js";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 document.addEventListener('DOMContentLoaded', () => {
   const form            = document.querySelector('.login-box');
@@ -102,27 +107,48 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.textContent = 'Logging in...';
 
     try {
-      // TODO: replace with your real login call, e.g.:
-      // await loginWithEmail(emailInput.value.trim(), passwordInput.value);
-      await mockLoginRequest(emailInput.value.trim(), passwordInput.value);
+      const user = await loginOrSignupWithEmail(emailInput.value.trim(), passwordInput.value);
+      console.log('Firebase login success:', user);
 
       submitBtn.textContent = 'Success!';
       window.location.href = 'index.html';
     } catch (err) {
-      showError(passwordInput, err.message || 'Login failed. Try again.');
+      showError(passwordInput, getFriendlyError(err.code) || err.message || 'Login failed. Try again.');
       submitBtn.textContent = originalText;
       submitBtn.disabled = false;
     }
   });
 
-  // Placeholder — remove once you wire up a real backend
-  function mockLoginRequest(email, password) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        console.log('Mock login attempt:', { email, password: '••••••' });
-        resolve();
-      }, 1000);
-    });
+  // Tries to sign in; if no account exists with this email yet,
+  // creates one automatically (since this page has no separate signup form).
+  async function loginOrSignupWithEmail(email, password) {
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      return result.user;
+    } catch (err) {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        return result.user;
+      }
+      throw err;
+    }
+  }
+
+  function getFriendlyError(code) {
+    switch (code) {
+      case 'auth/wrong-password':
+        return 'Incorrect password.';
+      case 'auth/email-already-in-use':
+        return 'That email is already registered with a different password.';
+      case 'auth/invalid-email':
+        return 'That email address looks invalid.';
+      case 'auth/weak-password':
+        return 'Password should be at least 6 characters.';
+      case 'auth/operation-not-allowed':
+        return 'Email/password sign-in is not enabled yet in Firebase.';
+      default:
+        return null;
+    }
   }
 
   // ----------------------------------------------------------
