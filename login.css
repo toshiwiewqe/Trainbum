@@ -1,0 +1,252 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
+}
+
+.login-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.55));
+    z-index: 0;
+}
+
+.login-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 2rem 0;  
+    position: relative;
+    overflow: hidden;
+}
+
+.login-box {
+    position: relative;
+    z-index: 1;
+    background: rgba(4, 28, 15, 0.6);
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9);
+    width: 100%;
+    max-width: 380px;
+    margin: 0 1rem;
+    border: 2px solid rgba(35, 85, 35, 0.3);
+}
+
+.login-page-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.login-eyebrow {
+    display: block;
+    font-size: 0.8rem;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.25rem;
+}
+
+.login-box section {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.login-box h3 {
+    text-transform: none;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    line-height: 1.3;
+    letter-spacing: normal;
+    color: #ffffff;
+}
+
+.login-box p {
+    text-transform: none;
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 400;
+    line-height: 1.4;
+    position: relative;
+    z-index: 1;
+}
+
+.input-box {
+    margin-bottom: 1rem;
+}
+
+.input-field {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #1a751e;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.input-field:focus,
+.social-btn:focus-visible,
+.submit-btn:focus-visible {
+    outline: 2px solid #4ade80;
+    outline-offset: 2px;
+}
+
+.input-label {
+    display: block;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 0.35rem;
+    font-weight: 500;
+}
+
+.forgot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+
+.forgot a,
+.forgot label {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.forgot a:hover {
+    text-decoration: underline;
+}
+
+.forgot section:first-child {
+    cursor: pointer;
+}
+
+.forgot input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #1b6239;
+    cursor: pointer;
+}
+
+.forgot label {
+    cursor: pointer;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 6px;
+    background-color: #1b6239;
+    color: #fbfbfb;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.submit-btn:hover {
+    background-color: #11331f;
+}
+
+.sign-up-link {
+    text-align: center;
+    margin-top: 1.25rem;
+    font-size: 0.9rem;
+    color: #ffffff;
+}
+
+.sign-up-link a {
+    color: #0e9744;
+}
+
+.background-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    filter: blur(4px) brightness(0.75);
+    transform: scale(1.05);
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1.25rem 0;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.divider span {
+    padding: 0 0.75rem;
+}
+
+.social-login {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.social-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.65rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.social-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.social-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.google-btn .social-icon,
+.facebook-btn .social-icon {
+    background: #fff;
+    border-radius: 50%;
+    padding: 2px;
+}
+
+.input-error-state {
+    border-color: #e63946 !important;
+}
+.input-error {
+    display: block;
+    color: #ffb4b4;
+    font-size: 0.75rem;
+    margin-top: 0.3rem;
+}
