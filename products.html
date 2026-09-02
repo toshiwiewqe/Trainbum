@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shop Hiking Gear — Trailbound</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" href="/icons/favicon.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#1a0401" />
+</head>
+<body>
+
+  <header class="site-header">
+      <div class="site-header-logo">
+      <img src="finaltrailboundlogo.png" alt="Site Logo"> </div>
+      <nav class="site-header-nav">
+        <nav class="site-header-nav">
+        <a href="index.html">Home</a>
+        <a href="index.html#trails">Trails</a>
+        <a href="products.html">Products</a>
+        <a href="booking.html" class="active">Book Now</a>
+        <a href="#">Contact</a>
+        <a href="login.html">Log In</a>
+      <span class="cart-badge">
+        <a href="#" class="account-icon-link" aria-label="Cart">
+          🛒
+          <span id="cart-count" class="cart-count" hidden>0</span>
+        </a>
+      </span>
+    </nav>
+  </header>
+
+  <div class="products-hero">
+    <h1>Hiking Gear</h1>
+    <p>Everything for camp, trail, and everything you carry between them — sourced for the long haul.</p>
+  </div>
+ 
+  <main class="products-layout">
+ 
+    <!-- Sidebar: categories + price + attributes -->
+    <aside class="products-sidebar">
+      <div class="products-sidebar-block">
+        <h5>Category</h5>
+        <div id="products-category-tree"></div>
+      </div>
+ 
+      <div class="products-sidebar-block">
+        <h5>Price Range</h5>
+        <div class="products-price-row">
+          <span id="products-price-min-label">₱0</span>
+          <span id="products-price-max-label">₱0</span>
+        </div>
+        <input type="range" id="products-price-min" min="0" step="50" value="0">
+        <input type="range" id="products-price-max" min="0" step="50" value="0" style="margin-top:0.4rem;">
+      </div>
+ 
+      <div class="products-sidebar-block">
+        <h5>Size</h5>
+        <div class="products-chip-row" id="products-size-filters"></div>
+      </div>
+ 
+      <div class="products-sidebar-block">
+        <h5>Color</h5>
+        <div class="products-chip-row" id="products-color-filters"></div>
+      </div>
+ 
+      <button type="button" class="products-clear-btn" id="products-clear-filters">Clear All Filters</button>
+    </aside>
+ 
+    <!-- Main: search/sort toolbar + grid -->
+    <div class="products-main">
+      <div class="products-toolbar">
+        <input type="text" id="products-search" class="products-search" placeholder="Search gear — tents, boots, headlamps…">
+        <select id="products-sort" class="products-sort">
+          <option value="popularity">Sort: Popularity</option>
+          <option value="newest">Sort: Newest</option>
+          <option value="price-asc">Sort: Price (Low to High)</option>
+          <option value="price-desc">Sort: Price (High to Low)</option>
+          <option value="name-asc">Sort: Name (A–Z)</option>
+        </select>
+      </div>
+ 
+      <p class="products-result-line"><span id="products-result-count">0</span> items</p>
+ 
+      <div class="products-grid" id="products-grid">
+        <p class="products-status" id="products-status" hidden></p>
+      </div>
+    </div>
+ 
+  </main>
+ 
+  <!-- Product detail drawer -->
+  <div class="drawer-backdrop" id="product-drawer-backdrop"></div>
+  <aside class="product-drawer" id="product-drawer" aria-label="Product details">
+    <button type="button" class="drawer-close" id="product-drawer-close" aria-label="Close">✕</button>
+    <div class="drawer-content">
+      <div class="drawer-img-main" id="drawer-img-main-wrap">
+        <img id="drawer-img-main" src="" alt="">
+      </div>
+      <div class="drawer-thumbs" id="drawer-thumbs"></div>
+ 
+      <div class="drawer-info">
+        <p class="drawer-category" id="drawer-category"></p>
+        <h3 id="drawer-title"></h3>
+        <p class="drawer-price" id="drawer-price"></p>
+        <span class="drawer-stock" id="drawer-stock"></span>
+        <p class="drawer-desc" id="drawer-desc"></p>
+ 
+        <div class="drawer-option-row" id="drawer-size-row" hidden>
+          <h5>Size</h5>
+          <div class="drawer-opt-group" id="drawer-size-opts"></div>
+        </div>
+ 
+        <div class="drawer-option-row" id="drawer-color-row" hidden>
+          <h5>Color</h5>
+          <div class="drawer-opt-group" id="drawer-color-opts"></div>
+        </div>
+ 
+        <div class="drawer-purchase-row">
+          <input type="number" id="drawer-qty" class="drawer-qty" value="1" min="1" max="10">
+          <button type="button" id="drawer-add-btn" class="drawer-add-btn">Add to Cart</button>
+        </div>
+ 
+        <div class="drawer-specs" id="drawer-specs"></div>
+      </div>
+    </div>
+  </aside>
+ 
+  <div class="cart-toast" id="cart-toast"></div>
+ 
+  
+<script src="taxonomy.js"></script>
+<script type="module" src="products.js"></script>
+</body>
+</html>
