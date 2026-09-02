@@ -783,7 +783,7 @@ section {
   pointer-events: none;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 800px) {
   .wonjyou h1 {
     font-size: 2.25rem;
     letter-spacing: -0.05rem;
