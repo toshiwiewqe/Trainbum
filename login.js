@@ -113,7 +113,10 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.textContent = 'Success!';
       window.location.href = 'index.html';
     } catch (err) {
-      showError(passwordInput, getFriendlyError(err.code) || err.message || 'Login failed. Try again.');
+      const message = err.code === 'auth/wrong-provider'
+        ? err.message
+        : (getFriendlyError(err.code) || err.message || 'Login failed. Try again.');
+      showError(passwordInput, message);
       submitBtn.textContent = originalText;
       submitBtn.disabled = false;
     }
@@ -127,8 +130,23 @@ document.addEventListener('DOMContentLoaded', () => {
       return result.user;
     } catch (err) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-        const result = await createUserWithEmailAndPassword(auth, email, password);
-        return result.user;
+        try {
+          return (await createUserWithEmailAndPassword(auth, email, password)).user;
+        } catch (createErr) {
+          if (createErr.code === 'auth/email-already-in-use') {
+            // Firebase no longer lets us detect WHICH provider an email
+            // belongs to (email enumeration protection, on by default
+            // since 2023) — so give one clear, actionable message instead
+            // of guessing.
+            const providerError = new Error(
+              "This email already has an account, but that password didn't match. " +
+              "If you originally signed up with Google or Facebook, use that button below instead."
+            );
+            providerError.code = 'auth/wrong-provider';
+            throw providerError;
+          }
+          throw createErr;
+        }
       }
       throw err;
     }
