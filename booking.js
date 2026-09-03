@@ -7,6 +7,13 @@
    this page tracks which bookings THIS BROWSER made using a
    small local list of IDs — see the TODO comment below for
    exactly what to change once login is ready.
+
+   Once a booking is saved (status: "Pending" = slot reserved,
+   not yet paid), it's added to the shared cart as a line item
+   via cart-store.js, and a modal offers the person a choice:
+   add gear from the shop, or go straight to checkout. Checkout
+   is what actually flips the booking to "Confirmed" once
+   payment goes through — see checkout.js.
    ========================================================== */
 
 import { db } from "./firebase-config.js";
@@ -17,46 +24,13 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
-import { fetchHourlyForecast, buildHikerTip, buildAlertMessage } from "./weather-api.js";
-
-/* ==========================================================
-   Auto-hiding header
-   The header hides while the page is actively being scrolled,
-   in either direction, and slides back into view once
-   scrolling has stopped for a short moment (~500ms). It stays
-   visible whenever the page is at (or very near) the top.
-   ========================================================== */
-
-(function initHeaderAutoHide() {
-  const header = document.getElementById("site-header") || document.querySelector(".site-header");
-  if (!header) return;
-
-  const TOP_THRESHOLD = 40; // px — always show the header near the very top
-  const IDLE_DELAY = 500; // ms of no scrolling before the header reappears
-
-  let idleTimer = null;
-
-  function showHeader() {
-    header.classList.remove("site-header--hidden");
-  }
-
-  function hideHeader() {
-    header.classList.add("site-header--hidden");
-  }
-
-  function onScroll() {
-    if (window.scrollY <= TOP_THRESHOLD) {
-      showHeader();
-    } else {
-      hideHeader();
-    }
-
-    if (idleTimer) clearTimeout(idleTimer);
-    idleTimer = setTimeout(showHeader, IDLE_DELAY);
-  }
-
-  window.addEventListener("scroll", onScroll, { passive: true });
-})();
+import {
+  addBookingToCart,
+  removeBookingByBookingId,
+  updateCartBadge,
+  onCartUpdated,
+} from "./cart-store.js";
+import { fetchHourlyForecast, buildHikerTip, buildAlertMessage } from "./Weather-api.js";
 
 const MY_BOOKING_IDS_KEY = "trailbound_my_booking_ids";
 
@@ -89,6 +63,13 @@ const priceTotalEl = document.getElementById("price-total");
 const form = document.getElementById("booking-form");
 const feedbackEl = document.getElementById("booking-feedback");
 const bookingsListEl = document.getElementById("bookings-list");
+const cartCountEl = document.getElementById("cart-count");
+
+const postBookingBackdrop = document.getElementById("post-booking-modal-backdrop");
+const postBookingModal = document.getElementById("post-booking-modal");
+const postBookingCopy = document.getElementById("post-booking-modal-copy");
+const postBookingAddGearBtn = document.getElementById("post-booking-add-gear");
+const postBookingCheckoutBtn = document.getElementById("post-booking-checkout");
 
 /* ---------- Weather modal DOM refs ---------- */
 
@@ -172,6 +153,9 @@ async function loadData() {
 
   const today = new Date().toISOString().split("T")[0];
   dateInput.min = today;
+
+  updateCartBadge(cartCountEl);
+  onCartUpdated(() => updateCartBadge(cartCountEl));
 }
 
 function populateTrailSelect() {
@@ -368,7 +352,7 @@ async function openWeatherModalForCurrentSelection() {
   document.body.style.overflow = "hidden";
   setWeatherLoadingState(dateStr, trail);
 
-  const locationForForecast = trail ? trail.location : "Benguet, Philippines"; // sensible default while no trail is picked yet
+  const locationForForecast = trail ? trail.location : "Manila, Philippines"; // sensible default while no trail is picked yet
 
   try {
     const { slots, featured, isFallback } = await fetchHourlyForecast(dateStr, locationForForecast);
@@ -478,6 +462,7 @@ form.addEventListener("submit", async (e) => {
     emergency_number: document.getElementById("emergency-number").value.trim(),
     total_price: pkg.price_per_pax * groupSize,
     status: "Pending",
+    payment_status: "Unpaid",
     created_at: new Date().toISOString(),
     // TODO: add `user_id: currentUser.uid` here once Auth is wired up
   };
@@ -486,15 +471,27 @@ form.addEventListener("submit", async (e) => {
     const docRef = await addDoc(collection(db, "bookings"), booking);
     addMyBookingId(docRef.id);
 
-    showFeedback(
-      `Booking confirmed for ${trail.name} (${pkg.name}) on ${booking.date}! Status: Pending admin approval.`,
-    );
+    // Stage this reservation in the cart so it can be paid for at
+    // checkout, alongside anything the person adds from the shop.
+    addBookingToCart({
+      bookingId: docRef.id,
+      trailName: trail.name,
+      packageName: pkg.name,
+      date: booking.date,
+      guideName: guide.full_name,
+      groupSize,
+      activity: booking.activity,
+      price: booking.total_price,
+      image: trail.image,
+    });
+
     form.reset();
     trailInfo.hidden = true;
     resetPackageSelect();
     resetGuideSelect();
     updatePrice();
     renderBookings();
+    openPostBookingModal(trail.name, booking.date);
   } catch (err) {
     console.error(err);
     showFeedback("Something went wrong saving your booking. Please try again.", true);
@@ -503,6 +500,35 @@ form.addEventListener("submit", async (e) => {
     submitBtn.textContent = "Confirm Booking";
   }
 });
+
+/* ---------- Post-booking modal: add gear or check out ---------- */
+
+function openPostBookingModal(trailName, date) {
+  postBookingCopy.textContent =
+    `Your spot on ${trailName} for ${date} is reserved and waiting in your cart. ` +
+    `Add trail gear now, or head straight to checkout to confirm it with payment.`;
+  postBookingBackdrop.hidden = false;
+  postBookingModal.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closePostBookingModal() {
+  postBookingBackdrop.hidden = true;
+  postBookingModal.hidden = true;
+  document.body.style.overflow = "";
+}
+
+if (postBookingBackdrop) postBookingBackdrop.addEventListener("click", closePostBookingModal);
+if (postBookingAddGearBtn) {
+  postBookingAddGearBtn.addEventListener("click", () => {
+    window.location.href = "products.html";
+  });
+}
+if (postBookingCheckoutBtn) {
+  postBookingCheckoutBtn.addEventListener("click", () => {
+    window.location.href = "checkout.html";
+  });
+}
 
 /* ---------- Booking history (My Bookings) ---------- */
 
@@ -554,6 +580,8 @@ async function renderBookings() {
 
 async function cancelBooking(bookingId) {
   await updateDoc(doc(db, "bookings", bookingId), { status: "Cancelled" });
+  // If it's still sitting unpaid in the cart, take it out too.
+  removeBookingByBookingId(bookingId);
   renderBookings();
 }
 

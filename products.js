@@ -10,10 +10,15 @@
 
    Product inventory itself is loaded from Firestore at startup —
    run seed-products.cjs once (see that file) to populate it.
+
+   Cart handling lives in cart-store.js and is shared with
+   booking.js, cart.js, and checkout.js — see that file for the
+   cart item shape and persistence approach.
    ========================================================== */
 
 import { db } from './firebase-config.js';
 import { collection, getDocs } from 'firebase/firestore';
+import { addProductToCart, updateCartBadge, onCartUpdated } from './cart-store.js';
 
 let PRODUCTS = [];
 
@@ -47,8 +52,6 @@ const state = {
   colors: new Set(),
   sort: "popularity"
 };
-
-const cart = []; // { id, name, price, qty, image }
 
 /* ==========================================================
    DOM refs
@@ -94,6 +97,11 @@ async function init() {
 
   els.status.hidden = false;
   els.status.textContent = "Loading gear…";
+
+  // Cart badge should reflect reality immediately, and stay in sync if
+  // the cart changes in another tab (e.g. removed from cart.html).
+  updateCartBadge(els.cartCount);
+  onCartUpdated(() => updateCartBadge(els.cartCount));
 
   try {
     await loadProducts();
@@ -448,22 +456,19 @@ function renderDrawerAttributes() {
 function addActiveToCart() {
   if (!activeProduct || !activeProduct.inStock) return;
   const qty = Math.max(1, Number(els.drawerQty.value) || 1);
-  cart.push({
-    id: activeProduct.id,
+
+  addProductToCart({
+    productId: activeProduct.id,
     name: activeProduct.name,
     price: activeProduct.price,
     qty,
+    image: activeProduct.images[0],
     size: selectedSize,
-    color: selectedColor
+    color: selectedColor,
   });
-  updateCartCount();
-  showToast(`Added ${activeProduct.name} to cart`);
-}
 
-function updateCartCount() {
-  const count = cart.reduce((sum, item) => sum + item.qty, 0);
-  els.cartCount.textContent = count;
-  els.cartCount.hidden = count === 0;
+  updateCartBadge(els.cartCount);
+  showToast(`Added ${activeProduct.name} to cart`);
 }
 
 let toastTimer = null;
