@@ -4,36 +4,47 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trailbound — Book Your Hike</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="booking.css" />
     <link rel="icon" href="/icons/favicon.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <meta name="theme-color" content="#1a0401" />
+    <meta name="theme-color" content="#f3efe1" />
   </head>
-  <header class="site-header">
+  <body class="booking-body">
+    <header class="site-header" id="site-header">
       <div class="site-header-logo">
-      <img src="finaltrailboundlogo.png" alt="Site Logo"> </div>
+        <img src="finaltrailboundlogo.png" alt="TrailBound Adventures logo" class="site-header-logo-img" />
+      </div>
       <nav class="site-header-nav">
-        <nav class="site-header-nav">
         <a href="index.html">Home</a>
         <a href="index.html#trails">Trails</a>
         <a href="products.html">Products</a>
         <a href="booking.html" class="active">Book Now</a>
         <a href="#">Contact</a>
         <a href="login.html">Log In</a>
-      <span class="cart-badge">
-        <a href="#" class="account-icon-link" aria-label="Cart">
-          🛒
-          <span id="cart-count" class="cart-count" hidden>0</span>
-        </a>
-      </span>
-    </nav>
-  </header>
+        <span class="cart-badge">
+          <a href="#" class="account-icon-link" aria-label="Cart">
+            🛒
+            <span id="cart-count" class="cart-count" hidden>0</span>
+          </a>
+        </span>
+      </nav>
+    </header>
 
     <main class="booking-page">
       <div class="booking-page-header">
         <span class="booking-eyebrow">Plan your trip</span>
-        <h3>Book your hike</h3>
+        <h1>
+          <span class="booking-flourish" aria-hidden="true">&#10086;</span>
+          Book your hike
+          <span class="booking-flourish" aria-hidden="true">&#10086;</span>
+        </h1>
         <p>Pick a trail, a date, and a certified guide to get started</p>
       </div>
 
@@ -43,8 +54,11 @@
 
           <div class="form-step">
             <div class="form-step-label">
-              <span class="form-step-number">01</span>
-              <span>Trail &amp; package</span>
+              <span class="form-step-icon" aria-hidden="true">🏔️</span>
+              <span class="form-step-heading">
+                <span class="form-step-number">01</span>
+                <span>Trail &amp; package</span>
+              </span>
             </div>
 
             <div class="form-group">
@@ -90,8 +104,11 @@
 
           <div class="form-step">
             <div class="form-step-label">
-              <span class="form-step-number">02</span>
-              <span>Guide &amp; schedule</span>
+              <span class="form-step-icon" aria-hidden="true">📅</span>
+              <span class="form-step-heading">
+                <span class="form-step-number">02</span>
+                <span>Guide &amp; schedule</span>
+              </span>
             </div>
 
             <div class="form-group">
@@ -104,11 +121,33 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="booking-date">Hike date</label>
-                <input type="date" id="booking-date" required />
+                <div class="input-icon-wrapper">
+                  <span class="input-icon" aria-hidden="true">📅</span>
+                  <input type="date" id="booking-date" required />
+                </div>
               </div>
               <div class="form-group">
                 <label for="group-size">Group size</label>
-                <input type="number" id="group-size" min="1" max="15" value="1" required />
+                <div class="input-icon-wrapper">
+                  <span class="input-icon" aria-hidden="true">👥</span>
+                  <select id="group-size" required>
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                    <option value="13">13</option>
+                    <option value="14">14</option>
+                    <option value="15">15</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -117,34 +156,52 @@
 
           <div class="form-step">
             <div class="form-step-label">
-              <span class="form-step-number">03</span>
-              <span>Your details</span>
+              <span class="form-step-icon" aria-hidden="true">🙂</span>
+              <span class="form-step-heading">
+                <span class="form-step-number">03</span>
+                <span>Your details</span>
+              </span>
             </div>
 
             <div class="form-group">
               <label for="full-name">Full name</label>
-              <input type="text" id="full-name" placeholder="Juan Dela Cruz" required />
+              <div class="input-icon-wrapper">
+                <span class="input-icon" aria-hidden="true">👤</span>
+                <input type="text" id="full-name" placeholder="Juan Dela Cruz" required />
+              </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" placeholder="you@email.com" required />
+                <div class="input-icon-wrapper">
+                  <span class="input-icon" aria-hidden="true">✉️</span>
+                  <input type="email" id="email" placeholder="you@email.com" required />
+                </div>
               </div>
               <div class="form-group">
                 <label for="contact-number">Contact number</label>
-                <input type="tel" id="contact-number" placeholder="09XX XXX XXXX" required />
+                <div class="input-icon-wrapper">
+                  <span class="input-icon" aria-hidden="true">📞</span>
+                  <input type="tel" id="contact-number" placeholder="09XX XXX XXXX" required />
+                </div>
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label for="emergency-name">Emergency contact name</label>
-                <input type="text" id="emergency-name" placeholder="Maria Dela Cruz" required />
+                <div class="input-icon-wrapper">
+                  <span class="input-icon" aria-hidden="true">👤</span>
+                  <input type="text" id="emergency-name" placeholder="Maria Dela Cruz" required />
+                </div>
               </div>
               <div class="form-group">
                 <label for="emergency-number">Emergency contact number</label>
-                <input type="tel" id="emergency-number" placeholder="09XX XXX XXXX" required />
+                <div class="input-icon-wrapper">
+                  <span class="input-icon" aria-hidden="true">📞</span>
+                  <input type="tel" id="emergency-number" placeholder="09XX XXX XXXX" required />
+                </div>
               </div>
             </div>
           </div>
@@ -154,19 +211,125 @@
             <span id="price-total">₱0</span>
           </div>
 
-          <button type="submit" class="booking-submit-btn">Confirm booking</button>
+          <button type="submit" class="booking-submit-btn">
+            <span aria-hidden="true">🗓️</span> Confirm booking
+          </button>
 
           <p id="booking-feedback" class="booking-feedback" hidden></p>
         </form>
 
         <!-- Booking history -->
-        <div class="booking-history">
-          <h4>My bookings</h4>
+        <aside class="booking-history">
+          <h4><span aria-hidden="true">📅</span> My bookings</h4>
           <div id="bookings-list" class="bookings-list">
-            <p class="bookings-empty">You have no bookings yet.</p>
+            <div class="bookings-empty-state">
+              <div class="bookings-empty-icon" aria-hidden="true">🏔️</div>
+              <h5>No bookings yet</h5>
+              <p>Your upcoming hikes will appear here.</p>
+            </div>
           </div>
-        </div>
+
+          <div class="trail-divider" aria-hidden="true"></div>
+
+          <ul class="trust-features">
+            <li>
+              <span class="trust-feature-icon" aria-hidden="true">🛡️</span>
+              <div>
+                <strong>Certified guides</strong>
+                <p>Hike with experienced and certified guides.</p>
+              </div>
+            </li>
+            <li>
+              <span class="trust-feature-icon" aria-hidden="true">⛑️</span>
+              <div>
+                <strong>Safety first</strong>
+                <p>Your safety is our top priority.</p>
+              </div>
+            </li>
+            <li>
+              <span class="trust-feature-icon" aria-hidden="true">🌿</span>
+              <div>
+                <strong>Leave no trace</strong>
+                <p>We promote responsible and sustainable hiking.</p>
+              </div>
+            </li>
+            <li>
+              <span class="trust-feature-icon" aria-hidden="true">🎧</span>
+              <div>
+                <strong>24/7 support</strong>
+                <p>We're here to help you every step of the way.</p>
+              </div>
+            </li>
+          </ul>
+        </aside>
       </div>
+
+      <!-- Weather forecast popup: opens automatically when a hike date is selected -->
+      <div id="weather-modal" class="weather-modal" hidden>
+        <div class="weather-modal-backdrop" id="weather-modal-backdrop"></div>
+
+        <div class="weather-modal-card" role="dialog" aria-modal="true" aria-labelledby="weather-modal-title">
+          <button type="button" class="weather-modal-close" id="weather-modal-close" aria-label="Close">✕</button>
+
+          <div class="weather-modal-header">
+            <span class="weather-modal-header-icon" aria-hidden="true">📅</span>
+            <h3 id="weather-modal-title">Review Your Hiking Date</h3>
+            <p>Here's the weather forecast for your selected date.<br />Make sure it's a good day for your adventure!</p>
+          </div>
+
+          <div class="weather-modal-top">
+            <div class="weather-modal-date-box">
+              <span class="weather-modal-eyebrow">Selected date</span>
+              <span id="weather-modal-date" class="weather-modal-date">—</span>
+              <span id="weather-modal-weekday" class="weather-modal-weekday"></span>
+              <span id="weather-modal-location" class="weather-modal-location"></span>
+            </div>
+
+            <div class="weather-modal-now">
+              <div class="weather-modal-now-main">
+                <span id="weather-modal-icon-big" class="weather-modal-icon-big" aria-hidden="true">☁️</span>
+                <div>
+                  <span id="weather-modal-temp-big" class="weather-modal-temp-big">—°C</span>
+                  <span id="weather-modal-condition-big" class="weather-modal-condition-big">—</span>
+                </div>
+                <div class="weather-modal-now-stats">
+                  <span>🌡️ <span id="weather-modal-feelslike">—°C</span><br /><small>Feels like</small></span>
+                  <span>💧 <span id="weather-modal-humidity">—%</span><br /><small>Humidity</small></span>
+                  <span>🌬️ <span id="weather-modal-wind">—</span><br /><small>Wind</small></span>
+                </div>
+              </div>
+              <div class="weather-modal-alert">
+                <span aria-hidden="true">⚠️</span>
+                <span id="weather-modal-alert-text">Loading forecast…</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="weather-modal-hourly">
+            <span class="weather-modal-eyebrow">Hourly forecast</span>
+            <p class="weather-modal-hourly-sub">Weather updates every 2 hours</p>
+            <div id="weather-hourly-list" class="weather-hourly-list">
+              <!-- populated by booking.js -->
+            </div>
+          </div>
+
+          <div class="weather-modal-tip">
+            <span aria-hidden="true">🧥</span>
+            <div>
+              <strong>Hiker's tip</strong>
+              <p id="weather-tip-text">Checking conditions for your hike…</p>
+            </div>
+            <span aria-hidden="true">🎒</span>
+          </div>
+
+          <div class="weather-modal-actions">
+            <button type="button" id="weather-change-date-btn" class="weather-btn weather-btn--ghost">📅 Change date</button>
+            <button type="button" id="weather-confirm-btn" class="weather-btn weather-btn--solid">✓ Continue booking</button>
+          </div>
+
+          <p class="weather-modal-footnote">You can reschedule up to 48 hours before your hike.</p>
+        </div>
+      </div>  
     </main>
 
     <script type="module" src="booking.js"></script>

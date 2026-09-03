@@ -1,54 +1,216 @@
 /* ==========================================================
-   Booking page (booking.html) — overrides/extends styles.css
-   Uses the site's own tokens (--base-100/200/300, PP Neue
-   Montreal, Inter, pill shapes) — no separate palette.
+   Booking page (booking.html) — cream / olive theme
+   Self-contained token set (--tb-*) so the page looks right
+   even without styles.css's --base-100/200/300 tokens. Where
+   this page shares real site chrome (.site-header, nav links)
+   we style defensively with var(--base-*, fallback) so it will
+   still pick up the real site palette once styles.css defines
+   those tokens.
    ========================================================== */
+
+:root {
+  --tb-cream: #f3efe1;
+  --tb-cream-soft: #faf7ee;
+  --tb-card: #fbf8f0;
+  --tb-ink: #2b1c12;
+  --tb-ink-soft: rgba(43, 28, 18, 0.68);
+  --tb-ink-faint: rgba(43, 28, 18, 0.45);
+  --tb-olive: #3f4a26;
+  --tb-olive-dark: #2f381c;
+  --tb-olive-soft: rgba(63, 74, 38, 0.1);
+  --tb-tan: #e7d9b8;
+  --tb-tan-dark: #d8c398;
+  --tb-border: rgba(43, 28, 18, 0.12);
+  --tb-shadow: 0 20px 45px rgba(43, 28, 18, 0.08);
+  --font-display: "Cormorant Garamond", "PP Neue Montreal", serif;
+  --font-body: "Inter", sans-serif;
+}
 
 .booking-body {
   min-height: 100vh;
-  background-color: #edf1e8;
-} 
-
-/* Header markup/behavior is untouched. The only override needed here is
-   position + background, since this page has no hero video behind the
-   header for it to float over — same dark bar you see on the homepage
-   once scrolled past the hero. Nav pill colors, hover, and active states
-   all come straight from styles.css. */
-.site-header--static {
-  position: static;
-  background-color: #edf1e8;
+  background-color: var(--tb-cream);
+  /* Fixed pixel stops (not %) so the photo-to-cream fade always covers
+     the same amount of the page — header + hero title — no matter how
+     tall the rest of the page ends up being. */
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(243, 239, 225, 0.08) 0px,
+      rgba(243, 239, 225, 0.35) 220px,
+      rgba(243, 239, 225, 0.85) 440px,
+      var(--tb-cream) 620px
+    ),
+    url("trail-hero-bg.jpg");
+  background-repeat: no-repeat;
+  background-position: center 40%, center 40%;
+  background-size: 100% 620px, cover;
+  background-attachment: scroll, fixed;
 }
 
+/* ---------- Header (sticky + auto-hide on scroll) ---------- */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem 3rem;
+  background: transparent;
+  transition: transform 0.35s ease;
+  transform: translateY(0);
+}
+
+/* Toggled by header-scroll.js while the page is actively being
+   scrolled (either direction); removed again once scrolling
+   stops, so the header re-appears at rest. */
+.site-header--hidden {
+  transform: translateY(-100%);
+  box-shadow: none;
+}
+
+.site-header-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.site-header-logo-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  background: transparent;
+}
+
+.site-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-body);
+}
+
+.site-header-nav a {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--tb-ink);
+  text-decoration: none;
+  background-color: rgba(230, 227, 219, 0.82);
+  padding: 0.65rem 1.35rem;
+  border-radius: 999px;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.site-header-nav a:hover {
+  background-color: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+}
+
+.site-header-nav a.active {
+  background-color: #eef0a8;
+  color: var(--tb-ink);
+}
+
+.cart-badge {
+  position: relative;
+}
+
+.account-icon-link {
+  position: relative;
+  text-decoration: none;
+  font-size: 1.05rem;
+  background-color: rgba(230, 227, 219, 0.82);
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.account-icon-link:hover {
+  background-color: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+}
+
+.cart-count {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background-color: var(--tb-olive-dark);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+}
+
+@media (max-width: 900px) {
+  .site-header {
+    flex-wrap: wrap;
+    padding: 1rem 1.25rem;
+  }
+  .site-header-nav {
+    flex-wrap: wrap;
+    gap: 0.9rem;
+  }
+}
+
+/* ---------- Hero / page header ---------- */
+
 .booking-page {
-  background-color: #edf1e8;
-  padding: 3.5rem 3rem 6rem;
+  /* transparent so the photo + fade set on .booking-body (behind this
+     element) can actually show through instead of being blocked by a
+     solid color here */
+  background-color: transparent;
+  padding: 3rem 3rem 6rem;
   min-height: 100vh;
 }
 
 .booking-page-header {
   text-align: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2.75rem;
 }
 
 .booking-eyebrow {
   display: inline-block;
-  font-family: "PP Neue Montreal", sans-serif;
+  font-family: var(--font-body);
   text-transform: uppercase;
   font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 1px;
-  color: var(--base-200);
-  margin-bottom: 0.6rem;
+  letter-spacing: 2px;
+  color: var(--tb-ink-soft);
+  margin-bottom: 0.9rem;
 }
 
-.booking-page-header h3 {
-  color: var(--base-300);
+.booking-page-header h1 {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 600;
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  color: var(--tb-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.booking-flourish {
+  font-size: 0.9rem;
+  color: var(--tb-tan-dark);
 }
 
 .booking-page-header p {
-  color: var(--base-300);
-  opacity: 0.7;
-  margin-top: 0.5rem;
+  font-family: var(--font-body);
+  color: var(--tb-ink-soft);
+  margin-top: 0.6rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .booking-layout {
@@ -69,12 +231,14 @@
 /* ---------- Form ---------- */
 
 .booking-form {
-  background-color: var(--base-300);
-  border-radius: 16px;
-  padding: 2rem;
+  background-color: var(--tb-card);
+  border: 1px solid var(--tb-border);
+  border-radius: 22px;
+  padding: 2.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 1.25rem;
+  box-shadow: var(--tb-shadow);
 }
 
 .form-step {
@@ -85,25 +249,42 @@
 
 .form-step-label {
   display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: var(--base-100);
-  opacity: 0.85;
+  align-items: center;
+  gap: 0.8rem;
   margin-bottom: -0.2rem;
 }
 
+.form-step-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background-color: var(--tb-tan);
+  font-size: 1.05rem;
+}
+
+.form-step-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--tb-ink);
+}
+
 .form-step-number {
-  color: var(--base-200);
+  color: var(--tb-olive);
 }
 
 .trail-divider {
   border: none;
-  border-top: 1px solid rgba(220, 219, 213, 0.15);
+  border-top: 1px solid var(--tb-border);
   margin: 0.25rem 0;
 }
 
@@ -126,52 +307,75 @@
 }
 
 .form-group label {
-  font-family: "PP Neue Montreal", sans-serif;
+  font-family: var(--font-body);
   text-transform: uppercase;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: #000000;
-  opacity: 0.75;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: var(--tb-ink-soft);
 }
 
 .form-group input,
 .form-group select {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-body);
   font-size: 0.9rem;
-  padding: 0.75rem 1.1rem;
+  padding: 0.85rem 1.15rem;
   border-radius: 999px;
-  border: 1px solid rgba(220, 219, 213, 0.3);
-  background-color: rgba(220, 219, 213, 0.31);
-  color: var(--base-100);
+  border: 1px solid var(--tb-border);
+  background-color: var(--tb-cream-soft);
+  color: var(--tb-ink);
   outline: none;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.form-group select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%232b1c12' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 1.1rem center;
+  padding-right: 2.4rem;
 }
 
 .form-group input::placeholder {
-  color: rgba(220, 219, 213, 0.4);
+  color: var(--tb-ink-faint);
 }
 
 .form-group input:focus,
 .form-group select:focus {
-  border-color: var(--base-200);
+  border-color: var(--tb-olive);
 }
 
 .form-group select:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
 }
 
-.form-divider {
-  border: none;
-  border-top: 1px solid rgba(220, 219, 213, 0.15);
-  margin: 0.25rem 0;
+/* Inputs with a leading icon (name, email, phone, date, group size) */
+.input-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon-wrapper .input-icon {
+  position: absolute;
+  left: 1.05rem;
+  font-size: 0.95rem;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.input-icon-wrapper input,
+.input-icon-wrapper select {
+  padding-left: 2.6rem;
 }
 
 .trail-info {
   display: flex;
   align-items: center;
   gap: 1rem;
-  background-color: rgba(220, 219, 213, 0.08);
-  border-radius: 12px;
+  background-color: var(--tb-olive-soft);
+  border-radius: 14px;
   padding: 1rem;
 }
 
@@ -185,21 +389,21 @@
   order: 2;
   width: 90px;
   height: 90px;
-  border-radius: 8px;
+  border-radius: 10px;
   object-fit: cover;
   flex-shrink: 0;
 }
 
 .trail-info-details p {
   text-transform: none;
-  font-family: "Inter", sans-serif;
-  color: var(--base-100);
+  font-family: var(--font-body);
+  color: var(--tb-ink);
 }
 
 #trail-info-meta {
   font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--base-200);
+  font-weight: 700;
+  color: var(--tb-olive);
   margin-bottom: 0.3rem;
 }
 
@@ -211,8 +415,8 @@
 
 #package-info-price {
   font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--base-200);
+  font-weight: 700;
+  color: var(--tb-olive);
   margin-bottom: 0.3rem;
 }
 
@@ -226,37 +430,47 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-family: "PP Neue Montreal", sans-serif;
+  font-family: var(--font-body);
   text-transform: uppercase;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--base-100);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--tb-ink);
   padding-top: 0.5rem;
+  border-top: 1px solid var(--tb-border);
 }
 
 #price-total {
-  color: var(--base-200);
-  font-size: 1.4rem;
+  font-family: var(--font-display);
+  color: var(--tb-olive);
+  font-size: 1.8rem;
+  font-weight: 600;
 }
 
 .booking-submit-btn {
-  font-family: "PP Neue Montreal", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  font-family: var(--font-body);
   text-transform: uppercase;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.5px;
-  padding: 1rem;
+  padding: 1.05rem;
   border: none;
   border-radius: 999px;
-  background-color: var(--base-200);
-  color: var(--base-100);
+  background-color: var(--tb-olive-dark);
+  color: #fff;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
 .booking-submit-btn:hover {
-  background-color: #f5f0a8;
-  color: var(--base-300);
+  background-color: var(--tb-olive);
+}
+
+.booking-submit-btn:active {
+  transform: scale(0.99);
 }
 
 .booking-submit-btn:disabled {
@@ -266,46 +480,90 @@
 
 .booking-feedback {
   text-align: center;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-body);
   text-transform: none;
   font-size: 0.85rem;
-  color: #8fd694;
+  color: var(--tb-olive);
   padding-top: 0.25rem;
 }
 
 .booking-feedback--error {
-  color: var(--base-200);
+  color: #b1462f;
 }
 
 /* ---------- Booking history ---------- */
 
 .booking-history {
-  background-color: var(--base-300);
-  border-radius: 16px;
-  padding: 2rem;
+  background-color: var(--tb-card);
+  border: 1px solid var(--tb-border);
+  border-radius: 22px;
+  padding: 2.25rem;
+  box-shadow: var(--tb-shadow);
+  position: sticky;
+  top: 6rem;
 }
 
 .booking-history h4 {
-  font-family: "PP Neue Montreal", sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-body);
   text-transform: uppercase;
-  color: var(--base-100);
-  font-size: 1.1rem;
-  margin-bottom: 1.2rem;
+  color: var(--tb-ink);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  margin-bottom: 1.5rem;
 }
 
-.bookings-empty {
-  color: var(--base-100);
-  opacity: 0.5;
-  font-family: "Inter", sans-serif;
-  text-transform: none;
+.booking-history h4 span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background-color: var(--tb-tan);
+  font-size: 0.95rem;
+}
+
+.bookings-empty-state {
+  text-align: center;
+  padding: 1.5rem 0.5rem 2rem;
+}
+
+.bookings-empty-icon {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 1.1rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  background: radial-gradient(circle at 35% 30%, #fbe9c8, var(--tb-tan) 70%);
+}
+
+.bookings-empty-state h5 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--tb-ink);
+  margin-bottom: 0.4rem;
+}
+
+.bookings-empty-state p {
+  font-family: var(--font-body);
   font-size: 0.85rem;
+  color: var(--tb-ink-soft);
+  line-height: 1.4;
 }
 
 .bookings-list {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  max-height: 600px;
+  max-height: 420px;
   overflow-y: auto;
 }
 
@@ -314,53 +572,70 @@
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  background-color: rgba(220, 219, 213, 0.06);
-  border-radius: 10px;
-  padding: 0.9rem 1.1rem;
+  background-color: var(--tb-cream-soft);
+  border: 1px solid var(--tb-border);
+  border-radius: 16px;
+  padding: 1.1rem 1.25rem;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.booking-item:hover {
+  box-shadow: 0 12px 24px rgba(43, 28, 18, 0.07);
+  transform: translateY(-1px);
 }
 
 .booking-item-main h5 {
-  font-family: "PP Neue Montreal", sans-serif;
+  font-family: var(--font-body);
   text-transform: uppercase;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--base-100);
-  margin-bottom: 0.2rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+  margin-bottom: 0.3rem;
+  letter-spacing: 0.2px;
 }
 
 .booking-item-main p {
   text-transform: none;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-body);
   font-size: 0.75rem;
-  color: var(--base-100);
-  opacity: 0.65;
-  margin-bottom: 0.35rem;
+  color: var(--tb-ink-soft);
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.booking-item[data-status="cancelled"] .booking-item-main h5,
+.booking-item[data-status="cancelled"] .booking-item-price {
+  opacity: 0.55;
+}
+
+.booking-item[data-status="cancelled"] .booking-item-price {
+  text-decoration: line-through;
 }
 
 .booking-status {
   display: inline-block;
-  font-family: "PP Neue Montreal", sans-serif;
+  font-family: var(--font-body);
   text-transform: uppercase;
   font-size: 0.6rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.5px;
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
 }
 
 .booking-status--pending {
-  background-color: #f5f0a8;
-  color: var(--base-300);
+  background-color: #f2dfa0;
+  color: var(--tb-ink);
 }
 
 .booking-status--cancelled {
-  background-color: rgba(220, 219, 213, 0.2);
-  color: var(--base-100);
+  background-color: rgba(43, 28, 18, 0.12);
+  color: var(--tb-ink);
 }
 
 .booking-status--confirmed {
-  background-color: #8fd694;
-  color: var(--base-300);
+  background-color: #a9d19c;
+  color: var(--tb-olive-dark);
 }
 
 .booking-item-side {
@@ -372,20 +647,20 @@
 }
 
 .booking-item-price {
-  font-family: "PP Neue Montreal", sans-serif;
-  font-weight: 600;
-  color: var(--base-100);
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--tb-ink);
   font-size: 0.9rem;
 }
 
 .booking-cancel-btn {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-body);
   text-transform: uppercase;
   font-size: 0.65rem;
-  font-weight: 600;
+  font-weight: 700;
   background: none;
-  border: 1px solid rgba(220, 219, 213, 0.3);
-  color: var(--base-100);
+  border: 1px solid var(--tb-border);
+  color: var(--tb-ink);
   padding: 0.35rem 0.7rem;
   border-radius: 999px;
   cursor: pointer;
@@ -393,8 +668,79 @@
 }
 
 .booking-cancel-btn:hover {
-  border-color: var(--base-200);
-  color: var(--base-200);
+  border-color: var(--tb-olive);
+  color: var(--tb-olive);
+}
+
+/* ---------- Trust / features list ---------- */
+
+.trust-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding-top: 0.5rem;
+}
+
+.trust-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.trust-feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background-color: var(--tb-tan);
+  font-size: 1.05rem;
+}
+
+/* A little variety instead of every icon sitting on the same tan chip */
+.trust-features li:nth-child(1) .trust-feature-icon {
+  background-color: #dce7f2;
+}
+.trust-features li:nth-child(2) .trust-feature-icon {
+  background-color: #f4dcdc;
+}
+.trust-features li:nth-child(3) .trust-feature-icon {
+  background-color: #dfead2;
+}
+.trust-features li:nth-child(4) .trust-feature-icon {
+  background-color: #e7ddf0;
+}
+
+.trust-features li {
+  border-radius: 14px;
+  padding: 0.5rem 0.6rem;
+  margin: 0 -0.6rem;
+  transition: background-color 0.2s ease;
+}
+
+.trust-features li:hover {
+  background-color: var(--tb-cream-soft);
+}
+
+.trust-features strong {
+  display: block;
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--tb-ink);
+  margin-bottom: 0.25rem;
+}
+
+.trust-features p {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--tb-ink-soft);
+  line-height: 1.4;
 }
 
 /* ---------- Focus visibility (a11y) ---------- */
@@ -402,8 +748,9 @@
 .booking-submit-btn:focus-visible,
 .booking-cancel-btn:focus-visible,
 .form-group input:focus-visible,
-.form-group select:focus-visible {
-  outline: 2px solid var(--base-200);
+.form-group select:focus-visible,
+.site-header-nav a:focus-visible {
+  outline: 2px solid var(--tb-olive);
   outline-offset: 2px;
 }
 
@@ -411,11 +758,389 @@
 
 @media (max-width: 640px) {
   .booking-page {
-    padding: 2.5rem 1.2rem 4rem;
+    padding: 2.25rem 1.2rem 4rem;
   }
 
   .booking-form,
   .booking-history {
     padding: 1.5rem;
+  }
+}
+
+/* ==========================================================
+   Weather Forecast Modal — restyled to match the cream/olive
+   theme above instead of the old dark base-300 palette.
+   ========================================================== */
+
+.weather-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.weather-modal[hidden] {
+  display: none;
+}
+
+.weather-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(43, 28, 18, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+.weather-modal-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background-color: var(--tb-cream);
+  border-radius: 22px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 30px 60px rgba(43, 28, 18, 0.3);
+}
+
+.weather-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: none;
+  background-color: var(--tb-olive-soft);
+  color: var(--tb-ink);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.weather-modal-close:hover {
+  background-color: var(--tb-tan);
+}
+
+.weather-modal-header {
+  text-align: center;
+}
+
+.weather-modal-header-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background-color: #fff;
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.weather-modal-header h3 {
+  font-family: var(--font-display);
+  color: var(--tb-ink);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.weather-modal-header p {
+  font-family: var(--font-body);
+  color: var(--tb-ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.weather-modal-top {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 0.9rem;
+}
+
+@media (max-width: 560px) {
+  .weather-modal-top {
+    grid-template-columns: 1fr;
+  }
+}
+
+.weather-modal-eyebrow {
+  display: block;
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--tb-ink-soft);
+  margin-bottom: 0.4rem;
+}
+
+.weather-modal-date-box {
+  background-color: #fff;
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.weather-modal-date {
+  display: block;
+  font-family: var(--font-display);
+  color: var(--tb-ink);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.weather-modal-weekday {
+  display: block;
+  font-family: var(--font-body);
+  color: var(--tb-ink-soft);
+  font-size: 0.8rem;
+  margin-top: 0.15rem;
+}
+
+.weather-modal-location {
+  display: block;
+  font-family: var(--font-body);
+  color: var(--tb-olive);
+  font-size: 0.75rem;
+  margin-top: 0.6rem;
+  font-weight: 700;
+}
+
+.weather-modal-now {
+  background-color: var(--tb-olive-dark);
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.weather-modal-now-main {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.weather-modal-icon-big {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.weather-modal-temp-big {
+  display: block;
+  font-family: var(--font-display);
+  color: #fff;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.weather-modal-condition-big {
+  display: block;
+  font-family: var(--font-body);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
+}
+
+.weather-modal-now-stats {
+  margin-left: auto;
+  display: flex;
+  gap: 0.9rem;
+  font-family: var(--font-body);
+  color: #fff;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.weather-modal-now-stats small {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+}
+
+.weather-modal-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 0.65rem;
+  font-family: var(--font-body);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.weather-modal-hourly {
+  background-color: #fff;
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+}
+
+.weather-modal-hourly-sub {
+  font-family: var(--font-body);
+  color: var(--tb-ink-soft);
+  font-size: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.weather-hourly-list {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(90px, 1fr);
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+}
+
+.weather-hour-card {
+  background-color: var(--tb-cream-soft);
+  border-radius: 12px;
+  padding: 0.7rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  text-align: center;
+  border: 1px solid transparent;
+}
+
+.weather-hour-card--selected {
+  border-color: var(--tb-olive);
+}
+
+.weather-hour-time {
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--tb-ink-soft);
+}
+
+.weather-hour-icon {
+  font-size: 1.3rem;
+}
+
+.weather-hour-temp {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--tb-ink);
+}
+
+.weather-hour-label {
+  font-family: var(--font-body);
+  font-size: 0.6rem;
+  color: var(--tb-ink-soft);
+}
+
+.weather-hour-precip,
+.weather-hour-wind {
+  font-family: var(--font-body);
+  font-size: 0.6rem;
+  color: var(--tb-ink-soft);
+}
+
+.weather-modal-tip {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background-color: #fff;
+  border-radius: 16px;
+  padding: 0.9rem 1.1rem;
+}
+
+.weather-modal-tip span[aria-hidden] {
+  font-size: 1.6rem;
+}
+
+.weather-modal-tip strong {
+  display: block;
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  color: var(--tb-ink);
+  margin-bottom: 0.2rem;
+}
+
+.weather-modal-tip p {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--tb-ink-soft);
+  line-height: 1.4;
+}
+
+.weather-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 0.8rem;
+}
+
+@media (max-width: 480px) {
+  .weather-modal-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.weather-btn {
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 0.85rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.weather-btn--ghost {
+  background-color: transparent;
+  border: 1px solid var(--tb-border);
+  color: var(--tb-ink);
+}
+
+.weather-btn--ghost:hover {
+  border-color: var(--tb-ink);
+}
+
+.weather-btn--solid {
+  background-color: var(--tb-olive-dark);
+  border: none;
+  color: #fff;
+}
+
+.weather-btn--solid:hover {
+  background-color: var(--tb-olive);
+}
+
+.weather-modal-footnote {
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  color: var(--tb-ink-faint);
+}
+
+.weather-modal-close:focus-visible,
+.weather-btn:focus-visible {
+  outline: 2px solid var(--tb-olive);
+  outline-offset: 2px;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .site-header {
+    transition: none;
   }
 }

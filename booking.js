@@ -17,8 +17,56 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
+import { fetchHourlyForecast, buildHikerTip, buildAlertMessage } from "./weather-api.js";
+
+/* ==========================================================
+   Auto-hiding header
+   The header hides while the page is actively being scrolled,
+   in either direction, and slides back into view once
+   scrolling has stopped for a short moment (~500ms). It stays
+   visible whenever the page is at (or very near) the top.
+   ========================================================== */
+
+(function initHeaderAutoHide() {
+  const header = document.getElementById("site-header") || document.querySelector(".site-header");
+  if (!header) return;
+
+  const TOP_THRESHOLD = 40; // px — always show the header near the very top
+  const IDLE_DELAY = 500; // ms of no scrolling before the header reappears
+
+  let idleTimer = null;
+
+  function showHeader() {
+    header.classList.remove("site-header--hidden");
+  }
+
+  function hideHeader() {
+    header.classList.add("site-header--hidden");
+  }
+
+  function onScroll() {
+    if (window.scrollY <= TOP_THRESHOLD) {
+      showHeader();
+    } else {
+      hideHeader();
+    }
+
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(showHeader, IDLE_DELAY);
+  }
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+})();
 
 const MY_BOOKING_IDS_KEY = "trailbound_my_booking_ids";
+
+const EMPTY_BOOKINGS_HTML = `
+  <div class="bookings-empty-state">
+    <div class="bookings-empty-icon" aria-hidden="true">🏔️</div>
+    <h5>No bookings yet</h5>
+    <p>Your upcoming hikes will appear here.</p>
+  </div>
+`;
 
 const trailSelect = document.getElementById("trail-select");
 const guideSelect = document.getElementById("guide-select");
@@ -42,9 +90,30 @@ const form = document.getElementById("booking-form");
 const feedbackEl = document.getElementById("booking-feedback");
 const bookingsListEl = document.getElementById("bookings-list");
 
+/* ---------- Weather modal DOM refs ---------- */
+
+const weatherModal = document.getElementById("weather-modal");
+const weatherModalBackdrop = document.getElementById("weather-modal-backdrop");
+const weatherModalClose = document.getElementById("weather-modal-close");
+const weatherModalDate = document.getElementById("weather-modal-date");
+const weatherModalWeekday = document.getElementById("weather-modal-weekday");
+const weatherModalLocation = document.getElementById("weather-modal-location");
+const weatherModalIconBig = document.getElementById("weather-modal-icon-big");
+const weatherModalTempBig = document.getElementById("weather-modal-temp-big");
+const weatherModalConditionBig = document.getElementById("weather-modal-condition-big");
+const weatherModalFeelslike = document.getElementById("weather-modal-feelslike");
+const weatherModalHumidity = document.getElementById("weather-modal-humidity");
+const weatherModalWind = document.getElementById("weather-modal-wind");
+const weatherModalAlertText = document.getElementById("weather-modal-alert-text");
+const weatherHourlyList = document.getElementById("weather-hourly-list");
+const weatherTipText = document.getElementById("weather-tip-text");
+const weatherChangeDateBtn = document.getElementById("weather-change-date-btn");
+const weatherConfirmBtn = document.getElementById("weather-confirm-btn");
+
 let trails = [];
 let guides = [];
 let packages = [];
+let weatherRequestToken = 0; // guards against out-of-order responses if the user changes date/trail quickly
 
 /* ---------- Helpers ---------- */
 
@@ -176,6 +245,12 @@ function handleTrailChange() {
       .join("");
 
   updatePrice();
+
+  // Trail (and therefore location) changed — if a date is already picked,
+  // refresh the forecast so it still matches the current trail.
+  if (dateInput.value) {
+    openWeatherModalForCurrentSelection();
+  }
 }
 
 function resetPackageSelect() {
@@ -226,7 +301,132 @@ function updatePrice() {
 
 trailSelect.addEventListener("change", handleTrailChange);
 packageSelect.addEventListener("change", handlePackageChange);
+// group-size is a <select> now (to match the redesigned UI) instead of a
+// number input — "change" is the reliable event for <select> across
+// browsers, "input" is kept too since modern browsers fire it as well.
 groupSizeInput.addEventListener("input", updatePrice);
+groupSizeInput.addEventListener("change", updatePrice);
+
+/* ---------- Weather forecast popup ---------- */
+
+function formatDateForDisplay(dateStr) {
+  // dateStr is "YYYY-MM-DD" from <input type="date">; parse as local, not UTC.
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dateObj = new Date(y, m - 1, d);
+  const dateLabel = dateObj.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  const weekdayLabel = dateObj.toLocaleDateString("en-US", { weekday: "long" });
+  return { dateLabel, weekdayLabel };
+}
+
+function renderWeatherHourlyList(slots, featuredHour) {
+  weatherHourlyList.innerHTML = slots
+    .map(
+      (s) => `
+        <div class="weather-hour-card${s.hour === featuredHour ? " weather-hour-card--selected" : ""}">
+          <span class="weather-hour-time">${s.timeLabel}</span>
+          <span class="weather-hour-icon" aria-hidden="true">${s.icon}</span>
+          <span class="weather-hour-temp">${s.tempC ?? "—"}°C</span>
+          <span class="weather-hour-label">${s.label}</span>
+          <span class="weather-hour-precip">💧 ${s.precipProbability ?? "—"}%</span>
+          <span class="weather-hour-wind">🌬️ ${s.windKph ?? "—"} km/h</span>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function setWeatherLoadingState(dateStr, trail) {
+  const { dateLabel, weekdayLabel } = formatDateForDisplay(dateStr);
+  weatherModalDate.textContent = dateLabel;
+  weatherModalWeekday.textContent = weekdayLabel;
+  weatherModalLocation.textContent = trail ? `${trail.name} · ${trail.location}` : "";
+
+  weatherModalTempBig.textContent = "—°C";
+  weatherModalConditionBig.textContent = "Loading...";
+  weatherModalIconBig.textContent = "⏳";
+  weatherModalFeelslike.textContent = "—°C";
+  weatherModalHumidity.textContent = "—%";
+  weatherModalWind.textContent = "—";
+  weatherModalAlertText.textContent = "Fetching the latest forecast…";
+  weatherTipText.textContent = "Checking conditions for your hike…";
+  weatherHourlyList.innerHTML = "";
+}
+
+async function openWeatherModalForCurrentSelection() {
+  const trail = getTrailById(trailSelect.value);
+  const dateStr = dateInput.value;
+
+  if (!dateStr) return;
+
+  const thisRequest = ++weatherRequestToken;
+
+  weatherModal.hidden = false;
+  document.body.style.overflow = "hidden";
+  setWeatherLoadingState(dateStr, trail);
+
+  const locationForForecast = trail ? trail.location : "Benguet, Philippines"; // sensible default while no trail is picked yet
+
+  try {
+    const { slots, featured, isFallback } = await fetchHourlyForecast(dateStr, locationForForecast);
+
+    // If the user changed date/trail again while this request was in flight, drop this result.
+    if (thisRequest !== weatherRequestToken) return;
+
+    weatherModalIconBig.textContent = featured.icon;
+    weatherModalTempBig.textContent = `${featured.tempC ?? "—"}°C`;
+    weatherModalConditionBig.textContent = featured.label;
+    weatherModalFeelslike.textContent = `${featured.feelsLikeC ?? "—"}°C`;
+    weatherModalHumidity.textContent = `${featured.humidity ?? "—"}%`;
+    weatherModalWind.textContent = `${featured.windKph ?? "—"} km/h`;
+    weatherModalAlertText.textContent = buildAlertMessage(slots, isFallback);
+    weatherTipText.textContent = buildHikerTip(slots);
+
+    renderWeatherHourlyList(slots, featured.hour);
+  } catch (err) {
+    if (thisRequest !== weatherRequestToken) return;
+    console.error(err);
+    weatherModalConditionBig.textContent = "Unavailable";
+    weatherModalAlertText.textContent = "Couldn't load the forecast right now. You can still continue with booking.";
+    weatherTipText.textContent = "Bring general hiking essentials just in case.";
+  }
+}
+
+function closeWeatherModal() {
+  weatherModal.hidden = true;
+  document.body.style.overflow = "";
+}
+
+dateInput.addEventListener("change", () => {
+  if (dateInput.value) {
+    openWeatherModalForCurrentSelection();
+  }
+});
+
+weatherModalClose.addEventListener("click", closeWeatherModal);
+weatherModalBackdrop.addEventListener("click", closeWeatherModal);
+
+weatherChangeDateBtn.addEventListener("click", () => {
+  closeWeatherModal();
+  if (typeof dateInput.showPicker === "function") {
+    dateInput.showPicker();
+  } else {
+    dateInput.focus();
+  }
+});
+
+weatherConfirmBtn.addEventListener("click", () => {
+  closeWeatherModal();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !weatherModal.hidden) {
+    closeWeatherModal();
+  }
+});
 
 /* ---------- Submit booking ---------- */
 
@@ -310,7 +510,7 @@ async function renderBookings() {
   const myIds = getMyBookingIds();
 
   if (myIds.length === 0) {
-    bookingsListEl.innerHTML = `<p class="bookings-empty">You have no bookings yet.</p>`;
+    bookingsListEl.innerHTML = EMPTY_BOOKINGS_HTML;
     return;
   }
 
@@ -321,14 +521,14 @@ async function renderBookings() {
     .filter(Boolean);
 
   if (myBookings.length === 0) {
-    bookingsListEl.innerHTML = `<p class="bookings-empty">You have no bookings yet.</p>`;
+    bookingsListEl.innerHTML = EMPTY_BOOKINGS_HTML;
     return;
   }
 
   bookingsListEl.innerHTML = myBookings
     .map(
       (b) => `
-        <div class="booking-item" data-id="${b.id}">
+        <div class="booking-item" data-id="${b.id}" data-status="${b.status.toLowerCase()}">
           <div class="booking-item-main">
             <h5>${b.trail_name} — ${b.package_name}</h5>
             <p>${b.date} · ${b.group_size} pax · Guide: ${b.guide_name}${b.activity ? ` · ${b.activity}` : ""}</p>
