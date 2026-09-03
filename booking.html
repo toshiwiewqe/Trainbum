@@ -6,6 +6,7 @@
     <title>Trailbound — Book Your Hike</title>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="booking.css" />
+    <link rel="stylesheet" href="post-booking-modal.css" />
     <link rel="icon" href="/icons/favicon.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="theme-color" content="#1a0401" />
@@ -22,7 +23,7 @@
         <a href="#">Contact</a>
         <a href="login.html">Log In</a>
       <span class="cart-badge">
-        <a href="#" class="account-icon-link" aria-label="Cart">
+        <a href="cart.html" class="account-icon-link" aria-label="Cart">
           🛒
           <span id="cart-count" class="cart-count" hidden>0</span>
         </a>
@@ -168,6 +169,17 @@
         </div>
       </div>
     </main>
+
+    <!-- Post-booking choice modal: add gear, or head to checkout -->
+    <div class="post-booking-modal-backdrop" id="post-booking-modal-backdrop" hidden></div>
+    <div class="post-booking-modal" id="post-booking-modal" hidden role="dialog" aria-modal="true" aria-labelledby="post-booking-modal-title">
+      <h4 id="post-booking-modal-title">Your hike is reserved!</h4>
+      <p id="post-booking-modal-copy"></p>
+      <div class="post-booking-modal-actions">
+        <button type="button" class="post-booking-btn post-booking-btn--secondary" id="post-booking-add-gear">Add trail gear</button>
+        <button type="button" class="post-booking-btn post-booking-btn--primary" id="post-booking-checkout">Proceed to checkout</button>
+      </div>
+    </div>
 
     <script type="module" src="booking.js"></script>
     <script type="module" src="auth-nav.js"></script>

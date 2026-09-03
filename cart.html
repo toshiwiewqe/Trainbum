@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Cart — Trailbound</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="cart.css" />
+  <link rel="icon" href="/icons/favicon.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="theme-color" content="#1a0401" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="site-header-logo">
+      <img src="finaltrailboundlogo.png" alt="Site Logo">
+    </div>
+    <nav class="site-header-nav">
+      <nav class="site-header-nav">
+        <a href="index.html">Home</a>
+        <a href="index.html#trails">Trails</a>
+        <a href="products.html">Products</a>
+        <a href="booking.html">Book Now</a>
+        <a href="#">Contact</a>
+        <a href="login.html">Log In</a>
+      <span class="cart-badge">
+        <a href="cart.html" class="account-icon-link active" aria-label="Cart">
+          🛒
+          <span id="cart-count" class="cart-count" hidden>0</span>
+        </a>
+      </span>
+    </nav>
+  </header>
+
+  <main class="cart-page">
+    <div class="cart-page-header">
+      <span class="cart-eyebrow">Step 1 of 2</span>
+      <h3>Your cart</h3>
+      <p>Review your gear and any trail bookings before checking out.</p>
+    </div>
+
+    <div class="cart-layout">
+      <div class="cart-list" id="cart-list"></div>
+
+      <div class="cart-summary">
+        <div class="cart-summary-row">
+          <span>Subtotal</span>
+          <span id="cart-subtotal">₱0</span>
+        </div>
+        <p class="cart-summary-note">Shipping and any final totals are calculated at checkout.</p>
+        <button type="button" class="cart-checkout-btn" id="cart-checkout-btn">Proceed to Checkout</button>
+        <a href="products.html" class="cart-continue-link">Continue shopping</a>
+      </div>
+    </div>
+
+    <div class="cart-empty" id="cart-empty" hidden>
+      <p>Your cart is empty.</p>
+      <div class="cart-empty-actions">
+        <a href="products.html" class="cart-empty-btn">Browse gear</a>
+        <a href="booking.html" class="cart-empty-btn cart-empty-btn--ghost">Book a trail</a>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="cart.js"></script>
+</body>
+</html>

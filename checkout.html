@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout — Trailbound</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="checkout.css" />
+  <link rel="icon" href="/icons/favicon.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="theme-color" content="#1a0401" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="site-header-logo">
+      <img src="finaltrailboundlogo.png" alt="Site Logo">
+    </div>
+    <nav class="site-header-nav">
+      <nav class="site-header-nav">
+        <a href="index.html">Home</a>
+        <a href="index.html#trails">Trails</a>
+        <a href="products.html">Products</a>
+        <a href="booking.html">Book Now</a>
+        <a href="#">Contact</a>
+        <a href="login.html">Log In</a>
+      <span class="cart-badge">
+        <a href="cart.html" class="account-icon-link" aria-label="Cart">
+          🛒
+          <span id="cart-count" class="cart-count" hidden>0</span>
+        </a>
+      </span>
+    </nav>
+  </header>
+
+  <main class="checkout-page">
+
+    <div class="checkout-page-header">
+      <span class="checkout-eyebrow">Step 2 of 2</span>
+      <h3>Checkout</h3>
+    </div>
+
+    <div class="checkout-stepper" id="checkout-stepper">
+      <div class="checkout-step-tab is-active" data-step="1">
+        <span class="checkout-step-number">01</span>
+        <span>Shipping</span>
+      </div>
+      <div class="checkout-step-tab" data-step="2">
+        <span class="checkout-step-number">02</span>
+        <span>Payment</span>
+      </div>
+      <div class="checkout-step-tab" data-step="3">
+        <span class="checkout-step-number">03</span>
+        <span>Review</span>
+      </div>
+    </div>
+
+    <div class="checkout-layout">
+      <form id="checkout-form" class="checkout-form">
+
+        <!-- Step 1: Shipping -->
+        <section class="checkout-panel is-active" data-panel="1">
+          <h4>Shipping information</h4>
+          <p class="checkout-panel-note" id="shipping-note" hidden>
+            Your cart doesn't contain any gear that needs shipping — you can skip straight to Payment.
+          </p>
+
+          <div class="form-group">
+            <label for="ship-name">Full name</label>
+            <input type="text" id="ship-name" placeholder="Juan Dela Cruz" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ship-email">Email</label>
+              <input type="email" id="ship-email" placeholder="you@email.com" required />
+            </div>
+            <div class="form-group">
+              <label for="ship-phone">Contact number</label>
+              <input type="tel" id="ship-phone" placeholder="09XX XXX XXXX" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="ship-address">Address</label>
+            <input type="text" id="ship-address" placeholder="Street, barangay" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ship-city">City</label>
+              <input type="text" id="ship-city" placeholder="Quezon City" required />
+            </div>
+            <div class="form-group">
+              <label for="ship-region">Region</label>
+              <select id="ship-region" required>
+                <option value="" disabled selected>Select region...</option>
+                <option value="ncr">Metro Manila (NCR)</option>
+                <option value="luzon">Luzon (outside NCR)</option>
+                <option value="visayas">Visayas</option>
+                <option value="mindanao">Mindanao</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="ship-zip">ZIP code</label>
+            <input type="text" id="ship-zip" placeholder="1100" required />
+          </div>
+
+          <div class="form-group">
+            <label for="ship-notes">Delivery notes (optional)</label>
+            <input type="text" id="ship-notes" placeholder="Gate code, landmark, etc." />
+          </div>
+
+          <div class="checkout-nav">
+            <span></span>
+            <button type="button" class="checkout-btn checkout-btn--primary" data-next="2">Continue to Payment</button>
+          </div>
+        </section>
+
+        <!-- Step 2: Payment -->
+        <section class="checkout-panel" data-panel="2">
+          <h4>Payment information</h4>
+          <p class="checkout-panel-note">
+            This is a simulated payment for now — no real card is charged. Real Stripe/PayPal processing comes next.
+          </p>
+
+          <div class="form-group">
+            <label for="pay-name">Name on card</label>
+            <input type="text" id="pay-name" placeholder="Juan Dela Cruz" required />
+          </div>
+
+          <div class="form-group">
+            <label for="pay-number">Card number</label>
+            <input type="text" id="pay-number" placeholder="4242 4242 4242 4242" inputmode="numeric" maxlength="19" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pay-expiry">Expiry (MM/YY)</label>
+              <input type="text" id="pay-expiry" placeholder="12/28" maxlength="5" required />
+            </div>
+            <div class="form-group">
+              <label for="pay-cvv">CVV</label>
+              <input type="text" id="pay-cvv" placeholder="123" inputmode="numeric" maxlength="4" required />
+            </div>
+          </div>
+
+          <div class="checkout-nav">
+            <button type="button" class="checkout-btn checkout-btn--ghost" data-back="1">Back</button>
+            <button type="button" class="checkout-btn checkout-btn--primary" data-next="3">Review Order</button>
+          </div>
+        </section>
+
+        <!-- Step 3: Review -->
+        <section class="checkout-panel" data-panel="3">
+          <h4>Review your order</h4>
+
+          <div class="checkout-review-list" id="checkout-review-list"></div>
+
+          <div class="checkout-review-totals">
+            <div class="checkout-review-row">
+              <span>Subtotal</span>
+              <span id="review-subtotal">₱0</span>
+            </div>
+            <div class="checkout-review-row">
+              <span>Shipping</span>
+              <span id="review-shipping">₱0</span>
+            </div>
+            <div class="checkout-review-row checkout-review-row--total">
+              <span>Total</span>
+              <span id="review-total">₱0</span>
+            </div>
+          </div>
+
+          <p class="checkout-review-error" id="checkout-error" hidden></p>
+
+          <div class="checkout-nav">
+            <button type="button" class="checkout-btn checkout-btn--ghost" data-back="2">Back</button>
+            <button type="submit" class="checkout-btn checkout-btn--primary" id="place-order-btn">Place Order</button>
+          </div>
+        </section>
+
+      </form>
+
+      <aside class="checkout-summary">
+        <h5>Order summary</h5>
+        <div class="checkout-summary-list" id="checkout-summary-list"></div>
+        <div class="checkout-summary-total">
+          <span>Total</span>
+          <span id="summary-total">₱0</span>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Confirmation -->
+    <section class="checkout-confirmation" id="checkout-confirmation" hidden>
+      <div class="checkout-confirmation-icon">✓</div>
+      <h3>Order confirmed</h3>
+      <p>Order #<span id="confirmation-order-id"></span> — a receipt has been recorded to your order.</p>
+      <p class="checkout-confirmation-sub">Any trail bookings in this order are now marked as Confirmed.</p>
+      <div class="checkout-confirmation-actions">
+        <a href="index.html" class="checkout-btn checkout-btn--primary">Back to home</a>
+        <a href="products.html" class="checkout-btn checkout-btn--ghost">Keep browsing gear</a>
+      </div>
+    </section>
+
+    <section class="checkout-empty" id="checkout-empty" hidden>
+      <p>Your cart is empty — there's nothing to check out yet.</p>
+      <div class="checkout-confirmation-actions">
+        <a href="products.html" class="checkout-btn checkout-btn--primary">Browse gear</a>
+        <a href="booking.html" class="checkout-btn checkout-btn--ghost">Book a trail</a>
+      </div>
+    </section>
+
+  </main>
+
+  <script type="module" src="checkout.js"></script>
+</body>
+</html>

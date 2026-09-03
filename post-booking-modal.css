@@ -1,0 +1,76 @@
+/* ==========================================================
+   Trailbound — Post-booking modal
+   Shown right after a trail booking is reserved, offering to
+   add gear from the shop or go straight to checkout.
+   ========================================================== */
+
+.post-booking-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 4, 1, 0.55);
+  z-index: 90;
+}
+
+.post-booking-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 91;
+  background: #f6f1e7;
+  border-radius: 14px;
+  padding: 2rem;
+  max-width: 420px;
+  width: calc(100% - 2.5rem);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  text-align: center;
+}
+
+.post-booking-modal h4 {
+  margin: 0 0 0.6rem;
+  color: #1a0401;
+  font-size: 1.3rem;
+}
+
+.post-booking-modal p {
+  margin: 0 0 1.5rem;
+  color: #6b5c4c;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.post-booking-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.post-booking-btn {
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.post-booking-btn--primary {
+  background: #a8592f;
+  color: #fff;
+}
+
+.post-booking-btn--primary:hover {
+  background: #8f4a26;
+}
+
+.post-booking-btn--secondary {
+  background: transparent;
+  color: #1a0401;
+  border: 1px solid #1a0401;
+}
+
+@media (max-width: 480px) {
+  .post-booking-modal {
+    padding: 1.5rem;
+  }
+}
