@@ -325,7 +325,9 @@ function render() {
 
 function productCard(p) {
   const card = document.createElement("article");
-  card.className = "product-card";
+  // "col" classes place this card in the Bootstrap row (#products-grid);
+  // "product-card" keeps all the existing look/behavior from styles.css
+  card.className = "col product-card";
   card.innerHTML = `
     <div class="product-card-img">
       <img src="${p.images[0]}" alt="${p.name}" loading="lazy">
