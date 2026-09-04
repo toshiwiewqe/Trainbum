@@ -410,11 +410,10 @@ function renderWeatherHourlyList(slots, featuredHour) {
       (s) => `
         <div class="weather-hour-card${s.hour === featuredHour ? " weather-hour-card--selected" : ""}">
           <span class="weather-hour-time">${s.timeLabel}</span>
-          <span class="weather-hour-icon" aria-hidden="true">${s.icon}</span>
           <span class="weather-hour-temp">${s.tempC ?? "—"}°C</span>
           <span class="weather-hour-label">${s.label}</span>
-          <span class="weather-hour-precip">💧 ${s.precipProbability ?? "—"}%</span>
-          <span class="weather-hour-wind">🌬️ ${s.windKph ?? "—"} km/h</span>
+          <span class="weather-hour-precip">Precip ${s.precipProbability ?? "—"}%</span>
+          <span class="weather-hour-wind">Wind ${s.windKph ?? "—"} km/h</span>
         </div>
       `,
     )
@@ -429,7 +428,7 @@ function setWeatherLoadingState(dateStr, trail) {
 
   weatherModalTempBig.textContent = "—°C";
   weatherModalConditionBig.textContent = "Loading...";
-  weatherModalIconBig.textContent = "⏳";
+  weatherModalIconBig.textContent = "";
   weatherModalFeelslike.textContent = "—°C";
   weatherModalHumidity.textContent = "—%";
   weatherModalWind.textContent = "—";
@@ -540,7 +539,7 @@ form.addEventListener("submit", async (e) => {
   }
 
   submitBtn.disabled = true;
-  submitBtn.innerHTML = `<span aria-hidden="true">🔒</span> Booking...`;
+  submitBtn.textContent = "Booking...";
 
   const booking = {
     trail_id: trail.trail_id,
@@ -592,7 +591,7 @@ form.addEventListener("submit", async (e) => {
     showFeedback("Something went wrong saving your booking. Please try again.", true);
   } finally {
     submitBtn.disabled = false;
-    submitBtn.innerHTML = `<span aria-hidden="true">🔒</span> Confirm booking`;
+    submitBtn.textContent = "Confirm booking";
   }
 });
 

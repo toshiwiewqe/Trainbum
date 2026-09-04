@@ -69,8 +69,9 @@
   justify-content: center;
 }
 
-.site-header-cart-icon {
-  font-size: 1.05rem;
+.site-header-cart-label {
+  font-size: inherit;
+  font-weight: inherit;
   line-height: 1;
 }
 
@@ -312,26 +313,6 @@
   opacity: 0.45;
 }
 
-/* Inputs with a leading icon */
-.input-icon-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.input-icon-wrapper .input-icon {
-  position: absolute;
-  left: 1.05rem;
-  font-size: 0.95rem;
-  pointer-events: none;
-  opacity: 0.85;
-}
-
-.input-icon-wrapper input,
-.input-icon-wrapper select {
-  padding-left: 2.6rem;
-}
-
 .trail-info {
   display: flex;
   align-items: center;
@@ -534,15 +515,7 @@
 }
 
 .summary-empty-icon {
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 0.9rem;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.7rem;
-  background: radial-gradient(circle at 35% 30%, #eef2df, var(--tb-cream) 70%);
+  display: none;
 }
 
 .summary-empty-state p {
@@ -749,18 +722,6 @@
   gap: 0.85rem;
 }
 
-.trust-feature-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  border-radius: 999px;
-  background-color: var(--tb-green-soft);
-  font-size: 1.05rem;
-}
-
 .trust-features strong {
   display: block;
   font-family: var(--font-body);
@@ -894,18 +855,6 @@
 
 .weather-modal-header {
   text-align: center;
-}
-
-.weather-modal-header-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  background-color: #fff;
-  font-size: 1.2rem;
-  margin-bottom: 0.75rem;
 }
 
 .weather-modal-header h3 {
