@@ -1725,6 +1725,210 @@ section {
   cursor: not-allowed;
 }
 
+/* ---- Product drawer: Ratings & Reviews ----
+   No purchase/account verification yet — see the TODO in products.js
+   next to the addDoc call. ---- */
+
+.drawer-reviews {
+  margin-top: 1.75rem;
+  border-top: 1px solid rgba(26, 4, 1, 0.12);
+  padding-top: 1.25rem;
+}
+
+.drawer-reviews-heading,
+.drawer-review-form h6 {
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+  color: var(--base-300);
+  opacity: 0.6;
+  margin-bottom: 0.75rem;
+}
+
+.drawer-reviews-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+  min-height: 1.4rem;
+}
+
+.drawer-reviews-summary-stars {
+  color: var(--base-200);
+  font-size: 1rem;
+  letter-spacing: 1px;
+}
+
+.drawer-reviews-summary-avg {
+  font-family: "PP Neue Montreal", sans-serif;
+  font-weight: 600;
+  color: var(--base-300);
+  font-size: 0.95rem;
+}
+
+.drawer-reviews-summary-count {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  color: var(--base-300);
+  opacity: 0.55;
+  font-size: 0.8rem;
+}
+
+.drawer-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.drawer-review-item {
+  border-bottom: 1px solid rgba(26, 4, 1, 0.08);
+  padding-bottom: 1rem;
+}
+
+.drawer-review-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.drawer-review-item-name {
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--base-300);
+}
+
+.drawer-review-item-date {
+  font-family: "Inter", sans-serif;
+  font-size: 0.72rem;
+  color: var(--base-300);
+  opacity: 0.5;
+}
+
+.drawer-review-item-stars {
+  color: var(--base-200);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  margin-bottom: 0.35rem;
+}
+
+.drawer-review-item-comment {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--base-300);
+  opacity: 0.8;
+}
+
+.drawer-review-more-btn {
+  display: block;
+  width: 100%;
+  font-family: "Inter", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--base-300);
+  background: transparent;
+  color: var(--base-300);
+  cursor: pointer;
+  opacity: 0.75;
+  margin-bottom: 1.75rem;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.drawer-review-more-btn:hover {
+  opacity: 1;
+  background-color: rgba(26, 4, 1, 0.05);
+}
+
+.drawer-review-stars-input {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 0.9rem;
+}
+
+.drawer-review-star-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--base-300);
+  opacity: 0.3;
+  cursor: pointer;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.drawer-review-star-btn.is-active {
+  color: var(--base-200);
+  opacity: 1;
+}
+
+.drawer-review-input {
+  display: block;
+  width: 100%;
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.85rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--base-300);
+  background: transparent;
+  color: var(--base-300);
+  outline: none;
+  margin-bottom: 0.7rem;
+}
+
+.drawer-review-input::placeholder {
+  color: var(--base-300);
+  opacity: 0.45;
+}
+
+.drawer-review-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.drawer-review-submit-btn {
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.75rem 1.4rem;
+  border-radius: 999px;
+  border: none;
+  background-color: var(--base-200);
+  color: var(--base-100);
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.drawer-review-submit-btn:hover:not(:disabled) {
+  background-color: #c62313;
+}
+
+.drawer-review-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.drawer-review-feedback {
+  margin-top: 0.6rem;
+  font-family: "Inter", sans-serif;
+  font-size: 0.8rem;
+  color: #2e7d32;
+}
+
+.drawer-review-feedback--error {
+  color: #c62313;
+}
+
 /* ---- Responsive: below lg, the sidebar is a Bootstrap offcanvas
    drawer (handled by Bootstrap's own offcanvas-lg CSS) — this just
    covers the rest of the page's small-screen spacing. ---- */

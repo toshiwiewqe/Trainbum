@@ -17,7 +17,7 @@
    ========================================================== */
 
 import { db } from './firebase-config.js';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where, addDoc } from 'firebase/firestore';
 import { addProductToCart, updateCartBadge, onCartUpdated } from './cart-store.js';
 
 let PRODUCTS = [];
@@ -36,6 +36,35 @@ async function loadProducts() {
         ? data.dateAdded.toDate().toISOString()
         : data.dateAdded
     };
+  });
+}
+
+/* ---------- Popularity, derived from product_reviews ----------
+   "Popularity" isn't a stored field — it's computed from ratings:
+   highest average star rating first, ties broken by review count.
+   Reads the whole product_reviews collection once (same pattern as
+   loading trails/guides/packages elsewhere) and attaches
+   avgRating/reviewCount onto each product in PRODUCTS. ---------- */
+async function loadProductPopularity() {
+  const totals = {}; // productId -> { sum, count }
+
+  try {
+    const snapshot = await getDocs(collection(db, "product_reviews"));
+    snapshot.docs.forEach(doc => {
+      const r = doc.data();
+      if (!r.productId || typeof r.rating !== "number") return;
+      if (!totals[r.productId]) totals[r.productId] = { sum: 0, count: 0 };
+      totals[r.productId].sum += r.rating;
+      totals[r.productId].count += 1;
+    });
+  } catch (err) {
+    console.error("Failed to load review aggregates for popularity sort:", err);
+  }
+
+  PRODUCTS.forEach(p => {
+    const t = totals[p.id];
+    p.avgRating = t ? t.sum / t.count : 0;
+    p.reviewCount = t ? t.count : 0;
   });
 }
 
@@ -95,6 +124,15 @@ async function init() {
   els.drawerAddBtn = document.getElementById("drawer-add-btn");
   els.drawerStock = document.getElementById("drawer-stock");
 
+  els.reviewsSummary = document.getElementById("drawer-reviews-summary");
+  els.reviewList = document.getElementById("drawer-review-list");
+  els.reviewMoreBtn = document.getElementById("drawer-review-more-btn");
+  els.reviewStarsInput = document.getElementById("drawer-review-stars-input");
+  els.reviewName = document.getElementById("drawer-review-name");
+  els.reviewComment = document.getElementById("drawer-review-comment");
+  els.reviewSubmitBtn = document.getElementById("drawer-review-submit-btn");
+  els.reviewFeedback = document.getElementById("drawer-review-feedback");
+
   els.status.hidden = false;
   els.status.textContent = "Loading gear…";
 
@@ -111,11 +149,14 @@ async function init() {
     return;
   }
 
+  await loadProductPopularity();
+
   state.maxPrice = PRODUCTS.length ? Math.max(...PRODUCTS.map(p => p.price)) : 0;
 
   buildPriceInputs();
   buildCategoryTree();
   buildAttributeFilters();
+  buildReviewStarsInput();
   bindEvents();
   render();
 }
@@ -261,6 +302,11 @@ function bindEvents() {
   els.drawerClose.addEventListener("click", closeDrawer);
   els.drawerBackdrop.addEventListener("click", closeDrawer);
   els.drawerAddBtn.addEventListener("click", addActiveToCart);
+  els.reviewSubmitBtn.addEventListener("click", handleReviewSubmit);
+  els.reviewMoreBtn.addEventListener("click", () => {
+    visibleReviewCount += REVIEWS_PAGE_SIZE;
+    renderReviewList();
+  });
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") closeDrawer();
   });
@@ -302,7 +348,12 @@ function getSortedProducts(list) {
     case "name-asc": sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
     case "newest": sorted.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded)); break;
     case "popularity":
-    default: sorted.sort((a, b) => b.popularity - a.popularity);
+    default:
+      sorted.sort((a, b) => {
+        const avgDiff = (b.avgRating || 0) - (a.avgRating || 0);
+        if (avgDiff !== 0) return avgDiff;
+        return (b.reviewCount || 0) - (a.reviewCount || 0);
+      });
   }
   return sorted;
 }
@@ -374,6 +425,13 @@ function openDrawer(p) {
   renderDrawerImages();
   renderDrawerSpecs();
   renderDrawerAttributes();
+
+  selectedRating = 0;
+  renderReviewStarsInput();
+  els.reviewName.value = "";
+  els.reviewComment.value = "";
+  els.reviewFeedback.hidden = true;
+  loadReviews(p.id);
 
   els.drawer.classList.add("is-open");
   els.drawerBackdrop.classList.add("is-open");
@@ -479,4 +537,183 @@ function showToast(message) {
   els.toast.classList.add("is-visible");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => els.toast.classList.remove("is-visible"), 2200);
+}
+
+/* ==========================================================
+   Ratings & Reviews
+   Stored in a new "product_reviews" collection, one doc per
+   review: { productId, name, rating, comment, created_at }.
+
+   No purchase/account verification yet, same as
+   support_messages in contact.js — anyone can post. Make sure
+   Firestore rules allow create on this collection the same way
+   they already do for orders/support_messages/bookings.
+
+   Query is equality-only (where productId ==) with sorting done
+   client-side, so it doesn't need a composite Firestore index —
+   if this list ever needs server-side pagination, add
+   orderBy("created_at", "desc") and create that index then.
+   ========================================================== */
+let activeReviews = [];
+let selectedRating = 0;
+let visibleReviewCount = 5;
+const REVIEWS_PAGE_SIZE = 5;
+
+function buildReviewStarsInput() {
+  els.reviewStarsInput.innerHTML = "";
+  for (let i = 1; i <= 5; i++) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "drawer-review-star-btn";
+    b.textContent = "★";
+    b.setAttribute("aria-label", `${i} star${i > 1 ? "s" : ""}`);
+    b.addEventListener("click", () => {
+      selectedRating = i;
+      renderReviewStarsInput();
+    });
+    els.reviewStarsInput.appendChild(b);
+  }
+  renderReviewStarsInput();
+}
+
+function renderReviewStarsInput() {
+  [...els.reviewStarsInput.children].forEach((btn, idx) => {
+    btn.classList.toggle("is-active", idx < selectedRating);
+  });
+}
+
+function starString(rating) {
+  const rounded = Math.round(rating);
+  return "★".repeat(rounded) + "☆".repeat(5 - rounded);
+}
+
+// User-supplied text (name/comment) goes through this before it's
+// ever placed in innerHTML — there's no auth or moderation on these
+// yet, so treat every review as untrusted input.
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str ?? "";
+  return div.innerHTML;
+}
+
+function formatReviewDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+async function loadReviews(productId) {
+  els.reviewList.innerHTML = "";
+  els.reviewsSummary.innerHTML = `<span class="drawer-reviews-summary-count">Loading reviews…</span>`;
+
+  try {
+    const q = query(collection(db, "product_reviews"), where("productId", "==", productId));
+    const snapshot = await getDocs(q);
+    activeReviews = snapshot.docs
+      .map(doc => doc.data())
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  } catch (err) {
+    console.error("Failed to load reviews:", err);
+    activeReviews = [];
+  }
+
+  visibleReviewCount = REVIEWS_PAGE_SIZE;
+  renderReviewsSummary();
+  renderReviewList();
+}
+
+function renderReviewsSummary() {
+  if (activeReviews.length === 0) {
+    els.reviewsSummary.innerHTML = `<span class="drawer-reviews-summary-count">No reviews yet — be the first!</span>`;
+    return;
+  }
+
+  const avg = activeReviews.reduce((sum, r) => sum + r.rating, 0) / activeReviews.length;
+  els.reviewsSummary.innerHTML = `
+    <span class="drawer-reviews-summary-stars">${starString(avg)}</span>
+    <span class="drawer-reviews-summary-avg">${avg.toFixed(1)}</span>
+    <span class="drawer-reviews-summary-count">(${activeReviews.length} review${activeReviews.length === 1 ? "" : "s"})</span>
+  `;
+}
+
+function renderReviewList() {
+  const visible = activeReviews.slice(0, visibleReviewCount);
+
+  els.reviewList.innerHTML = visible
+    .map(r => `
+      <div class="drawer-review-item">
+        <div class="drawer-review-item-header">
+          <span class="drawer-review-item-name">${escapeHtml(r.name)}</span>
+          <span class="drawer-review-item-date">${formatReviewDate(r.created_at)}</span>
+        </div>
+        <div class="drawer-review-item-stars">${starString(r.rating)}</div>
+        <p class="drawer-review-item-comment">${escapeHtml(r.comment)}</p>
+      </div>
+    `)
+    .join("");
+
+  const remaining = activeReviews.length - visible.length;
+  els.reviewMoreBtn.hidden = remaining <= 0;
+  if (remaining > 0) {
+    els.reviewMoreBtn.textContent = `See ${Math.min(REVIEWS_PAGE_SIZE, remaining)} more review${Math.min(REVIEWS_PAGE_SIZE, remaining) === 1 ? "" : "s"}`;
+  }
+}
+
+async function handleReviewSubmit() {
+  if (!activeProduct) return;
+
+  const name = els.reviewName.value.trim();
+  const comment = els.reviewComment.value.trim();
+
+  if (selectedRating === 0) {
+    showReviewFeedback("Please select a star rating.", true);
+    return;
+  }
+  if (!name || !comment) {
+    showReviewFeedback("Please add your name and a short review.", true);
+    return;
+  }
+
+  els.reviewSubmitBtn.disabled = true;
+  els.reviewSubmitBtn.textContent = "Submitting...";
+
+  try {
+    await addDoc(collection(db, "product_reviews"), {
+      productId: activeProduct.id,
+      name,
+      rating: selectedRating,
+      comment,
+      created_at: new Date().toISOString(),
+      // TODO (after Auth/verified-purchase is added): attach
+      // `user_id` and a `verified_purchase` flag here, same idea
+      // as the user_id TODO already in checkout.js.
+    });
+
+    selectedRating = 0;
+    renderReviewStarsInput();
+    els.reviewName.value = "";
+    els.reviewComment.value = "";
+    showReviewFeedback("Thanks for your review!", false);
+    await loadReviews(activeProduct.id);
+
+    // Keep popularity sort accurate immediately, without waiting for a
+    // refresh — activeReviews was just refetched by loadReviews() above.
+    activeProduct.reviewCount = activeReviews.length;
+    activeProduct.avgRating = activeReviews.length
+      ? activeReviews.reduce((sum, r) => sum + r.rating, 0) / activeReviews.length
+      : 0;
+    if (state.sort === "popularity") render();
+  } catch (err) {
+    console.error("Failed to submit review:", err);
+    showReviewFeedback("Something went wrong submitting your review. Please try again.", true);
+  } finally {
+    els.reviewSubmitBtn.disabled = false;
+    els.reviewSubmitBtn.textContent = "Submit Review";
+  }
+}
+
+function showReviewFeedback(message, isError) {
+  els.reviewFeedback.textContent = message;
+  els.reviewFeedback.hidden = false;
+  els.reviewFeedback.classList.toggle("drawer-review-feedback--error", isError);
 }
