@@ -11,83 +11,98 @@
 </head>
 <body>
 
-  <header class="site-header">
-      <div class="site-header-logo">
-      <img src="finaltrailboundlogo.png" alt="Site Logo"> </div>
-      <nav class="site-header-nav">
-        <nav class="site-header-nav">
-        <a href="index.html">Home</a>
-        <a href="index.html#trails">Trails</a>
-        <a href="products.html">Products</a>
-        <a href="booking.html" class="active">Book Now</a>
-        <a href="#">Contact</a>
-        <a href="login.html">Log In</a>
-      <span class="cart-badge">
-        <a href="cart.html" class="account-icon-link" aria-label="Cart">
-          🛒
-          <span id="cart-count" class="cart-count" hidden>0</span>
-        </a>
-      </span>
-    </nav>
-  </header>
+  <div id="site-header-root"></div>
+  <script src="header.js"></script>
+    <script type="module" src="bootstrap-init.js"></script>
 
   <div class="products-hero">
     <h1>Hiking Gear</h1>
     <p>Everything for camp, trail, and everything you carry between them — sourced for the long haul.</p>
   </div>
  
-  <main class="products-layout">
- 
-    <!-- Sidebar: categories + price + attributes -->
-    <aside class="products-sidebar">
-      <div class="products-sidebar-block">
-        <h5>Category</h5>
-        <div id="products-category-tree"></div>
-      </div>
- 
-      <div class="products-sidebar-block">
-        <h5>Price Range</h5>
-        <div class="products-price-row">
-          <span id="products-price-min-label">₱0</span>
-          <span id="products-price-max-label">₱0</span>
+  <main class="products-layout container-fluid">
+    <div class="row">
+
+      <!-- Sidebar: categories + price + attributes.
+           offcanvas-lg = plain static sidebar at ≥lg, slide-in drawer below lg.
+           Bootstrap handles both states from this one block of markup. -->
+      <div
+        class="products-sidebar offcanvas-lg offcanvas-start col-lg-3"
+        tabindex="-1"
+        id="productsFilters"
+        aria-labelledby="productsFiltersLabel"
+      >
+        <div class="offcanvas-header">
+          <h5 class="offcanvas-title" id="productsFiltersLabel">Filters</h5>
+          <button
+            type="button"
+            class="btn-close btn-close-white"
+            data-bs-dismiss="offcanvas"
+            data-bs-target="#productsFilters"
+            aria-label="Close"
+          ></button>
         </div>
-        <input type="range" id="products-price-min" min="0" step="50" value="0">
-        <input type="range" id="products-price-max" min="0" step="50" value="0" style="margin-top:0.4rem;">
+
+        <div class="offcanvas-body d-flex flex-column gap-4">
+          <div class="products-sidebar-block">
+            <h5>Category</h5>
+            <div id="products-category-tree"></div>
+          </div>
+
+          <div class="products-sidebar-block">
+            <h5>Price Range</h5>
+            <div class="products-price-row">
+              <span id="products-price-min-label">₱0</span>
+              <span id="products-price-max-label">₱0</span>
+            </div>
+            <input type="range" id="products-price-min" min="0" step="50" value="0">
+            <input type="range" id="products-price-max" min="0" step="50" value="0" style="margin-top:0.4rem;">
+          </div>
+
+          <div class="products-sidebar-block">
+            <h5>Size</h5>
+            <div class="products-chip-row" id="products-size-filters"></div>
+          </div>
+
+          <div class="products-sidebar-block">
+            <h5>Color</h5>
+            <div class="products-chip-row" id="products-color-filters"></div>
+          </div>
+
+          <button type="button" class="products-clear-btn" id="products-clear-filters">Clear All Filters</button>
+        </div>
       </div>
- 
-      <div class="products-sidebar-block">
-        <h5>Size</h5>
-        <div class="products-chip-row" id="products-size-filters"></div>
+
+      <!-- Main: search/sort toolbar + grid -->
+      <div class="products-main col-lg-9">
+        <div class="products-toolbar">
+          <button
+            type="button"
+            class="products-filter-toggle d-lg-none"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#productsFilters"
+            aria-controls="productsFilters"
+          >
+            Filters
+          </button>
+          <input type="text" id="products-search" class="products-search" placeholder="Search gear — tents, boots, headlamps…">
+          <select id="products-sort" class="products-sort">
+            <option value="popularity">Sort: Popularity</option>
+            <option value="newest">Sort: Newest</option>
+            <option value="price-asc">Sort: Price (Low to High)</option>
+            <option value="price-desc">Sort: Price (High to Low)</option>
+            <option value="name-asc">Sort: Name (A–Z)</option>
+          </select>
+        </div>
+
+        <p class="products-result-line"><span id="products-result-count">0</span> items</p>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-3 g-lg-4" id="products-grid">
+          <p class="products-status" id="products-status" hidden></p>
+        </div>
       </div>
- 
-      <div class="products-sidebar-block">
-        <h5>Color</h5>
-        <div class="products-chip-row" id="products-color-filters"></div>
-      </div>
- 
-      <button type="button" class="products-clear-btn" id="products-clear-filters">Clear All Filters</button>
-    </aside>
- 
-    <!-- Main: search/sort toolbar + grid -->
-    <div class="products-main">
-      <div class="products-toolbar">
-        <input type="text" id="products-search" class="products-search" placeholder="Search gear — tents, boots, headlamps…">
-        <select id="products-sort" class="products-sort">
-          <option value="popularity">Sort: Popularity</option>
-          <option value="newest">Sort: Newest</option>
-          <option value="price-asc">Sort: Price (Low to High)</option>
-          <option value="price-desc">Sort: Price (High to Low)</option>
-          <option value="name-asc">Sort: Name (A–Z)</option>
-        </select>
-      </div>
- 
-      <p class="products-result-line"><span id="products-result-count">0</span> items</p>
- 
-      <div class="products-grid" id="products-grid">
-        <p class="products-status" id="products-status" hidden></p>
-      </div>
+
     </div>
- 
   </main>
  
   <!-- Product detail drawer -->

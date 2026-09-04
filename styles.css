@@ -1,3 +1,5 @@
+/* Bootstrap first so every rule below it (yours) wins the cascade */
+@import "bootstrap/dist/css/bootstrap.min.css";
 @import url("https://fonts.cdnfonts.com/css/pp-neue-montreal");
 @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 
@@ -155,9 +157,59 @@ section {
     color: var(--base-300);
 }
 
-@media (max-width: 800px) {
+/* Bootstrap navbar-toggler (hamburger). .site-header is transparent
+   and floats over different content on every page, so — same as
+   the nav pills — the toggler carries its own solid background
+   rather than depending on whatever's behind it. */
+.site-header-toggler {
+  border: none;
+  background-color: var(--base-100);
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 11;
+}
+
+.site-header-toggler:focus {
+  box-shadow: none;
+}
+
+.site-header-toggler .navbar-toggler-icon {
+  width: 1.2em;
+  height: 1.2em;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%234E220F' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2.5' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* Matches Bootstrap's own md breakpoint (navbar-expand-md) so the
+   toggler and collapse panel switch on together, not at two
+   different widths. */
+@media (max-width: 767.98px) {
+  /* Collapsed panel: solid card dropped below the fixed header so
+     the pill links are readable no matter what's behind the header */
+  .navbar-collapse {
+    position: absolute;
+    top: 80px;
+    left: 0;
+    width: 100%;
+    background-color: var(--base-300);
+    padding: 1.25rem 1.5rem 1.75rem;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+  }
+
   .site-header-nav {
-    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 0;
+    gap: 0.6rem;
+  }
+
+  .site-header-nav a,
+  .site-header-nav .cart-badge {
+    text-align: center;
   }
 }
 
@@ -860,6 +912,15 @@ section {
 
    Reuses --base-100 / --base-200 / --base-300 and the site's two
    type families so the shop matches the rest of Trailbound.
+
+   Layout concept: the light "layout" panel now overlaps the dark
+   hero by a couple rem and gets rounded top corners + a lifted
+   shadow, so the page reads as one continuous surface with a
+   deliberate seam — instead of a hero and a body that just happen
+   to be stacked. The sidebar is a single dark card (not loose
+   floating text) so its filters have a visible container, and the
+   active category is shown with an accent bar + tinted background
+   rather than a color change alone.
    ========================================================== */
 
 /* ---- Page background + hero banner ---- */
@@ -870,7 +931,9 @@ section {
      inside a <section> element instead of a <div>. */
   height: auto;
   overflow: visible;
-  padding: 7rem 1.5rem 2.5rem;
+  position: relative;
+  z-index: 0;
+  padding: 7rem 1.5rem 4rem;
   background-color: var(--base-300);
   color: var(--base-100);
   text-align: center;
@@ -891,36 +954,124 @@ section {
   font-size: 0.9rem;
 }
 
-/* ---- Two-column layout: sidebar + main content ---- */
+/* ---- Two-column layout: sidebar + main content ----
+   The column split itself is Bootstrap's .row / .col-lg-3 /
+   .col-lg-9 (in products.html); this handles spacing/background
+   for the outer wrapper, plus the overlap-the-hero treatment. */
 
 .products-layout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 2.5rem;
+  position: relative;
+  z-index: 1;
   max-width: 1400px;
-  margin: 0 auto;
+  margin: -2rem auto 0;
   padding: 3rem 3rem 6rem;
-  align-items: start;
   background-color: var(--base-100);
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -12px 30px rgba(26, 4, 1, 0.18);
 }
 
-/* ---- Sidebar: category tree, price range, size/color chips ---- */
+/* Gutter between the sidebar column and the main column — set
+   explicitly on the CSS variable Bootstrap's grid already reads,
+   so the gap is guaranteed and not dependent on column padding
+   staying untouched elsewhere. */
+.products-layout > .row {
+  --bs-gutter-x: 3rem;
+}
 
+@media (max-width: 991.98px) {
+  .products-layout > .row {
+    --bs-gutter-x: 1.5rem;
+  }
+}
+
+/* Gutter between product cards themselves — same approach, applied
+   to the grid row directly. */
+#products-grid {
+  --bs-gutter-x: 2.25rem;
+  --bs-gutter-y: 2.25rem;
+}
+
+@media (min-width: 992px) {
+  #products-grid {
+    --bs-gutter-x: 2rem;
+    --bs-gutter-y: 2rem;
+  }
+}
+
+/* ---- Sidebar: category tree, price range, size/color chips ----
+   Also a Bootstrap responsive offcanvas (offcanvas-lg): at ≥lg it's
+   a plain sticky column; below lg, Bootstrap turns it into a
+   slide-in drawer automatically — these rules only style the
+   ≥lg "plain sidebar" state.
+
+   Bootstrap's own .offcanvas class paints its background from the
+   --bs-offcanvas-bg-color variable (and .offcanvas + .offcanvas-start
+   is a more specific selector than a single .products-sidebar class),
+   so it was winning over the background-color below. Overriding the
+   variable itself — instead of fighting the property — makes ours
+   win regardless of specificity, at both breakpoints. */
 .products-sidebar {
-  position: sticky;
-  top: 100px;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  background-color: var(--base-300);
-  border-radius: 16px;
+  --bs-offcanvas-bg-color: var(--base-300);
+  --bs-offcanvas-color: var(--base-100);
+  --bs-offcanvas-border-color: transparent;
+  /* !important is required here: at >=992px Bootstrap's own
+     .offcanvas-lg rule sets `background-color: transparent !important`
+     to strip offcanvas styling and turn this into a plain static
+     column. A normal declaration — or even the CSS variable above —
+     can never beat an !important, regardless of specificity or
+     source order, so we have to match it. */
+  background-color: var(--base-300) !important;
+  color: var(--base-100) !important;
+  border-radius: 18px;
+}
+
+/* Visual padding lives on .offcanvas-body, NOT on .products-sidebar.
+   .products-sidebar is also Bootstrap's col-lg-3 grid column, and
+   Bootstrap builds column gutters out of that column's own left/right
+   padding — a flat `padding` shorthand here would silently overwrite
+   that gutter padding and let the sidebar's edge crowd into the
+   product grid next to it. Padding a separate inner element keeps
+   the column's gutter untouched. */
+.products-sidebar .offcanvas-body {
   padding: 1.75rem;
-  color: var(--base-100);
-  /* Cap the sidebar to the visible viewport (minus the sticky offset and
-     a little breathing room) so a long category list scrolls inside the
-     sidebar itself instead of growing the whole page. */
-  max-height: calc(100svh - 120px);
-  overflow-y: auto;
+}
+
+@media (min-width: 992px) {
+  .products-sidebar {
+    position: sticky;
+    top: 100px;
+    /* Cap the sidebar to the visible viewport (minus the sticky offset
+       and a little breathing room) so a long category list scrolls
+       inside the sidebar itself instead of growing the whole page. */
+    max-height: calc(100svh - 120px);
+    overflow-y: auto;
+  }
+
+  /* Bootstrap's offcanvas markup includes a header (title + close
+     button) meant for the mobile drawer state — hide it once the
+     sidebar is back to being a plain static column. */
+  .products-sidebar .offcanvas-header {
+    display: none;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .products-sidebar .offcanvas-header {
+    border-bottom: 1px solid rgba(237, 241, 232, 0.12);
+    padding: 1.25rem 1.5rem;
+  }
+
+  .products-sidebar .offcanvas-title {
+    font-family: "PP Neue Montreal", sans-serif;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+  }
+
+  /* Overrides the 1.75rem default further up for the mobile drawer */
+  .products-sidebar .offcanvas-body {
+    padding: 1.5rem;
+  }
 }
 
 /* Thin, dark-matched scrollbar for the sidebar (WebKit browsers) */
@@ -947,6 +1098,14 @@ section {
   scrollbar-color: rgba(237, 241, 232, 0.25) transparent;
 }
 
+/* Each filter block gets a hairline rule below it (instead of only
+   the flex gap) so "category / price / size / color" read as
+   distinct, ordered groups inside one panel. */
+.products-sidebar-block:not(:last-child) {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(237, 241, 232, 0.1);
+}
+
 .products-sidebar-block h5 {
   font-family: "PP Neue Montreal", sans-serif;
   text-transform: uppercase;
@@ -954,13 +1113,16 @@ section {
   font-weight: 600;
   letter-spacing: 0.5px;
   color: var(--base-100);
-  opacity: 0.6;
+  opacity: 0.55;
   margin-bottom: 0.9rem;
 }
 
-/* Category buttons — top-level categories and their subcategories */
+/* Category buttons — top-level categories and their subcategories.
+   A left accent bar + tinted pill mark the active item, so state is
+   visible even at a glance (not just a subtle text-color change). */
 
 .products-cat-btn {
+  position: relative;
   display: block;
   width: 100%;
   text-align: left;
@@ -972,14 +1134,29 @@ section {
   font-size: 0.8rem;
   font-weight: 500;
   letter-spacing: 0.3px;
-  padding: 0.4rem 0;
+  padding: 0.55rem 0.75rem 0.55rem 1rem;
+  margin-bottom: 0.15rem;
+  border-radius: 8px;
   cursor: pointer;
-  opacity: 0.75;
-  transition: opacity 0.15s ease, color 0.15s ease;
+  opacity: 0.7;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.products-cat-btn::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 0%;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background-color: var(--base-200);
+  transition: height 0.15s ease;
 }
 
 .products-cat-btn.indent {
-  padding-left: 0.9rem;
+  padding-left: 1.75rem;
   font-size: 0.72rem;
   text-transform: none;
   font-family: "Inter", sans-serif;
@@ -988,11 +1165,17 @@ section {
 
 .products-cat-btn:hover {
   opacity: 1;
+  background-color: rgba(237, 241, 232, 0.06);
 }
 
 .products-cat-btn.is-active {
   opacity: 1;
-  color: var(--base-200);
+  color: var(--base-100);
+  background-color: rgba(225, 44, 26, 0.18);
+}
+
+.products-cat-btn.is-active::before {
+  height: 55%;
 }
 
 .products-subtree {
@@ -1006,7 +1189,7 @@ section {
   letter-spacing: 0.6px;
   color: var(--base-100);
   opacity: 0.4;
-  margin: 0.6rem 0 0.2rem 0.9rem;
+  margin: 0.6rem 0 0.2rem 1rem;
 }
 
 /* Price range sliders */
@@ -1064,10 +1247,12 @@ section {
   border-radius: 999px;
   cursor: pointer;
   width: 100%;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .products-clear-btn:hover {
   border-color: var(--base-100);
+  background-color: rgba(237, 241, 232, 0.06);
 }
 
 /* ---- Main column: search/sort toolbar + product grid ---- */
@@ -1077,7 +1262,28 @@ section {
   flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
+  padding-bottom: 1.5rem;
   margin-bottom: 1.75rem;
+  border-bottom: 1px solid rgba(78, 34, 15, 0.12);
+}
+
+.products-filter-toggle {
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.8rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--base-300);
+  background-color: var(--base-300);
+  color: var(--base-100);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.products-filter-toggle:hover {
+  background-color: #3a1c0e;
 }
 
 .products-search {
@@ -1087,10 +1293,16 @@ section {
   font-size: 0.85rem;
   padding: 0.85rem 1.3rem;
   border-radius: 999px;
-  border: 1px solid var(--base-300);
-  background-color: var(--base-100);
+  border: 1px solid rgba(78, 34, 15, 0.25);
+  background-color: #fff;
   color: var(--base-300);
   outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.products-search::placeholder {
+  color: var(--base-300);
+  opacity: 0.45;
 }
 
 .products-search:focus {
@@ -1104,7 +1316,7 @@ section {
   letter-spacing: 0.4px;
   padding: 0.8rem 1.2rem;
   border-radius: 999px;
-  border: 1px solid var(--base-300);
+  border: 1px solid rgba(78, 34, 15, 0.25);
   background-color: var(--base-100);
   color: var(--base-300);
   cursor: pointer;
@@ -1118,14 +1330,12 @@ section {
   margin-bottom: 1.25rem;
 }
 
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.5rem;
-}
+/* Layout for #products-grid comes from Bootstrap's .row /
+   .row-cols-* classes in the HTML — no custom grid rule needed
+   here. Just the empty/loading state message below. */
 
 .products-status {
-  grid-column: 1 / -1;
+  width: 100%;
   text-align: center;
   padding: 3rem 1rem;
   color: var(--base-300);
@@ -1142,11 +1352,12 @@ section {
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .product-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 28px rgba(26, 4, 1, 0.3);
 }
 
 .product-card-img {
@@ -1514,22 +1725,19 @@ section {
   cursor: not-allowed;
 }
 
-/* ---- Responsive: stack sidebar above grid on small screens ---- */
+/* ---- Responsive: below lg, the sidebar is a Bootstrap offcanvas
+   drawer (handled by Bootstrap's own offcanvas-lg CSS) — this just
+   covers the rest of the page's small-screen spacing. ---- */
 
-@media (max-width: 900px) {
+@media (max-width: 991.98px) {
   .products-layout {
-    grid-template-columns: 1fr;
+    margin-top: -1.25rem;
+    border-radius: 20px 20px 0 0;
     padding: 2rem 1.25rem 4rem;
   }
 
-  .products-sidebar {
-    position: static;
-    max-height: none;
-    overflow-y: visible;
-  }
-
   .products-hero {
-    padding: 7rem 1.5rem 2rem;
+    padding: 7rem 1.5rem 3rem;
   }
 
   .drawer-content {
