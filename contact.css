@@ -1,0 +1,338 @@
+/* ==========================================================
+   Contact / Support Page (contact.html)
+   Reuses design tokens (--base-100/200/300) and fonts defined
+   in styles.css. Load styles.css BEFORE this file so the
+   variables exist. Mirrors account.css / products.html's
+   conventions rather than the separate "tb-" theme used by
+   cart.css / checkout.css / login.css.
+   ========================================================== */
+
+.contact-page {
+  background-color: var(--base-100);
+  min-height: 100vh;
+  padding-bottom: 4rem;
+}
+
+/* ---- Hero banner ---- */
+
+.contact-hero {
+  height: auto;
+  overflow: visible;
+  padding: 7rem 1.5rem 2.5rem;
+  background-color: var(--base-300);
+  color: var(--base-100);
+  text-align: center;
+}
+
+.contact-eyebrow {
+  display: inline-block;
+  font-family: "Inter", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--base-200);
+  margin-bottom: 0.4rem;
+}
+
+.contact-hero h3 {
+  color: var(--base-100);
+  font-size: clamp(1.75rem, 4vw, 3rem);
+}
+
+.contact-hero p {
+  margin: 0.75rem auto 0;
+  max-width: 52ch;
+  color: var(--base-100);
+  opacity: 0.7;
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* ---- Two-column layout: form + info sidebar ---- */
+
+.contact-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 0;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .contact-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Form card ---- */
+
+.contact-form-card,
+.contact-info-card {
+  background-color: var(--base-300);
+  border-radius: 20px;
+  padding: 2.25rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.contact-form-card h4,
+.contact-info-card h4 {
+  color: var(--base-100);
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: none;
+  font-size: 1.3rem;
+  margin-bottom: 0.3rem;
+}
+
+.contact-form-note {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  color: var(--base-100);
+  opacity: 0.55;
+  font-size: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.contact-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .contact-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.contact-field {
+  margin-bottom: 1.1rem;
+}
+
+.contact-field label {
+  display: block;
+  font-family: "Inter", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+  color: var(--base-100);
+  opacity: 0.6;
+  margin-bottom: 0.45rem;
+}
+
+.contact-input {
+  width: 100%;
+  font-family: "Inter", sans-serif;
+  padding: 0.7rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--base-100);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.contact-input::placeholder {
+  color: var(--base-100);
+  opacity: 0.4;
+}
+
+.contact-input:focus {
+  border-color: var(--base-200);
+}
+
+.contact-textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+/* Native <select> options render with browser-default colors
+   regardless of the dark background — force readable text. */
+.contact-input option {
+  color: #000;
+}
+
+.contact-submit-btn {
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.85rem 1.5rem;
+  border: none;
+  border-radius: 999px;
+  background-color: var(--base-200);
+  color: var(--base-100);
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.contact-submit-btn:hover:not(:disabled) {
+  background-color: #c62313;
+}
+
+.contact-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.contact-feedback {
+  margin-top: 0.75rem;
+  font-family: "Inter", sans-serif;
+  font-size: 0.8rem;
+  color: #7ee19a;
+}
+
+.contact-feedback--error {
+  color: #ff9d9d;
+}
+
+/* ---- Confirmation state (replaces the form on success) ---- */
+
+.contact-confirmation {
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.contact-confirmation-icon {
+  width: 3rem;
+  height: 3rem;
+  line-height: 3rem;
+  border-radius: 50%;
+  background-color: var(--base-200);
+  color: var(--base-100);
+  font-size: 1.3rem;
+  margin: 0 auto 1rem;
+}
+
+.contact-confirmation h4 {
+  margin-bottom: 0.4rem;
+}
+
+.contact-confirmation p {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  color: var(--base-100);
+  opacity: 0.7;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ---- Info sidebar ---- */
+
+.contact-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1.1rem;
+}
+
+.contact-info-label {
+  font-family: "Inter", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+  color: var(--base-100);
+  opacity: 0.55;
+}
+
+.contact-info-value {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  color: var(--base-100);
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+a.contact-info-value:hover {
+  color: var(--base-200);
+  text-decoration: underline;
+}
+
+.contact-divider {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.12);
+  margin: 1.25rem 0;
+}
+
+.contact-livechat-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: none;
+  color: var(--base-100);
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.contact-badge-soon {
+  font-family: "Inter", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  background-color: rgba(255, 255, 255, 0.12);
+  color: var(--base-100);
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
+
+.contact-livechat p {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  color: var(--base-100);
+  opacity: 0.65;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.contact-secondary-btn {
+  width: 100%;
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.75rem;
+  border-radius: 999px;
+  background-color: transparent;
+  color: var(--base-100);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.contact-secondary-btn:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.contact-secondary-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.contact-quicklinks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.contact-quicklinks a {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  color: var(--base-100);
+  font-size: 0.9rem;
+  text-decoration: none;
+  opacity: 0.85;
+}
+
+.contact-quicklinks a:hover {
+  color: var(--base-200);
+  text-decoration: underline;
+}

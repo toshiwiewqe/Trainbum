@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact &amp; Support — Trailbound</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="contact.css" />
+    <link rel="icon" href="/icons/favicon.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#1a0401" />
+  </head>
+  <body>
+    <div id="site-header-root"></div>
+    <script src="header.js"></script>
+    <script type="module" src="bootstrap-init.js"></script>
+
+    <main class="contact-page">
+
+      <div class="contact-hero">
+        <span class="contact-eyebrow">Customer Support</span>
+        <h3>We're here to help</h3>
+        <p>Questions about a booking, an order, or your account? Send us a message
+          or reach out directly — our team usually replies within one business day.</p>
+      </div>
+
+      <div class="contact-layout">
+
+        <!-- Contact form -->
+        <section class="contact-form-card" id="contact-form-section">
+          <h4>Send us a message</h4>
+          <p class="contact-form-note">Fields marked with * are required.</p>
+
+          <form id="contact-form" novalidate>
+            <div class="contact-form-row">
+              <div class="contact-field">
+                <label for="contact-name">Name *</label>
+                <input type="text" id="contact-name" class="contact-input" placeholder="Juan Dela Cruz" required>
+              </div>
+              <div class="contact-field">
+                <label for="contact-email">Email *</label>
+                <input type="email" id="contact-email" class="contact-input" placeholder="you@email.com" required>
+              </div>
+            </div>
+
+            <div class="contact-field">
+              <label for="contact-subject">What's this about? *</label>
+              <select id="contact-subject" class="contact-input" required>
+                <option value="" disabled selected>Select a topic...</option>
+                <option value="booking">A trail booking</option>
+                <option value="order">An order / gear shipment</option>
+                <option value="account">My account</option>
+                <option value="other">Something else</option>
+              </select>
+            </div>
+
+            <div class="contact-field">
+              <label for="contact-message">Message *</label>
+              <textarea id="contact-message" class="contact-input contact-textarea" rows="5"
+                placeholder="Tell us what's going on — include your booking or order ID if you have one." required></textarea>
+            </div>
+
+            <button type="submit" id="contact-submit-btn" class="contact-submit-btn">Send Message</button>
+            <p id="contact-feedback" class="contact-feedback" hidden></p>
+          </form>
+
+          <!-- Shown in place of the form after a successful submit -->
+          <div class="contact-confirmation" id="contact-confirmation" hidden>
+            <div class="contact-confirmation-icon">✓</div>
+            <h4>Message sent</h4>
+            <p>Reference #<span id="contact-ref-id"></span> — we've got it, and we'll get back to you by email.</p>
+            <button type="button" class="contact-secondary-btn" id="contact-send-another-btn">Send another message</button>
+          </div>
+        </section>
+
+        <!-- Other ways to reach support -->
+        <aside class="contact-info-card">
+          <h4>Other ways to reach us</h4>
+
+          <div class="contact-info-item">
+            <span class="contact-info-label">Email</span>
+            <a href="mailto:support@trailbound.app" class="contact-info-value">support@trailbound.app</a>
+          </div>
+
+          <div class="contact-info-item">
+            <span class="contact-info-label">Phone</span>
+            <a href="tel:+639171234567" class="contact-info-value">+63 917 123 4567</a>
+          </div>
+
+          <div class="contact-info-item">
+            <span class="contact-info-label">Support hours</span>
+            <span class="contact-info-value">Mon–Sat, 8:00 AM – 6:00 PM (PHT)</span>
+          </div>
+
+          <div class="contact-divider"></div>
+
+          <div class="contact-livechat">
+            <div class="contact-livechat-heading">
+              <span>Live Chat</span>
+              <span class="contact-badge-soon">Coming soon</span>
+            </div>
+            <p>Real-time chat support is on the way. For now, the fastest way to reach
+              us is email or the form on this page.</p>
+            <button type="button" class="contact-secondary-btn" id="contact-livechat-btn" disabled>
+              Start Live Chat
+            </button>
+          </div>
+
+          <div class="contact-divider"></div>
+
+          <div class="contact-quicklinks">
+            <span class="contact-info-label">Looking for something specific?</span>
+            <a href="booking.html">My Bookings</a>
+            <a href="account.html">My Account</a>
+          </div>
+        </aside>
+
+      </div>
+    </main>
+
+    <script type="module" src="auth-nav.js"></script>
+    <script type="module" src="contact.js"></script>
+  </body>
+</html>

@@ -30,6 +30,7 @@
   const isProducts = path === "products.html";
   const isBooking = path === "booking.html";
   const isCart = path === "cart.html";
+  const isContact = path === "contact.html";
 
   const cls = (isActive) => (isActive ? ' class="active"' : "");
 
@@ -59,7 +60,7 @@
             <a href="index.html#trails"${cls(isTrails)}>Trails</a>
             <a href="products.html"${cls(isProducts)}>Products</a>
             <a href="booking.html"${cls(isBooking)}>Book Now</a>
-            <a href="#">Contact</a>
+            <a href="contact.html"${cls(isContact)}>Contact</a>
             <a href="login.html">Log In</a>
             <span class="cart-badge">
               <a href="cart.html" class="account-icon-link${isCart ? " active" : ""}" aria-label="Cart">
