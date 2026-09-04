@@ -19,7 +19,7 @@
   <main class="checkout-page">
 
     <div class="checkout-page-header">
-      <span class="checkout-eyebrow">Step 2 of 2</span>
+      <span class="checkout-eyebrow" id="checkout-eyebrow">Step 1 of 3</span>
       <h3>Checkout</h3>
     </div>
 
@@ -75,20 +75,53 @@
               <input type="text" id="ship-city" placeholder="Quezon City" required />
             </div>
             <div class="form-group">
-              <label for="ship-region">Region</label>
-              <select id="ship-region" required>
-                <option value="" disabled selected>Select region...</option>
-                <option value="ncr">Metro Manila (NCR)</option>
-                <option value="luzon">Luzon (outside NCR)</option>
-                <option value="visayas">Visayas</option>
-                <option value="mindanao">Mindanao</option>
-              </select>
+              <label for="ship-zip">ZIP code</label>
+              <input type="text" id="ship-zip" placeholder="1100" required />
             </div>
           </div>
 
           <div class="form-group">
-            <label for="ship-zip">ZIP code</label>
-            <input type="text" id="ship-zip" placeholder="1100" required />
+            <label id="ship-region-label">Region</label>
+            <div
+              class="option-card-group option-card-group--grid"
+              id="ship-region-group"
+              role="radiogroup"
+              aria-labelledby="ship-region-label"
+            >
+              <label class="option-card is-selected" data-region="ncr">
+                <input class="sr-only" type="radio" name="ship-region" value="ncr" checked />
+                <span class="option-card-radio"></span>
+                <span class="option-card-body">
+                  <span class="option-card-title">Metro Manila (NCR)</span>
+                </span>
+                <span class="option-card-price">₱100</span>
+              </label>
+              <label class="option-card" data-region="luzon">
+                <input class="sr-only" type="radio" name="ship-region" value="luzon" />
+                <span class="option-card-radio"></span>
+                <span class="option-card-body">
+                  <span class="option-card-title">Luzon (outside NCR)</span>
+                </span>
+                <span class="option-card-price">₱150</span>
+              </label>
+              <label class="option-card" data-region="visayas">
+                <input class="sr-only" type="radio" name="ship-region" value="visayas" />
+                <span class="option-card-radio"></span>
+                <span class="option-card-body">
+                  <span class="option-card-title">Visayas</span>
+                </span>
+                <span class="option-card-price">₱200</span>
+              </label>
+              <label class="option-card" data-region="mindanao">
+                <input class="sr-only" type="radio" name="ship-region" value="mindanao" />
+                <span class="option-card-radio"></span>
+                <span class="option-card-body">
+                  <span class="option-card-title">Mindanao</span>
+                </span>
+                <span class="option-card-price">₱220</span>
+              </label>
+            </div>
+            <p class="checkout-review-error" id="region-error" hidden>Please select a region.</p>
           </div>
 
           <div class="form-group">
@@ -110,23 +143,66 @@
           </p>
 
           <div class="form-group">
-            <label for="pay-name">Name on card</label>
-            <input type="text" id="pay-name" placeholder="Juan Dela Cruz" required />
-          </div>
-
-          <div class="form-group">
-            <label for="pay-number">Card number</label>
-            <input type="text" id="pay-number" placeholder="4242 4242 4242 4242" inputmode="numeric" maxlength="19" required />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="pay-expiry">Expiry (MM/YY)</label>
-              <input type="text" id="pay-expiry" placeholder="12/28" maxlength="5" required />
+            <label id="pay-method-label">Payment method</label>
+            <div class="option-card-group" id="pay-method-group" role="radiogroup" aria-labelledby="pay-method-label">
+              <label class="option-card is-selected" data-method="card">
+                <input class="sr-only" type="radio" name="pay-method" value="card" checked />
+                <span class="option-card-radio"></span>
+                <span class="option-card-body">
+                  <span class="option-card-title">Credit / Debit Card</span>
+                  <span class="option-card-sub">Visa, Mastercard, JCB</span>
+                </span>
+              </label>
+              <label class="option-card is-disabled" data-method="gcash">
+                <input class="sr-only" type="radio" name="pay-method" value="gcash" disabled />
+                <span class="option-card-radio"></span>
+                <span class="option-card-body">
+                  <span class="option-card-title">GCash</span>
+                  <span class="option-card-sub">Pay with your GCash wallet</span>
+                </span>
+                <span class="option-card-badge">Coming soon</span>
+              </label>
+              <label class="option-card is-disabled" data-method="maya">
+                <input class="sr-only" type="radio" name="pay-method" value="maya" disabled />
+                <span class="option-card-radio"></span>
+                <span class="option-card-body">
+                  <span class="option-card-title">Maya</span>
+                  <span class="option-card-sub">Pay with your Maya wallet</span>
+                </span>
+                <span class="option-card-badge">Coming soon</span>
+              </label>
+              <label class="option-card is-disabled" data-method="cod">
+                <input class="sr-only" type="radio" name="pay-method" value="cod" disabled />
+                <span class="option-card-radio"></span>
+                <span class="option-card-body">
+                  <span class="option-card-title">Cash on Delivery</span>
+                  <span class="option-card-sub">Pay when your order arrives</span>
+                </span>
+                <span class="option-card-badge">Coming soon</span>
+              </label>
             </div>
+          </div>
+
+          <div id="card-fields">
             <div class="form-group">
-              <label for="pay-cvv">CVV</label>
-              <input type="text" id="pay-cvv" placeholder="123" inputmode="numeric" maxlength="4" required />
+              <label for="pay-name">Name on card</label>
+              <input type="text" id="pay-name" placeholder="Juan Dela Cruz" required />
+            </div>
+
+            <div class="form-group">
+              <label for="pay-number">Card number</label>
+              <input type="text" id="pay-number" placeholder="4242 4242 4242 4242" inputmode="numeric" maxlength="19" required />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="pay-expiry">Expiry (MM/YY)</label>
+                <input type="text" id="pay-expiry" placeholder="12/28" maxlength="5" required />
+              </div>
+              <div class="form-group">
+                <label for="pay-cvv">CVV</label>
+                <input type="text" id="pay-cvv" placeholder="123" inputmode="numeric" maxlength="4" required />
+              </div>
             </div>
           </div>
 
@@ -140,7 +216,28 @@
         <section class="checkout-panel" data-panel="3">
           <h4>Review your order</h4>
 
-          <div class="checkout-review-list" id="checkout-review-list"></div>
+          <div class="checkout-review-section" id="review-shipping-section">
+            <div class="checkout-review-section-head">
+              <h6>Shipping address</h6>
+              <button type="button" class="checkout-edit-link" data-edit="1">Edit</button>
+            </div>
+            <div class="checkout-review-summary-card" id="review-shipping-summary"></div>
+          </div>
+
+          <div class="checkout-review-section">
+            <div class="checkout-review-section-head">
+              <h6>Payment method</h6>
+              <button type="button" class="checkout-edit-link" data-edit="2">Edit</button>
+            </div>
+            <div class="checkout-review-summary-card" id="review-payment-summary"></div>
+          </div>
+
+          <div class="checkout-review-section">
+            <div class="checkout-review-section-head">
+              <h6>Order items</h6>
+            </div>
+            <div class="checkout-review-list" id="checkout-review-list"></div>
+          </div>
 
           <div class="checkout-review-totals">
             <div class="checkout-review-row">
@@ -181,8 +278,47 @@
     <section class="checkout-confirmation" id="checkout-confirmation" hidden>
       <div class="checkout-confirmation-icon">✓</div>
       <h3>Order confirmed</h3>
-      <p>Order #<span id="confirmation-order-id"></span> — a receipt has been recorded to your order.</p>
-      <p class="checkout-confirmation-sub">Any trail bookings in this order are now marked as Confirmed.</p>
+      <p class="checkout-confirmation-sub">Thank you — a receipt has been recorded to your order.</p>
+
+      <div class="checkout-order-details">
+        <div class="checkout-order-details-row">
+          <span class="checkout-order-details-label">Order number</span>
+          <span class="checkout-order-details-value">#<span id="confirmation-order-id"></span></span>
+        </div>
+        <div class="checkout-order-details-row">
+          <span class="checkout-order-details-label">Order date</span>
+          <span class="checkout-order-details-value" id="confirmation-order-date"></span>
+        </div>
+        <div class="checkout-order-details-row">
+          <span class="checkout-order-details-label">Total amount</span>
+          <span class="checkout-order-details-value" id="confirmation-order-total"></span>
+        </div>
+      </div>
+
+      <div class="checkout-next-steps">
+        <div class="checkout-next-step" id="confirmation-booking-step" hidden>
+          <span class="checkout-next-step-icon">✓</span>
+          <span class="checkout-next-step-body">
+            <span class="checkout-next-step-title">Bookings confirmed</span>
+            <span class="checkout-next-step-sub">Any trail bookings in this order are now marked Confirmed.</span>
+          </span>
+        </div>
+        <div class="checkout-next-step">
+          <span class="checkout-next-step-icon">✉</span>
+          <span class="checkout-next-step-body">
+            <span class="checkout-next-step-title">Check your email</span>
+            <span class="checkout-next-step-sub">We'll send a confirmation to the address you provided.</span>
+          </span>
+        </div>
+        <div class="checkout-next-step" id="confirmation-shipping-step" hidden>
+          <span class="checkout-next-step-icon">📦</span>
+          <span class="checkout-next-step-body">
+            <span class="checkout-next-step-title">Your gear ships soon</span>
+            <span class="checkout-next-step-sub">We'll notify you once it's on the way.</span>
+          </span>
+        </div>
+      </div>
+
       <div class="checkout-confirmation-actions">
         <a href="index.html" class="checkout-btn checkout-btn--primary">Back to home</a>
         <a href="products.html" class="checkout-btn checkout-btn--ghost">Keep browsing gear</a>

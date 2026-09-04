@@ -18,7 +18,7 @@
 
 import { db } from './firebase-config.js';
 import { collection, getDocs } from 'firebase/firestore';
-import { addProductToCart, updateCartBadge, onCartUpdated } from './cart-store.js';
+import { addProductToCart, updateCartBadge, onCartUpdated, getCart } from './cart-store.js';
 
 let PRODUCTS = [];
 
@@ -459,6 +459,19 @@ function addActiveToCart() {
   if (!activeProduct || !activeProduct.inStock) return;
   const qty = Math.max(1, Number(els.drawerQty.value) || 1);
 
+  // addProductToCart() silently merges into an existing line when the
+  // same product+size+color combo is already in the cart (see
+  // cart-store.js), so check for that match *before* calling it — this
+  // is the only way to tell the user "you already had this" instead of
+  // just "added", since the store itself doesn't report which happened.
+  const alreadyInCart = getCart().some(
+    (i) =>
+      i.type === "product" &&
+      i.productId === activeProduct.id &&
+      i.size === selectedSize &&
+      i.color === selectedColor
+  );
+
   addProductToCart({
     productId: activeProduct.id,
     name: activeProduct.name,
@@ -470,13 +483,42 @@ function addActiveToCart() {
   });
 
   updateCartBadge(els.cartCount);
-  showToast(`Added ${activeProduct.name} to cart`);
+
+  if (alreadyInCart) {
+    // Read the line back from the store rather than recomputing the merge
+    // math ourselves, so the number shown always matches what's actually
+    // in the cart (including the 10-unit cap in cart-store.js).
+    const updatedLine = getCart().find(
+      (i) => i.type === "product" && i.productId === activeProduct.id && i.size === selectedSize && i.color === selectedColor
+    );
+    const newQty = updatedLine ? updatedLine.qty : qty;
+    showToast(`Already in your cart — quantity updated to ${newQty}`, "already");
+    flashAddButton("Already in cart");
+  } else {
+    showToast(`Added ${activeProduct.name} to cart`, "added");
+    flashAddButton("Added ✓");
+  }
+}
+
+let addBtnResetTimer = null;
+function flashAddButton(label) {
+  const btn = els.drawerAddBtn;
+  const originalLabel = activeProduct.inStock ? "Add to Cart" : "Sold Out";
+  btn.textContent = label;
+  btn.classList.add("drawer-add-btn--flash");
+  clearTimeout(addBtnResetTimer);
+  addBtnResetTimer = setTimeout(() => {
+    btn.textContent = originalLabel;
+    btn.classList.remove("drawer-add-btn--flash");
+  }, 1600);
 }
 
 let toastTimer = null;
-function showToast(message) {
+function showToast(message, variant = "added") {
   els.toast.textContent = message;
-  els.toast.classList.add("is-visible");
+  els.toast.classList.remove("cart-toast--already", "cart-toast--added");
+  els.toast.classList.add("is-visible", variant === "already" ? "cart-toast--already" : "cart-toast--added");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => els.toast.classList.remove("is-visible"), 2200);
+  const duration = variant === "already" ? 3200 : 2200;
+  toastTimer = setTimeout(() => els.toast.classList.remove("is-visible"), duration);
 }

@@ -984,17 +984,11 @@ section {
   }
 }
 
-/* Gutter between product cards themselves — same approach, applied
-   to the grid row directly. */
-#products-grid {
-  --bs-gutter-x: 2.25rem;
-  --bs-gutter-y: 2.25rem;
-}
 
 @media (min-width: 992px) {
   #products-grid {
-    --bs-gutter-x: 2rem;
-    --bs-gutter-y: 2rem;
+    --bs-gutter-x: 1rem;
+    --bs-gutter-y: 1rem;
   }
 }
 
@@ -1347,6 +1341,7 @@ section {
 
 .product-card {
   background-color: var(--base-300);
+  padding: 0;
   border-radius: 14px;
   overflow: hidden;
   display: flex;
@@ -1483,6 +1478,23 @@ section {
 .cart-toast.is-visible {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+/* Add to styles.css — supports the "already in cart" feedback in products.js */
+
+.cart-toast--added {
+  background: var(--tb-forest, #33502f);
+  color: #fff;
+}
+
+.cart-toast--already {
+  background: var(--tb-clay, #a8592f);
+  color: #fff;
+  font-weight: 600;
+}
+
+.drawer-add-btn--flash {
+  background: var(--tb-clay, #a8592f) !important;
+  transition: background 0.15s ease;
 }
 
 /* ---- Product detail drawer (slides in from the right) ---- */
@@ -1729,18 +1741,3 @@ section {
    drawer (handled by Bootstrap's own offcanvas-lg CSS) — this just
    covers the rest of the page's small-screen spacing. ---- */
 
-@media (max-width: 991.98px) {
-  .products-layout {
-    margin-top: -1.25rem;
-    border-radius: 20px 20px 0 0;
-    padding: 2rem 1.25rem 4rem;
-  }
-
-  .products-hero {
-    padding: 7rem 1.5rem 3rem;
-  }
-
-  .drawer-content {
-    padding: 0 1.5rem 3rem;
-  }
-}

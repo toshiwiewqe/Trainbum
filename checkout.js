@@ -14,6 +14,11 @@
    handlePlaceOrder(), replacing the simulated block — the rest
    of the flow (steps, review, order doc shape) stays the same.
 
+   Shipping region and payment method are presented as selectable
+   cards (instead of a <select> / fixed fields) — shippingCost()
+   and handlePlaceOrder() read the currently-checked radio inputs
+   rather than a single form control.
+
    TODO (after Auth is added): attach `user_id` to the order doc
    here, same as the TODO already in booking.js, and add a
    Firestore-backed "My Orders" list next to "My Bookings".
@@ -38,6 +43,15 @@ const SHIPPING_RATES = {
   mindanao: 220,
 }; // ₱ — only charged if the order includes gear; free for booking-only orders
 
+const REGION_LABELS = {
+  ncr: "Metro Manila (NCR)",
+  luzon: "Luzon (outside NCR)",
+  visayas: "Visayas",
+  mindanao: "Mindanao",
+};
+
+const STEP_COUNT = 3;
+
 const els = {};
 let currentStep = 1;
 
@@ -45,11 +59,18 @@ document.addEventListener("DOMContentLoaded", init);
 
 function init() {
   els.cartCount = document.getElementById("cart-count");
+  els.eyebrow = document.getElementById("checkout-eyebrow");
   els.stepper = document.getElementById("checkout-stepper");
   els.form = document.getElementById("checkout-form");
   els.panels = document.querySelectorAll(".checkout-panel");
   els.tabs = document.querySelectorAll(".checkout-step-tab");
   els.shippingNote = document.getElementById("shipping-note");
+  els.regionGroup = document.getElementById("ship-region-group");
+  els.regionError = document.getElementById("region-error");
+  els.payMethodGroup = document.getElementById("pay-method-group");
+  els.reviewShippingSection = document.getElementById("review-shipping-section");
+  els.reviewShippingSummary = document.getElementById("review-shipping-summary");
+  els.reviewPaymentSummary = document.getElementById("review-payment-summary");
   els.reviewList = document.getElementById("checkout-review-list");
   els.reviewSubtotal = document.getElementById("review-subtotal");
   els.reviewShipping = document.getElementById("review-shipping");
@@ -61,6 +82,10 @@ function init() {
   els.checkoutLayout = document.querySelector(".checkout-layout");
   els.confirmation = document.getElementById("checkout-confirmation");
   els.confirmationOrderId = document.getElementById("confirmation-order-id");
+  els.confirmationOrderDate = document.getElementById("confirmation-order-date");
+  els.confirmationOrderTotal = document.getElementById("confirmation-order-total");
+  els.confirmationBookingStep = document.getElementById("confirmation-booking-step");
+  els.confirmationShippingStep = document.getElementById("confirmation-shipping-step");
   els.emptyState = document.getElementById("checkout-empty");
 
   updateCartBadge(els.cartCount);
@@ -75,12 +100,40 @@ function init() {
 
   if (!hasProducts()) {
     els.shippingNote.hidden = false;
+    els.reviewShippingSection.hidden = true;
   }
 
   bindNav();
+  bindOptionCardGroup(els.regionGroup, () => {
+    els.regionError.hidden = true;
+    renderSummary();
+  });
+  bindOptionCardGroup(els.payMethodGroup);
   renderSummary();
-  document.getElementById("ship-region").addEventListener("change", renderSummary);
   els.form.addEventListener("submit", handlePlaceOrder);
+}
+
+/* ---------- Selectable option cards (region / payment method) ---------- */
+function bindOptionCardGroup(group, onChange) {
+  if (!group) return;
+  group.querySelectorAll(".option-card").forEach((card) => {
+    const input = card.querySelector("input[type='radio']");
+    if (input.disabled) return;
+    card.addEventListener("click", () => {
+      group.querySelectorAll(".option-card").forEach((c) => c.classList.remove("is-selected"));
+      card.classList.add("is-selected");
+      input.checked = true;
+      if (onChange) onChange();
+    });
+  });
+}
+
+function getSelectedRegion() {
+  return els.regionGroup.querySelector("input[name='ship-region']:checked")?.value ?? null;
+}
+
+function getSelectedPaymentMethod() {
+  return els.payMethodGroup.querySelector("input[name='pay-method']:checked")?.value ?? "card";
 }
 
 /* ---------- Step navigation ---------- */
@@ -94,13 +147,21 @@ function bindNav() {
   document.querySelectorAll("[data-back]").forEach((btn) => {
     btn.addEventListener("click", () => goToStep(Number(btn.dataset.back)));
   });
+  document.querySelectorAll("[data-edit]").forEach((btn) => {
+    btn.addEventListener("click", () => goToStep(Number(btn.dataset.edit)));
+  });
 }
 
 function validateStep(step) {
   const panel = document.querySelector(`.checkout-panel[data-panel="${step}"]`);
-  const inputs = panel.querySelectorAll("input[required]");
+  const inputs = panel.querySelectorAll("input[required]:not([type='radio'])");
   for (const input of inputs) {
     if (!input.reportValidity()) return false;
+  }
+  if (step === 1 && hasProducts() && !getSelectedRegion()) {
+    els.regionError.hidden = false;
+    els.regionGroup.scrollIntoView({ behavior: "smooth", block: "center" });
+    return false;
   }
   return true;
 }
@@ -114,6 +175,7 @@ function goToStep(step) {
     t.classList.toggle("is-active", n === step);
     t.classList.toggle("is-done", n < step);
   });
+  els.eyebrow.textContent = `Step ${step} of ${STEP_COUNT}`;
 
   if (step === 3) renderReview();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -145,9 +207,11 @@ function renderReview() {
               .filter(Boolean)
               .join(" · ")
           : [i.size, i.color, `Qty ${i.qty}`].filter(Boolean).join(" · ");
+      const icon = i.type === "booking" ? "🥾" : "🎒";
 
       return `
         <div class="checkout-review-item">
+          <span class="checkout-review-item-icon">${icon}</span>
           <span class="checkout-review-item-name">
             ${i.name}
             <span class="checkout-review-item-meta">${metaLine}</span>
@@ -156,6 +220,27 @@ function renderReview() {
         </div>`;
     })
     .join("");
+
+  if (hasProducts()) {
+    const region = getSelectedRegion();
+    els.reviewShippingSummary.innerHTML = `
+      ${val("ship-name")}<br />
+      ${val("ship-address")}, ${val("ship-city")}<br />
+      ${region ? REGION_LABELS[region] : ""} ${val("ship-zip")}<br />
+      <span class="checkout-review-summary-muted">${val("ship-phone")} · ${val("ship-email")}</span>
+    `;
+  }
+
+  const method = getSelectedPaymentMethod();
+  if (method === "card") {
+    const cardNumber = val("pay-number").replace(/\s+/g, "");
+    els.reviewPaymentSummary.innerHTML = `
+      Credit / Debit Card ending in ${cardNumber.slice(-4) || "····"}<br />
+      <span class="checkout-review-summary-muted">${val("pay-name")} · Simulated payment (no real charge)</span>
+    `;
+  } else {
+    els.reviewPaymentSummary.textContent = "Selected payment method not yet supported.";
+  }
 
   const subtotal = getSubtotal();
   const shipping = shippingCost();
@@ -167,8 +252,8 @@ function renderReview() {
 
 function shippingCost() {
   if (!hasProducts()) return 0;
-  const region = document.getElementById("ship-region")?.value;
-  return SHIPPING_RATES[region] ?? SHIPPING_RATES.luzon; // default until step 1 is filled in
+  const region = getSelectedRegion();
+  return SHIPPING_RATES[region] ?? SHIPPING_RATES.ncr; // default until step 1 is filled in
 }
 
 function computeTotal() {
@@ -194,7 +279,7 @@ async function handlePlaceOrder(e) {
     phone: val("ship-phone"),
     address: val("ship-address"),
     city: val("ship-city"),
-    region: document.getElementById("ship-region").value,
+    region: getSelectedRegion(),
     zip: val("ship-zip"),
     notes: val("ship-notes"),
   };
@@ -208,6 +293,8 @@ async function handlePlaceOrder(e) {
     last4: cardNumber.slice(-4),
     name_on_card: val("pay-name"),
   };
+
+  const createdAt = new Date();
 
   const order = {
     items: productItems.map((i) => ({
@@ -225,7 +312,7 @@ async function handlePlaceOrder(e) {
     shipping_fee: shippingCost(),
     total: computeTotal(),
     status: "Paid",
-    created_at: new Date().toISOString(),
+    created_at: createdAt.toISOString(),
     // TODO: add `user_id: currentUser.uid` here once Auth is wired up
   };
 
@@ -242,7 +329,7 @@ async function handlePlaceOrder(e) {
     );
 
     clearCart();
-    showConfirmation(orderRef.id);
+    showConfirmation(orderRef.id, createdAt, order.total, bookingItems.length > 0, hasProducts());
   } catch (err) {
     console.error("Failed to place order:", err);
     els.checkoutError.textContent = "Something went wrong placing your order. Please try again.";
@@ -256,9 +343,17 @@ function val(id) {
   return document.getElementById(id).value.trim();
 }
 
-function showConfirmation(orderId) {
+function showConfirmation(orderId, createdAt, total, hasBookings, hadProducts) {
   els.stepper.hidden = true;
   els.checkoutLayout.hidden = true;
   els.confirmationOrderId.textContent = orderId;
+  els.confirmationOrderDate.textContent = createdAt.toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  els.confirmationOrderTotal.textContent = "₱" + total.toLocaleString("en-PH");
+  els.confirmationBookingStep.hidden = !hasBookings;
+  els.confirmationShippingStep.hidden = !hadProducts;
   els.confirmation.hidden = false;
 }

@@ -24,15 +24,46 @@
     </div>
 
     <div class="cart-layout">
-      <div class="cart-list" id="cart-list"></div>
+      <div>
+        <div class="cart-list-header" id="cart-list-header">
+          <div class="cart-list-header-left">
+            <input type="checkbox" class="cart-checkbox" id="cart-select-all" aria-label="Select all items">
+            <p class="cart-list-title">Select all <span class="cart-list-count" id="cart-list-count">00</span></p>
+          </div>
+          <button type="button" class="cart-remove-all" id="cart-remove-all">Remove all</button>
+        </div>
+        <div class="cart-list" id="cart-list"></div>
+      </div>
 
       <div class="cart-summary">
-        <div class="cart-summary-row">
-          <span>Subtotal</span>
-          <span id="cart-subtotal">₱0</span>
+        <h5>Summary</h5>
+        <div class="summary-row">
+          <span>Selected items</span>
+          <span id="summary-count">0 items</span>
         </div>
-        <p class="cart-summary-note">Shipping and any final totals are calculated at checkout.</p>
-        <button type="button" class="cart-checkout-btn" id="cart-checkout-btn">Proceed to Checkout</button>
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <span id="summary-subtotal">₱0</span>
+        </div>
+        <div class="summary-row">
+          <span>Est. delivery</span>
+          <span id="summary-delivery">₱0</span>
+        </div>
+        <div class="summary-row summary-row--tax">
+          <span>Taxes</span>
+          <span id="summary-tax">+₱0</span>
+        </div>
+        <div class="summary-row summary-row--discount">
+          <span>Discount</span>
+          <span id="summary-discount">−₱0</span>
+        </div>
+        <hr class="summary-divider">
+        <div class="summary-row summary-row--total">
+          <span>Final payment</span>
+          <span id="summary-total">₱0</span>
+        </div>
+
+        <button type="button" class="cart-checkout-btn" id="cart-checkout-btn">Checkout</button>
         <a href="products.html" class="cart-continue-link">Continue shopping</a>
       </div>
     </div>
