@@ -1157,3 +1157,125 @@
     animation: none;
   }
 }
+
+/* ==========================================================
+   Post-booking choice modal
+   ========================================================== */
+
+.post-booking-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background-color: rgba(15, 35, 21, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.post-booking-modal-backdrop[hidden],
+.post-booking-modal[hidden] {
+  display: none;
+}
+
+.post-booking-modal {
+  position: fixed;
+  z-index: 1101;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 460px;
+  background-color: var(--tb-cream);
+  border-radius: 22px;
+  padding: 2.25rem;
+  text-align: center;
+  box-shadow: 0 30px 60px rgba(15, 35, 21, 0.35);
+  animation: tb-fade-up 0.35s ease both;
+}
+
+.post-booking-modal::before {
+  content: "";
+  display: block;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 1.1rem;
+  border-radius: 999px;
+  background-color: var(--tb-green-soft);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'><path d='M5 13l4 4L19 7' stroke='%23173b22' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+#post-booking-modal-title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--tb-ink);
+  margin-bottom: 0.6rem;
+}
+
+#post-booking-modal-copy {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--tb-ink-soft);
+  line-height: 1.5;
+  margin-bottom: 1.75rem;
+}
+
+.post-booking-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.post-booking-btn {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  padding: 0.95rem;
+  border-radius: 999px;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.post-booking-btn:active {
+  transform: scale(0.99);
+}
+
+.post-booking-btn--primary {
+  background-color: var(--tb-green-dark);
+  color: #fff;
+}
+
+.post-booking-btn--primary:hover {
+  background-color: var(--tb-green);
+}
+
+.post-booking-btn--secondary {
+  background-color: transparent;
+  color: var(--tb-ink);
+  border: 1px solid var(--tb-border);
+}
+
+.post-booking-btn--secondary:hover {
+  border-color: var(--tb-green);
+  color: var(--tb-green);
+}
+
+.post-booking-btn:focus-visible {
+  outline: 2px solid var(--tb-green);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .post-booking-modal {
+    max-width: calc(100% - 2rem);
+    padding: 1.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .post-booking-modal {
+    animation: none;
+  }
+}
