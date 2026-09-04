@@ -17,35 +17,37 @@ const FEATURED_HOUR = 14; // 2:00 PM slot is shown as the "current" summary card
 
 const geocodeCache = new Map();
 
-/* ---------- Weather code -> icon/label (WMO codes used by Open-Meteo) ---------- */
+/* ---------- Weather code -> icon/label/condition (WMO codes used by Open-Meteo)
+   `condition` is a coarse category ("sunny" | "cloudy" | "rain" | "snow" | "storm" | "fog")
+   meant for picking a background video — see weatherBackgroundVideo.js ---------- */
 
 function describeWeatherCode(code) {
   const map = {
-    0: { icon: "☀️", label: "Clear Sky" },
-    1: { icon: "🌤️", label: "Mostly Clear" },
-    2: { icon: "⛅", label: "Partly Cloudy" },
-    3: { icon: "☁️", label: "Cloudy" },
-    45: { icon: "🌫️", label: "Foggy" },
-    48: { icon: "🌫️", label: "Foggy" },
-    51: { icon: "🌦️", label: "Light Drizzle" },
-    53: { icon: "🌦️", label: "Drizzle" },
-    55: { icon: "🌦️", label: "Heavy Drizzle" },
-    61: { icon: "🌦️", label: "Light Rain" },
-    63: { icon: "🌧️", label: "Rain" },
-    65: { icon: "🌧️", label: "Heavy Rain" },
-    66: { icon: "🌧️", label: "Freezing Rain" },
-    67: { icon: "🌧️", label: "Freezing Rain" },
-    71: { icon: "🌨️", label: "Light Snow" },
-    73: { icon: "🌨️", label: "Snow" },
-    75: { icon: "🌨️", label: "Heavy Snow" },
-    80: { icon: "🌦️", label: "Rain Showers" },
-    81: { icon: "🌧️", label: "Rain Showers" },
-    82: { icon: "🌧️", label: "Rain Showers" },
-    95: { icon: "⛈️", label: "Thunderstorm" },
-    96: { icon: "⛈️", label: "Thunderstorm" },
-    99: { icon: "⛈️", label: "Thunderstorm" },
+    0: { icon: "☀️", label: "Sunny", condition: "sunny" },
+    1: { icon: "🌤️", label: "Mostly Sunny", condition: "sunny" },
+    2: { icon: "⛅", label: "Partly Cloudy", condition: "cloudy" },
+    3: { icon: "☁️", label: "Cloudy", condition: "cloudy" },
+    45: { icon: "🌫️", label: "Fog", condition: "fog" },
+    48: { icon: "🌫️", label: "Fog", condition: "fog" },
+    51: { icon: "🌦️", label: "Drizzle", condition: "rain" },
+    53: { icon: "🌦️", label: "Drizzle", condition: "rain" },
+    55: { icon: "🌦️", label: "Heavy Drizzle", condition: "rain" },
+    61: { icon: "🌦️", label: "Light Rain", condition: "rain" },
+    63: { icon: "🌧️", label: "Rain", condition: "rain" },
+    65: { icon: "🌧️", label: "Heavy Rain", condition: "rain" },
+    66: { icon: "🌧️", label: "Freezing Rain", condition: "rain" },
+    67: { icon: "🌧️", label: "Freezing Rain", condition: "rain" },
+    71: { icon: "🌨️", label: "Light Snow", condition: "snow" },
+    73: { icon: "🌨️", label: "Snow", condition: "snow" },
+    75: { icon: "🌨️", label: "Heavy Snow", condition: "snow" },
+    80: { icon: "🌦️", label: "Rain Showers", condition: "rain" },
+    81: { icon: "🌧️", label: "Rain Showers", condition: "rain" },
+    82: { icon: "🌧️", label: "Rain Showers", condition: "rain" },
+    95: { icon: "⛈️", label: "Thunderstorm", condition: "storm" },
+    96: { icon: "⛈️", label: "Thunderstorm", condition: "storm" },
+    99: { icon: "⛈️", label: "Thunderstorm", condition: "storm" },
   };
-  return map[code] || { icon: "☁️", label: "Cloudy" };
+  return map[code] || { icon: "☁️", label: "Cloudy", condition: "cloudy" };
 }
 
 /* ---------- Geocoding ---------- */
@@ -126,7 +128,7 @@ function generateFallbackForecast(dateStr) {
  * @returns {Promise<{
  *   slots: Array<{hour:number, timeLabel:string, tempC:number, feelsLikeC:number,
  *                 humidity:number, precipProbability:number, windKph:number,
- *                 icon:string, label:string}>,
+ *                 icon:string, label:string, condition:string}>,
  *   featured: (same shape as a slot entry),
  *   isFallback: boolean
  * }>}
