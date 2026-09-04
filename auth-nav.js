@@ -6,12 +6,14 @@
 import { auth } from "./firebase-init.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-onAuthStateChanged(auth, (user) => {
+let latestUser = undefined; // undefined = auth state not resolved yet
+
+function applyNavState(user) {
   const nav = document.querySelector('.site-header-nav');
-  if (!nav) return;
+  if (!nav) return false; // header not in the DOM yet
 
   const loginLink = nav.querySelector('a[href="login.html"]');
-  if (!loginLink) return;
+  if (!loginLink) return false;
 
   if (user) {
     loginLink.href = 'account.html';
@@ -28,7 +30,24 @@ onAuthStateChanged(auth, (user) => {
     loginLink.removeAttribute('aria-label');
     loginLink.textContent = 'Log In';
   }
+  return true;
+}
+
+onAuthStateChanged(auth, (user) => {
+  latestUser = user;
+  applyNavState(user);
 });
+
+// The header may be injected asynchronously by header.js AFTER this script
+// runs. Watch the DOM and re-apply the nav state once .site-header-nav
+// actually appears, so the icon still shows up correctly either way.
+const headerRoot = document.getElementById('site-header-root') || document.body;
+const observer = new MutationObserver(() => {
+  if (latestUser !== undefined && applyNavState(latestUser)) {
+    observer.disconnect(); // done — no need to keep watching
+  }
+});
+observer.observe(headerRoot, { childList: true, subtree: true });
 
 function getAccountIconHTML(user) {
   // Use the user's real profile photo if available (Google/Facebook provide one)

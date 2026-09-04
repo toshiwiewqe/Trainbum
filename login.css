@@ -38,6 +38,10 @@
     border: 2px solid rgba(35, 85, 35, 0.3);
 }
 
+.login-page-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
 
 .login-eyebrow {
     display: block;
@@ -245,4 +249,94 @@
     color: #ffb4b4;
     font-size: 0.75rem;
     margin-top: 0.3rem;
+}
+
+/* ==========================================================
+   OTP Email Verification Modal
+   ========================================================== */
+
+.otp-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(3px);
+}
+
+.otp-modal-box {
+    background: rgba(4, 28, 15, 0.95);
+    border: 2px solid rgba(35, 85, 35, 0.4);
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 360px;
+    margin: 0 1rem;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9);
+}
+
+.otp-modal-box h3 {
+    color: #ffffff;
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.otp-modal-box p {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.9rem;
+    margin-bottom: 1.25rem;
+}
+
+.otp-input {
+    width: 100%;
+    text-align: center;
+    letter-spacing: 0.5rem;
+    font-size: 1.5rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #1a751e;
+    margin-bottom: 0.75rem;
+}
+
+.otp-error {
+    color: #ffb4b4;
+    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
+}
+
+.otp-verify-btn {
+    width: 100%;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 6px;
+    background-color: #1b6239;
+    color: #fbfbfb;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 1rem;
+}
+
+.otp-verify-btn:hover {
+    background-color: #11331f;
+}
+
+.otp-modal-actions {
+    display: flex;
+    justify-content: space-between;
+}
+
+.otp-link-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.otp-link-btn:hover {
+    color: #ffffff;
 }
