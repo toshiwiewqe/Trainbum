@@ -79,6 +79,24 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
+.contact-info-card {
+  /* Sticks while scrolling the form, same pattern as .cart-summary /
+     .checkout-summary. Offset clears the fixed 80px site header
+     (see .site-header in styles.css) instead of the bare 1.5rem
+     those two use, so the card doesn't scroll in underneath it. */
+  position: sticky;
+  top: 6rem;
+}
+
+@media (max-width: 860px) {
+  /* Below the breakpoint where .contact-layout drops to a single
+     column (see above), the sidebar sits after the form in normal
+     flow — sticky here would just pin it mid-page, so turn it off. */
+  .contact-info-card {
+    position: static;
+  }
+}
+
 .contact-form-card h4,
 .contact-info-card h4 {
   color: var(--base-100);

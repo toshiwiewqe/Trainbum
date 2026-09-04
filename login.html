@@ -5,13 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trailbound</title>
     <link rel="stylesheet" href="login.css" />
-    <link rel="stylesheet" href="styles.css" />
+      <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="site-header-root"></div>
-    <script src="header.js"></script>
-    <script type="module" src="bootstrap-init.js"></script>
-    
+    <header class="site-header">
+      <div class="site-header-logo">
+        <img src="finaltrailboundlogo.png" alt="Site Logo">
+      </div>
+      <nav class="site-header-nav">
+        <a href="index.html" class="active">Home</a>
+        <a href="index.html#trails">Trails</a>
+        <a href="booking.html">Book Now</a>
+        <a href="#">Contact</a>
+        <a href="login.html">Log In</a>
+      </nav>
+    </header>
+
     <main class="login-page">
     <video autoplay muted loop playsinline class="background-video">
     <source src="202608301622.mp4" type="video/mp4"></video>
@@ -63,15 +72,126 @@
       </div>
     </main>
 
+    <div id="otp-modal" class="otp-modal" hidden>
+      <div class="otp-modal-box">
+        <h3>Verify your email</h3>
+        <p>We sent a 6-digit code to <strong id="otp-modal-email"></strong></p>
+
+        <input type="text" id="otp-input" class="otp-input" maxlength="6" inputmode="numeric" placeholder="000000" autocomplete="one-time-code">
+
+        <p id="otp-error" class="otp-error" hidden></p>
+
+        <button type="button" class="otp-verify-btn" onclick="verifyOtpCode()">Verify</button>
+
+        <div class="otp-modal-actions">
+          <button type="button" class="otp-link-btn" onclick="resendOtpCode()">Resend code</button>
+          <button type="button" class="otp-link-btn" onclick="cancelOtpVerification()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
 
  <!-----pangkonek to sa firebase----->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script type="module">
   import { auth } from "./firebase-init.js";
   import {
     GoogleAuthProvider,
     FacebookAuthProvider,
-    signInWithPopup
+    signInWithPopup,
+    signOut
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  // ----------------------------------------------------------
+  // EmailJS config — replace these three with your own values
+  // from the EmailJS dashboard (Step 1 of the setup guide).
+  // ----------------------------------------------------------
+  const EMAILJS_PUBLIC_KEY  = "sWgeXKnDZsScYJZ3z";
+  const EMAILJS_SERVICE_ID  = "service_s7cro69";
+  const EMAILJS_TEMPLATE_ID = "template_umpto7f";
+
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
+  const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+
+  function generateOtp() {
+    return String(Math.floor(100000 + Math.random() * 900000)); // 6-digit code
+  }
+
+  function sendOtpEmail(toEmail, toName, code) {
+    return emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: toEmail,
+      to_name: toName || toEmail,
+      code: code
+    });
+  }
+
+  function startEmailVerification(user) {
+    const code = generateOtp();
+    const expiresAt = Date.now() + OTP_EXPIRY_MS;
+
+    sessionStorage.setItem('trailbound_otp', JSON.stringify({
+      code, expiresAt, email: user.email
+    }));
+
+    sendOtpEmail(user.email, user.displayName, code)
+      .catch((err) => {
+        console.error('EmailJS send error:', err);
+        alert('Could not send verification code. Please try again.');
+      });
+
+    document.getElementById('otp-modal-email').textContent = user.email;
+    document.getElementById('otp-modal').hidden = false;
+    document.getElementById('otp-input').value = '';
+    document.getElementById('otp-error').hidden = true;
+    document.getElementById('otp-input').focus();
+  }
+
+  window.verifyOtpCode = function () {
+    const stored = JSON.parse(sessionStorage.getItem('trailbound_otp') || 'null');
+    const enteredCode = document.getElementById('otp-input').value.trim();
+    const errorEl = document.getElementById('otp-error');
+
+    if (!stored) {
+      errorEl.textContent = 'No verification in progress. Please log in again.';
+      errorEl.hidden = false;
+      return;
+    }
+
+    if (Date.now() > stored.expiresAt) {
+      errorEl.textContent = 'This code expired. Click Resend to get a new one.';
+      errorEl.hidden = false;
+      return;
+    }
+
+    if (enteredCode !== stored.code) {
+      errorEl.textContent = 'Incorrect code. Please try again.';
+      errorEl.hidden = false;
+      return;
+    }
+
+    sessionStorage.removeItem('trailbound_otp');
+    window.location.href = 'index.html';
+  };
+
+  window.resendOtpCode = function () {
+    const stored = JSON.parse(sessionStorage.getItem('trailbound_otp') || 'null');
+    if (!stored) return;
+
+    const code = generateOtp();
+    const expiresAt = Date.now() + OTP_EXPIRY_MS;
+    sessionStorage.setItem('trailbound_otp', JSON.stringify({ ...stored, code, expiresAt }));
+
+    sendOtpEmail(stored.email, null, code);
+    document.getElementById('otp-error').hidden = true;
+  };
+
+  window.cancelOtpVerification = async function () {
+    sessionStorage.removeItem('trailbound_otp');
+    document.getElementById('otp-modal').hidden = true;
+    // They didn't finish verifying, so sign them back out of Firebase too
+    await signOut(auth);
+  };
 
   window.signInWithGoogle = function () {
     const provider = new GoogleAuthProvider();
@@ -79,7 +199,7 @@
     signInWithPopup(auth, provider)
       .then((result) => {
         console.log("Google login success:", result.user);
-        window.location.href = 'index.html';
+        startEmailVerification(result.user);
       })
       .catch((err) => {
         console.error("Google login error:", err.code, err.message);

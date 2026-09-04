@@ -1,109 +1,99 @@
 /* ==========================================================
-   Weather API module
+   Weather API module — WeatherAPI.com
    ----------------------------------------------------------
-   Talks to Open-Meteo (free, no API key, CORS-enabled):
-     - Geocoding:  https://geocoding-api.open-meteo.com/v1/search
-     - Forecast:   https://api.open-meteo.com/v1/forecast
+   Single endpoint does geocoding + forecast + real observed
+   "current conditions" in one call:
+     https://api.weatherapi.com/v1/forecast.json
 
-   If you swap in a different weather provider later, you only
-   need to rewrite the two functions below that touch the network
-   (`geocodeLocation` and `fetchOpenMeteoForecast`) — everything
-   that calls this module just awaits `fetchHourlyForecast()` and
-   consumes the normalized shape it returns.
+   Free tier: 1M calls/month, no card required.
+   Get a key at https://www.weatherapi.com/ → paste below.
+
+   Why this replaced Open-Meteo: Open-Meteo is pure forecast-
+   model output with no live observations, so during active/
+   patchy weather (e.g. an ongoing monsoon system) it can miss
+   what's actually happening right now. WeatherAPI's `current`
+   field is a real observed/nowcast reading, which is what
+   Google's "right now" panel is built on too — so featured-slot
+   accuracy for "today" is much closer.
    ========================================================== */
 
+const WEATHERAPI_KEY = "YOUR_API_KEY_HERE"; // <-- paste your WeatherAPI.com key
+
 const HOURLY_SLOTS = [6, 8, 10, 12, 14, 16, 18, 20, 22]; // 6AM - 10PM, every 2 hours
-const FEATURED_HOUR = 14; // 2:00 PM slot is shown as the "current" summary card
+const PH_TIMEZONE = "Asia/Manila"; // used to pick the "featured" (highlighted) slot
 
-const geocodeCache = new Map();
+/* ---------- Condition text -> icon/label/condition category
+   WeatherAPI returns a `condition.text` string (e.g. "Patchy rain
+   possible", "Partly cloudy") and a numeric `condition.code`. We
+   keep the same emoji-based shape the rest of the app expects,
+   matched by keyword so we don't have to hardcode all ~50 codes.
+   `condition` (lowercase key) is a coarse category used elsewhere
+   for background selection. ---------- */
 
-/* ---------- Weather code -> icon/label/condition (WMO codes used by Open-Meteo)
-   `condition` is a coarse category ("sunny" | "cloudy" | "rain" | "snow" | "storm" | "fog")
-   meant for picking a background video — see weatherBackgroundVideo.js ---------- */
+function describeCondition(text) {
+  const t = (text || "").toLowerCase();
 
-function describeWeatherCode(code) {
-  const map = {
-    0: { icon: "☀️", label: "Sunny", condition: "sunny" },
-    1: { icon: "🌤️", label: "Mostly Sunny", condition: "sunny" },
-    2: { icon: "⛅", label: "Partly Cloudy", condition: "cloudy" },
-    3: { icon: "☁️", label: "Cloudy", condition: "cloudy" },
-    45: { icon: "🌫️", label: "Fog", condition: "fog" },
-    48: { icon: "🌫️", label: "Fog", condition: "fog" },
-    51: { icon: "🌦️", label: "Drizzle", condition: "rain" },
-    53: { icon: "🌦️", label: "Drizzle", condition: "rain" },
-    55: { icon: "🌦️", label: "Heavy Drizzle", condition: "rain" },
-    61: { icon: "🌦️", label: "Light Rain", condition: "rain" },
-    63: { icon: "🌧️", label: "Rain", condition: "rain" },
-    65: { icon: "🌧️", label: "Heavy Rain", condition: "rain" },
-    66: { icon: "🌧️", label: "Freezing Rain", condition: "rain" },
-    67: { icon: "🌧️", label: "Freezing Rain", condition: "rain" },
-    71: { icon: "🌨️", label: "Light Snow", condition: "snow" },
-    73: { icon: "🌨️", label: "Snow", condition: "snow" },
-    75: { icon: "🌨️", label: "Heavy Snow", condition: "snow" },
-    80: { icon: "🌦️", label: "Rain Showers", condition: "rain" },
-    81: { icon: "🌧️", label: "Rain Showers", condition: "rain" },
-    82: { icon: "🌧️", label: "Rain Showers", condition: "rain" },
-    95: { icon: "⛈️", label: "Thunderstorm", condition: "storm" },
-    96: { icon: "⛈️", label: "Thunderstorm", condition: "storm" },
-    99: { icon: "⛈️", label: "Thunderstorm", condition: "storm" },
-  };
-  return map[code] || { icon: "☁️", label: "Cloudy", condition: "cloudy" };
-}
-
-/* ---------- Geocoding ---------- */
-
-async function geocodeLocation(locationName) {
-  const key = locationName.trim().toLowerCase();
-  if (geocodeCache.has(key)) return geocodeCache.get(key);
-
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-    locationName,
-  )}&count=1&language=en&format=json`;
-
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Geocoding request failed");
-  const data = await res.json();
-
-  if (!data.results || data.results.length === 0) {
-    throw new Error(`No coordinates found for "${locationName}"`);
+  if (t.includes("thunder") || t.includes("storm")) {
+    return { icon: "⛈️", label: text, condition: "storm" };
   }
-
-  const coords = { lat: data.results[0].latitude, lon: data.results[0].longitude };
-  geocodeCache.set(key, coords);
-  return coords;
+  if (t.includes("snow") || t.includes("sleet") || t.includes("ice") || t.includes("blizzard")) {
+    return { icon: "🌨️", label: text, condition: "snow" };
+  }
+  if (t.includes("fog") || t.includes("mist") || t.includes("haze")) {
+    return { icon: "🌫️", label: text, condition: "fog" };
+  }
+  if (t.includes("rain") || t.includes("drizzle") || t.includes("shower")) {
+    return { icon: "🌧️", label: text, condition: "rain" };
+  }
+  if (t.includes("overcast") || t.includes("cloudy")) {
+    return { icon: "☁️", label: text, condition: "cloudy" };
+  }
+  if (t.includes("partly")) {
+    return { icon: "⛅", label: text, condition: "cloudy" };
+  }
+  if (t.includes("sunny") || t.includes("clear")) {
+    return { icon: "☀️", label: text, condition: "sunny" };
+  }
+  return { icon: "☁️", label: text || "Cloudy", condition: "cloudy" };
 }
 
-/* ---------- Forecast ---------- */
+/* ---------- Forecast / current fetch ----------
+   `q` accepts "lat,lon" or a place name string — WeatherAPI
+   geocodes place names internally, so no separate geocoding call
+   is needed (unlike the old Open-Meteo setup). `dt` requests a
+   specific date; free tier supports today + a few days ahead. */
 
-async function fetchOpenMeteoForecast({ lat, lon }, dateStr) {
+async function fetchWeatherApiForecast(q, dateStr) {
   const url =
-    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-    `&hourly=temperature_2m,apparent_temperature,relativehumidity_2m,precipitation_probability,weathercode,windspeed_10m` +
-    `&start_date=${dateStr}&end_date=${dateStr}&timezone=auto`;
+    `https://api.weatherapi.com/v1/forecast.json?key=${WEATHERAPI_KEY}` +
+    `&q=${encodeURIComponent(q)}&days=1&dt=${dateStr}&aqi=no&alerts=no`;
 
   const res = await fetch(url);
-  if (!res.ok) throw new Error("Forecast request failed");
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message || "Forecast request failed");
+  }
   const data = await res.json();
 
-  if (!data.hourly || !data.hourly.time || data.hourly.time.length === 0) {
+  if (!data.forecast || !data.forecast.forecastday || data.forecast.forecastday.length === 0) {
     throw new Error("No forecast data available for that date");
   }
-  return data.hourly;
+  return data;
 }
 
-/* ---------- Fallback (used if the date is out of the API's range, the
-   location can't be geocoded, or the network call fails) so the UI
-   always has something sensible to show. Deterministic per date so it
-   doesn't jump around on re-render. ---------- */
+/* ---------- Fallback (used if the date is out of range, the
+   location can't be resolved, or the network call fails) so the
+   UI always has something sensible to show. Deterministic per
+   date so it doesn't jump around on re-render. ---------- */
 
 function generateFallbackForecast(dateStr) {
   let seed = 0;
   for (const ch of dateStr) seed = (seed * 31 + ch.charCodeAt(0)) % 1000;
   const rand = (min, max) => min + ((seed = (seed * 9301 + 49297) % 233280) / 233280) * (max - min);
 
-  const codes = [1, 2, 3, 61, 80, 63];
+  const labels = ["Partly cloudy", "Cloudy", "Light rain", "Patchy rain possible", "Overcast", "Sunny"];
   return HOURLY_SLOTS.map((hour) => {
-    const code = codes[Math.floor(rand(0, codes.length))];
+    const label = labels[Math.floor(rand(0, labels.length))];
     const temp = Math.round(rand(13, 19));
     return {
       hour,
@@ -112,19 +102,59 @@ function generateFallbackForecast(dateStr) {
       humidity: Math.round(rand(75, 95)),
       precipProbability: Math.round(rand(20, 90)),
       windKph: Math.round(rand(6, 12)),
-      ...describeWeatherCode(code),
+      ...describeCondition(label),
     };
+  });
+}
+
+/* ---------- Featured-slot selection ----------
+   The "featured" card is the one highlighted in the hourly strip
+   (the green-bordered one). It tracks the current time in the
+   Philippines and highlights whichever HOURLY_SLOTS entry is
+   closest to "right now". ---------- */
+
+function getCurrentPhHour() {
+  const hourStr = new Intl.DateTimeFormat("en-US", {
+    timeZone: PH_TIMEZONE,
+    hour: "numeric",
+    hour12: false,
+  }).format(new Date());
+  const hour = parseInt(hourStr, 10);
+  return hour === 24 ? 0 : hour;
+}
+
+function getCurrentPhDateStr() {
+  // "YYYY-MM-DD" for "today" in Philippine time, for comparing against
+  // the picked booking date to decide whether to use live `current` data.
+  return new Intl.DateTimeFormat("en-CA", { timeZone: PH_TIMEZONE }).format(new Date());
+}
+
+function pickFeaturedHour() {
+  const currentHour = getCurrentPhHour();
+  return HOURLY_SLOTS.reduce((closest, hour) => {
+    const currentDist = Math.abs(closest - currentHour);
+    const newDist = Math.abs(hour - currentHour);
+    // On an exact tie (e.g. 3PM sitting midway between the 2PM and 4PM
+    // slots), prefer the later slot — the current hour has already
+    // started moving into that block.
+    return newDist <= currentDist ? hour : closest;
   });
 }
 
 /* ---------- Public API ---------- */
 
 /**
- * Fetch the every-2-hours forecast (6AM–10PM) for a specific hike date
- * and trail location.
+ * Fetch the every-2-hours forecast (6AM–10PM) for a specific hike date.
  *
- * @param {string} dateStr        "YYYY-MM-DD"
- * @param {string} locationName   e.g. "Benguet, Philippines"
+ * @param {string} dateStr           "YYYY-MM-DD"
+ * @param {string} locationName      e.g. "Nasugbu, Batangas" — used as the
+ *                                    `q` query ONLY when coordsOverride
+ *                                    isn't given, and for the fallback seed.
+ * @param {{lat:number, lon:number}} [coordsOverride] — pass exact trail
+ *                                    coordinates (e.g. from Firestore) for
+ *                                    precise location targeting (important
+ *                                    for mountains/peaks vs. their nearest
+ *                                    town).
  * @returns {Promise<{
  *   slots: Array<{hour:number, timeLabel:string, tempC:number, feelsLikeC:number,
  *                 humidity:number, precipProbability:number, windKph:number,
@@ -133,13 +163,14 @@ function generateFallbackForecast(dateStr) {
  *   isFallback: boolean
  * }>}
  */
-export async function fetchHourlyForecast(dateStr, locationName) {
-  let hourly = null;
+export async function fetchHourlyForecast(dateStr, locationName, coordsOverride = null) {
+  let data = null;
   let isFallback = false;
 
+  const q = coordsOverride ? `${coordsOverride.lat},${coordsOverride.lon}` : locationName;
+
   try {
-    const coords = await geocodeLocation(locationName);
-    hourly = await fetchOpenMeteoForecast(coords, dateStr);
+    data = await fetchWeatherApiForecast(q, dateStr);
   } catch (err) {
     console.warn("Weather API fallback engaged:", err.message);
     isFallback = true;
@@ -147,18 +178,21 @@ export async function fetchHourlyForecast(dateStr, locationName) {
 
   let slots;
 
-  if (hourly) {
+  if (data) {
+    const hourly = data.forecast.forecastday[0].hour; // 24 entries for the requested date
     slots = HOURLY_SLOTS.map((hour) => {
-      const idx = hourly.time.findIndex((t) => new Date(t).getHours() === hour);
-      const weatherCode = idx !== -1 ? hourly.weathercode[idx] : 3;
+      const entry = hourly.find((h) => new Date(h.time).getHours() === hour);
+      if (!entry) {
+        return { hour, tempC: null, feelsLikeC: null, humidity: null, precipProbability: null, windKph: null, ...describeCondition("") };
+      }
       return {
         hour,
-        tempC: idx !== -1 ? Math.round(hourly.temperature_2m[idx]) : null,
-        feelsLikeC: idx !== -1 ? Math.round(hourly.apparent_temperature[idx]) : null,
-        humidity: idx !== -1 ? Math.round(hourly.relativehumidity_2m[idx]) : null,
-        precipProbability: idx !== -1 ? Math.round(hourly.precipitation_probability[idx]) : null,
-        windKph: idx !== -1 ? Math.round(hourly.windspeed_10m[idx]) : null,
-        ...describeWeatherCode(weatherCode),
+        tempC: Math.round(entry.temp_c),
+        feelsLikeC: Math.round(entry.feelslike_c),
+        humidity: Math.round(entry.humidity),
+        precipProbability: Math.round(entry.chance_of_rain ?? 0),
+        windKph: Math.round(entry.wind_kph),
+        ...describeCondition(entry.condition?.text),
       };
     });
   } else {
@@ -172,7 +206,24 @@ export async function fetchHourlyForecast(dateStr, locationName) {
   };
 
   const withLabels = slots.map((s) => ({ ...s, timeLabel: formatHour(s.hour) }));
-  const featured = withLabels.find((s) => s.hour === FEATURED_HOUR) || withLabels[0];
+  const featuredHour = pickFeaturedHour();
+  let featured = withLabels.find((s) => s.hour === featuredHour) || withLabels[0];
+
+  // If the booked date is today (PH time) and the live call succeeded,
+  // swap in WeatherAPI's real observed `current` reading for the
+  // featured card instead of the nearest forecasted hourly slot — this
+  // is the piece that actually matches what Google shows as "right now".
+  if (data && dateStr === getCurrentPhDateStr() && data.current) {
+    const c = data.current;
+    featured = {
+      ...featured,
+      tempC: Math.round(c.temp_c),
+      feelsLikeC: Math.round(c.feelslike_c),
+      humidity: Math.round(c.humidity),
+      windKph: Math.round(c.wind_kph),
+      ...describeCondition(c.condition?.text),
+    };
+  }
 
   return { slots: withLabels, featured, isFallback };
 }

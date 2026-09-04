@@ -26,7 +26,7 @@
   --tb-gold: #b08d57;
   --tb-shadow: 0 30px 60px rgba(15, 35, 21, 0.22);
   --tb-shadow-soft: 0 14px 30px rgba(15, 35, 21, 0.1);
-  --font-display: "Cormorant Garamond", "PP Neue Montreal", serif;
+  --font-display: "Inter", "PP Neue Montreal", sans-serif;
   --font-body: "Inter", sans-serif;
 }
 
@@ -1180,7 +1180,6 @@
   z-index: 1101;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
   width: 100%;
   max-width: 460px;
   background-color: var(--tb-cream);
@@ -1188,7 +1187,24 @@
   padding: 2.25rem;
   text-align: center;
   box-shadow: 0 30px 60px rgba(15, 35, 21, 0.35);
-  animation: tb-fade-up 0.35s ease both;
+  /* IMPORTANT: this animation's keyframes (below) already include the
+     translate(-50%, -50%) centering offset on every step. Do NOT also
+     set a static `transform: translate(-50%, -50%)` on this rule —
+     CSS animations replace the whole `transform` value rather than
+     compose with it, so a separate static transform gets clobbered
+     the instant the animation runs, and the modal ends up mis-centered. */
+  animation: tb-modal-fade-up 0.35s ease both;
+}
+
+@keyframes tb-modal-fade-up {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 16px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .post-booking-modal::before {

@@ -13,29 +13,146 @@
     <script type="module" src="bootstrap-init.js"></script>
 
     <main class="account-page">
-      <div class="account-card">
-        <div class="account-avatar-wrap">
-          <img id="account-avatar" class="account-avatar" src="" alt="Profile photo" hidden>
-          <div id="account-avatar-fallback" class="account-avatar-fallback"></div>
-        </div>
+      <div class="account-card account-card--wide">
 
-        <h3 id="account-name">Loading...</h3>
-        <p id="account-email" class="account-email"></p>
-        <p id="account-member-since" class="account-member-since"></p>
-
-        <div class="account-section">
-          <label for="display-name-input">Display name</label>
-          <div class="account-edit-row">
-            <input type="text" id="display-name-input" class="account-input" placeholder="Your name">
-            <button id="save-name-btn" class="account-save-btn">Save</button>
+        <div class="account-top">
+          <div class="account-avatar-wrap">
+            <img id="account-avatar" class="account-avatar" src="" alt="Profile photo" hidden>
+            <div id="account-avatar-fallback" class="account-avatar-fallback"></div>
           </div>
-          <p id="account-feedback" class="account-feedback" hidden></p>
+          <h3 id="account-name">Loading...</h3>
+          <p id="account-email" class="account-email"></p>
+          <p id="account-member-since" class="account-member-since"></p>
         </div>
 
-        <div class="account-actions">
-          <a href="booking.html" class="account-link-btn">My Bookings</a>
-          <button id="logout-btn" class="account-logout-btn">Log Out</button>
+        <!-- MENU LIST VIEW -->
+        <div id="account-menu" class="account-menu">
+          <button class="account-menu-row" data-tab="profile" type="button">
+            <span class="account-menu-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
+            </span>
+            <span class="account-menu-label">Account</span>
+            <span class="account-menu-chevron">›</span>
+          </button>
+
+          <button class="account-menu-row" data-tab="addresses" type="button">
+            <span class="account-menu-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C7.6 2 4 5.6 4 10c0 5.4 8 12 8 12s8-6.6 8-12c0-4.4-3.6-8-8-8zm0 10.8a2.8 2.8 0 1 1 0-5.6 2.8 2.8 0 0 1 0 5.6z"/></svg>
+            </span>
+            <span class="account-menu-label">My Address</span>
+            <span class="account-menu-chevron">›</span>
+          </button>
+
+          <button class="account-menu-row" data-tab="wishlist" type="button">
+            <span class="account-menu-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.2 5 5.7 5c2 0 3.4 1.1 4.3 2.4C10.9 6.1 12.3 5 14.3 5c3.5 0 5.3 3.4 3.7 6.7C19.5 16.4 12 21 12 21z"/></svg>
+            </span>
+            <span class="account-menu-label">Wishlist</span>
+            <span class="account-menu-chevron">›</span>
+          </button>
+
+          <button class="account-menu-row" data-tab="notifications" type="button">
+            <span class="account-menu-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a2.2 2.2 0 0 0 2.2-2.2h-4.4A2.2 2.2 0 0 0 12 22zm7-6.2V11c0-3.4-1.8-6.2-5-6.9V3a2 2 0 0 0-4 0v1.1C6.8 4.8 5 7.6 5 11v4.8L3 17.8V19h18v-1.2l-2-2z"/></svg>
+            </span>
+            <span class="account-menu-label">Notifications</span>
+            <span id="notif-badge" class="account-menu-badge" hidden></span>
+            <span class="account-menu-chevron">›</span>
+          </button>
+
+          <button class="account-menu-row" id="menu-bookings-btn" type="button">
+            <span class="account-menu-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm12 8H5v10h14V10z"/></svg>
+            </span>
+            <span class="account-menu-label">My Bookings</span>
+            <span class="account-menu-chevron">›</span>
+          </button>
+
+          <button class="account-menu-row account-menu-row--danger" id="logout-btn" type="button">
+            <span class="account-menu-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/></svg>
+            </span>
+            <span class="account-menu-label">Log Out</span>
+          </button>
         </div>
+
+        <!-- DETAIL VIEW (shown after tapping a menu row) -->
+        <div id="account-detail" class="account-detail" hidden>
+          <button class="account-back-btn" id="back-btn" type="button">‹ Back</button>
+
+          <div class="account-panel" id="panel-profile">
+            <h4 class="account-detail-title">Account</h4>
+
+            <div class="account-section">
+              <label for="display-name-input">Display name</label>
+              <div class="account-edit-row">
+                <input type="text" id="display-name-input" class="account-input" placeholder="Your name">
+                <button id="save-name-btn" class="account-save-btn" type="button">Save</button>
+              </div>
+            </div>
+
+            <div class="account-section">
+              <label for="phone-input">Phone number</label>
+              <div class="account-edit-row">
+                <input type="tel" id="phone-input" class="account-input" placeholder="09XX XXX XXXX">
+                <button id="save-phone-btn" class="account-save-btn" type="button">Save</button>
+              </div>
+            </div>
+
+            <p id="profile-feedback" class="account-feedback" hidden></p>
+          </div>
+
+          <div class="account-panel" id="panel-addresses" hidden>
+            <h4 class="account-detail-title">My Address</h4>
+
+            <form id="address-form">
+              <h4 class="account-subheading">Shipping address</h4>
+              <div class="account-form-grid">
+                <input type="text" id="ship-line1" placeholder="Address line 1" class="account-input">
+                <input type="text" id="ship-line2" placeholder="Address line 2 (optional)" class="account-input">
+                <input type="text" id="ship-city" placeholder="City" class="account-input">
+                <input type="text" id="ship-province" placeholder="Province" class="account-input">
+                <input type="text" id="ship-postal" placeholder="Postal code" class="account-input">
+                <input type="text" id="ship-country" placeholder="Country" class="account-input" value="Philippines">
+              </div>
+
+              <label class="account-checkbox-row">
+                <input type="checkbox" id="billing-same-check" checked>
+                Billing address is the same as shipping
+              </label>
+
+              <div id="billing-fields" hidden>
+                <h4 class="account-subheading">Billing address</h4>
+                <div class="account-form-grid">
+                  <input type="text" id="bill-line1" placeholder="Address line 1" class="account-input">
+                  <input type="text" id="bill-line2" placeholder="Address line 2 (optional)" class="account-input">
+                  <input type="text" id="bill-city" placeholder="City" class="account-input">
+                  <input type="text" id="bill-province" placeholder="Province" class="account-input">
+                  <input type="text" id="bill-postal" placeholder="Postal code" class="account-input">
+                  <input type="text" id="bill-country" placeholder="Country" class="account-input" value="Philippines">
+                </div>
+              </div>
+
+              <button type="submit" class="account-save-btn account-save-btn--full">Save addresses</button>
+              <p id="address-feedback" class="account-feedback" hidden></p>
+            </form>
+          </div>
+
+          <div class="account-panel" id="panel-wishlist" hidden>
+            <h4 class="account-detail-title">Wishlist</h4>
+            <div id="wishlist-list" class="wishlist-list">
+              <p class="account-empty">Loading wishlist...</p>
+            </div>
+          </div>
+
+          <div class="account-panel" id="panel-notifications" hidden>
+            <h4 class="account-detail-title">Notifications</h4>
+            <div id="notifications-list" class="notifications-list">
+              <p class="account-empty">Loading notifications...</p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
 
