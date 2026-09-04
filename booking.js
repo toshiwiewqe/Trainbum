@@ -3,10 +3,7 @@
    Loads trails, guides, and packages from Firestore.
    Saves each booking as a document in Firestore's "bookings"
    collection, so it's visible to Admin regardless of who's
-   browsing. Since Auth isn't wired up yet, "My Bookings" on
-   this page tracks which bookings THIS BROWSER made using a
-   small local list of IDs — see the TODO comment below for
-   exactly what to change once login is ready.
+   browsing.
 
    Once a booking is saved (status: "Pending" = slot reserved,
    not yet paid), it's added to the shared cart as a line item
@@ -21,30 +18,14 @@ import {
   collection,
   getDocs,
   addDoc,
-  doc,
-  updateDoc,
 } from "firebase/firestore";
-import {
-  addBookingToCart,
-  removeBookingByBookingId,
-  updateCartBadge,
-  onCartUpdated,
-} from "./cart-store.js";
+import { addBookingToCart } from "./cart-store.js";
 import { fetchHourlyForecast, buildHikerTip, buildAlertMessage } from "./Weather-api.js";
-
-const MY_BOOKING_IDS_KEY = "trailbound_my_booking_ids";
-
-const EMPTY_BOOKINGS_HTML = `
-  <div class="bookings-empty-state">
-    <div class="bookings-empty-icon" aria-hidden="true">🏔️</div>
-    <h5>No bookings yet</h5>
-    <p>Your upcoming hikes will appear here.</p>
-  </div>
-`;
 
 const trailSelect = document.getElementById("trail-select");
 const guideSelect = document.getElementById("guide-select");
 const packageSelect = document.getElementById("package-select");
+const packageCardsEl = document.getElementById("package-cards");
 const activityGroup = document.getElementById("activity-group");
 const activitySelect = document.getElementById("activity-select");
 
@@ -62,14 +43,57 @@ const groupSizeInput = document.getElementById("group-size");
 const priceTotalEl = document.getElementById("price-total");
 const form = document.getElementById("booking-form");
 const feedbackEl = document.getElementById("booking-feedback");
-const bookingsListEl = document.getElementById("bookings-list");
-const cartCountEl = document.getElementById("cart-count");
+const submitBtn = document.getElementById("booking-submit-btn");
 
 const postBookingBackdrop = document.getElementById("post-booking-modal-backdrop");
 const postBookingModal = document.getElementById("post-booking-modal");
 const postBookingCopy = document.getElementById("post-booking-modal-copy");
 const postBookingAddGearBtn = document.getElementById("post-booking-add-gear");
 const postBookingCheckoutBtn = document.getElementById("post-booking-checkout");
+
+/* ---------- Booking summary panel DOM refs ---------- */
+
+const summaryEmptyState = document.getElementById("summary-empty-state");
+const summaryContent = document.getElementById("summary-content");
+const summaryTrailImg = document.getElementById("summary-trail-img");
+const summaryTrailName = document.getElementById("summary-trail-name");
+const summaryTrailLocation = document.getElementById("summary-trail-location");
+const summaryTrailDifficulty = document.getElementById("summary-trail-difficulty");
+const summaryDate = document.getElementById("summary-date");
+const summaryGroupSize = document.getElementById("summary-group-size");
+const summaryGuide = document.getElementById("summary-guide");
+const summaryPackageName = document.getElementById("summary-package-name");
+const summaryIncluded = document.getElementById("summary-included");
+const summaryPricePerPerson = document.getElementById("summary-price-per-person");
+const summarySubtotalLabel = document.getElementById("summary-subtotal-label");
+const summarySubtotal = document.getElementById("summary-subtotal");
+
+/* ---------- Header show/hide on scroll ----------
+   Hides the header while the page is actively being scrolled (either
+   direction), and brings it back once scrolling stops for a moment.
+   Always visible while at the very top of the page. */
+
+const siteHeaderEl = document.getElementById("site-header");
+
+if (siteHeaderEl) {
+  let idleTimer = null;
+  const idleDelay = 200; // ms of no scroll activity before the header reappears
+
+  function handleScroll() {
+    if (window.scrollY <= 12) {
+      siteHeaderEl.classList.remove("site-header--hidden");
+    } else {
+      siteHeaderEl.classList.add("site-header--hidden");
+    }
+
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      siteHeaderEl.classList.remove("site-header--hidden");
+    }, idleDelay);
+  }
+
+  window.addEventListener("scroll", handleScroll, { passive: true });
+}
 
 /* ---------- Weather modal DOM refs ---------- */
 
@@ -114,25 +138,6 @@ function getPackageById(id) {
   return packages.find((p) => p.package_id === id);
 }
 
-// TODO (after Auth is added): replace this whole "my booking ids in
-// localStorage" approach with a Firestore query like:
-//   query(collection(db, "bookings"), where("user_id", "==", currentUser.uid))
-// That will show a user's real bookings on any device they log into,
-// instead of only the browser they booked from.
-function getMyBookingIds() {
-  try {
-    return JSON.parse(localStorage.getItem(MY_BOOKING_IDS_KEY)) || [];
-  } catch {
-    return [];
-  }
-}
-
-function addMyBookingId(id) {
-  const ids = getMyBookingIds();
-  ids.unshift(id);
-  localStorage.setItem(MY_BOOKING_IDS_KEY, JSON.stringify(ids));
-}
-
 /* ---------- Load data from Firestore ---------- */
 
 async function loadData() {
@@ -149,13 +154,10 @@ async function loadData() {
   populateTrailSelect();
   populatePackageSelectOptions();
   preselectTrailFromURL();
-  renderBookings();
+  updateSummaryPanel();
 
   const today = new Date().toISOString().split("T")[0];
   dateInput.min = today;
-
-  updateCartBadge(cartCountEl);
-  onCartUpdated(() => updateCartBadge(cartCountEl));
 }
 
 function populateTrailSelect() {
@@ -189,6 +191,51 @@ function preselectTrailFromURL() {
   }
 }
 
+/* ---------- Package selection cards ----------
+   The real <select id="package-select"> stays in the DOM (visually
+   hidden) so all of the existing validation/read logic below keeps
+   working unchanged. These cards are just a nicer way to set its
+   value — clicking a card sets packageSelect.value and dispatches a
+   "change" event, which runs the same handlePackageChange() as before. */
+
+function renderPackageCards() {
+  if (!packageCardsEl) return;
+
+  if (packages.length === 0) {
+    packageCardsEl.innerHTML = `<p class="package-cards-placeholder">No packages available right now.</p>`;
+    return;
+  }
+
+  packageCardsEl.innerHTML = packages
+    .map(
+      (p) => `
+        <button type="button" class="package-card" data-id="${p.package_id}">
+          <span class="package-card-radio" aria-hidden="true"></span>
+          <span class="package-card-name">${p.name}</span>
+          <span class="package-card-desc">${(p.includes || []).slice(0, 2).join(", ")}</span>
+          <span class="package-card-price">${formatPrice(p.price_per_pax)} <small>/ person</small></span>
+        </button>
+      `,
+    )
+    .join("");
+
+  packageCardsEl.querySelectorAll(".package-card").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      packageSelect.value = btn.dataset.id;
+      packageSelect.dispatchEvent(new Event("change"));
+    });
+  });
+
+  syncPackageCardSelection();
+}
+
+function syncPackageCardSelection() {
+  if (!packageCardsEl) return;
+  packageCardsEl.querySelectorAll(".package-card").forEach((btn) => {
+    btn.classList.toggle("package-card--selected", btn.dataset.id === packageSelect.value);
+  });
+}
+
 /* ---------- Trail change ---------- */
 
 function handleTrailChange() {
@@ -212,6 +259,11 @@ function handleTrailChange() {
   packageSelect.innerHTML = packageSelect.dataset.optionsHtml;
   packageInfo.hidden = true;
   activityGroup.hidden = true;
+
+  if (packageCardsEl) {
+    packageCardsEl.classList.remove("package-cards--disabled");
+    renderPackageCards();
+  }
 
   const availableGuides = trail.guide_ids
     .map(getGuideById)
@@ -242,6 +294,11 @@ function resetPackageSelect() {
   packageSelect.innerHTML = `<option value="" disabled selected>Select a trail first...</option>`;
   packageInfo.hidden = true;
   activityGroup.hidden = true;
+
+  if (packageCardsEl) {
+    packageCardsEl.classList.add("package-cards--disabled");
+    packageCardsEl.innerHTML = `<p class="package-cards-placeholder">Select a trail to see available packages.</p>`;
+  }
 }
 
 function resetGuideSelect() {
@@ -253,6 +310,8 @@ function resetGuideSelect() {
 
 function handlePackageChange() {
   const pkg = getPackageById(packageSelect.value);
+
+  syncPackageCardSelection();
 
   if (!pkg) {
     packageInfo.hidden = true;
@@ -274,22 +333,61 @@ function handlePackageChange() {
   updatePrice();
 }
 
-/* ---------- Price ---------- */
+/* ---------- Price + summary panel ---------- */
 
 function updatePrice() {
   const pkg = getPackageById(packageSelect.value);
   const groupSize = Math.max(1, parseInt(groupSizeInput.value, 10) || 1);
   const total = pkg ? pkg.price_per_pax * groupSize : 0;
   priceTotalEl.textContent = formatPrice(total);
+  updateSummaryPanel();
+}
+
+function updateSummaryPanel() {
+  const trail = getTrailById(trailSelect.value);
+  const pkg = getPackageById(packageSelect.value);
+  const guide = getGuideById(guideSelect.value);
+  const groupSize = Math.max(1, parseInt(groupSizeInput.value, 10) || 1);
+
+  if (!summaryContent || !summaryEmptyState) return;
+
+  if (!trail) {
+    summaryContent.hidden = true;
+    summaryEmptyState.hidden = false;
+    return;
+  }
+
+  summaryContent.hidden = false;
+  summaryEmptyState.hidden = true;
+
+  summaryTrailImg.src = trail.image;
+  summaryTrailImg.alt = trail.name;
+  summaryTrailName.textContent = trail.name;
+  summaryTrailLocation.textContent = trail.location;
+  summaryTrailDifficulty.textContent = trail.difficulty;
+
+  summaryDate.textContent = dateInput.value ? formatDateForDisplay(dateInput.value).dateLabel : "Not selected yet";
+  summaryGroupSize.textContent = `${groupSize} ${groupSize === 1 ? "person" : "people"}`;
+  summaryGuide.textContent = guide ? guide.full_name : "Not selected yet";
+  summaryPackageName.textContent = pkg ? pkg.name : "Not selected yet";
+  summaryIncluded.textContent = pkg ? pkg.includes.join(", ") : "—";
+
+  const perPerson = pkg ? pkg.price_per_pax : 0;
+  const subtotal = perPerson * groupSize;
+  summaryPricePerPerson.textContent = formatPrice(perPerson);
+  summarySubtotalLabel.textContent = `Subtotal (${groupSize} × ${formatPrice(perPerson)})`;
+  summarySubtotal.textContent = formatPrice(subtotal);
 }
 
 trailSelect.addEventListener("change", handleTrailChange);
 packageSelect.addEventListener("change", handlePackageChange);
+guideSelect.addEventListener("change", updateSummaryPanel);
 // group-size is a <select> now (to match the redesigned UI) instead of a
 // number input — "change" is the reliable event for <select> across
 // browsers, "input" is kept too since modern browsers fire it as well.
 groupSizeInput.addEventListener("input", updatePrice);
 groupSizeInput.addEventListener("change", updatePrice);
+dateInput.addEventListener("input", updateSummaryPanel);
 
 /* ---------- Weather forecast popup ---------- */
 
@@ -441,9 +539,8 @@ form.addEventListener("submit", async (e) => {
     return;
   }
 
-  const submitBtn = form.querySelector(".booking-submit-btn");
   submitBtn.disabled = true;
-  submitBtn.textContent = "Booking...";
+  submitBtn.innerHTML = `<span aria-hidden="true">🔒</span> Booking...`;
 
   const booking = {
     trail_id: trail.trail_id,
@@ -469,7 +566,6 @@ form.addEventListener("submit", async (e) => {
 
   try {
     const docRef = await addDoc(collection(db, "bookings"), booking);
-    addMyBookingId(docRef.id);
 
     // Stage this reservation in the cart so it can be paid for at
     // checkout, alongside anything the person adds from the shop.
@@ -490,14 +586,13 @@ form.addEventListener("submit", async (e) => {
     resetPackageSelect();
     resetGuideSelect();
     updatePrice();
-    renderBookings();
     openPostBookingModal(trail.name, booking.date);
   } catch (err) {
     console.error(err);
     showFeedback("Something went wrong saving your booking. Please try again.", true);
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = "Confirm Booking";
+    submitBtn.innerHTML = `<span aria-hidden="true">🔒</span> Confirm booking`;
   }
 });
 
@@ -528,61 +623,6 @@ if (postBookingCheckoutBtn) {
   postBookingCheckoutBtn.addEventListener("click", () => {
     window.location.href = "checkout.html";
   });
-}
-
-/* ---------- Booking history (My Bookings) ---------- */
-
-async function renderBookings() {
-  const myIds = getMyBookingIds();
-
-  if (myIds.length === 0) {
-    bookingsListEl.innerHTML = EMPTY_BOOKINGS_HTML;
-    return;
-  }
-
-  const snapshot = await getDocs(collection(db, "bookings"));
-  const allBookings = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-  const myBookings = myIds
-    .map((id) => allBookings.find((b) => b.id === id))
-    .filter(Boolean);
-
-  if (myBookings.length === 0) {
-    bookingsListEl.innerHTML = EMPTY_BOOKINGS_HTML;
-    return;
-  }
-
-  bookingsListEl.innerHTML = myBookings
-    .map(
-      (b) => `
-        <div class="booking-item" data-id="${b.id}" data-status="${b.status.toLowerCase()}">
-          <div class="booking-item-main">
-            <h5>${b.trail_name} — ${b.package_name}</h5>
-            <p>${b.date} · ${b.group_size} pax · Guide: ${b.guide_name}${b.activity ? ` · ${b.activity}` : ""}</p>
-            <span class="booking-status booking-status--${b.status.toLowerCase()}">${b.status}</span>
-          </div>
-          <div class="booking-item-side">
-            <span class="booking-item-price">${formatPrice(b.total_price)}</span>
-            ${
-              b.status !== "Cancelled"
-                ? `<button type="button" class="booking-cancel-btn" data-id="${b.id}">Cancel</button>`
-                : ""
-            }
-          </div>
-        </div>
-      `,
-    )
-    .join("");
-
-  bookingsListEl.querySelectorAll(".booking-cancel-btn").forEach((btn) => {
-    btn.addEventListener("click", () => cancelBooking(btn.dataset.id));
-  });
-}
-
-async function cancelBooking(bookingId) {
-  await updateDoc(doc(db, "bookings", bookingId), { status: "Cancelled" });
-  // If it's still sitting unpaid in the cart, take it out too.
-  removeBookingByBookingId(bookingId);
-  renderBookings();
 }
 
 loadData();

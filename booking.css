@@ -1,225 +1,179 @@
 /* ==========================================================
-   Booking page (booking.html) — cream / olive theme
+   Booking page (booking.html) — forest green / cream theme
    Self-contained token set (--tb-*) so the page looks right
-   even without styles.css's --base-100/200/300 tokens. Where
-   this page shares real site chrome (.site-header, nav links)
-   we style defensively with var(--base-*, fallback) so it will
-   still pick up the real site palette once styles.css defines
-   those tokens.
+   even without styles.css's --base-100/200/300 tokens.
+
+   NOTE: header/nav/logo layout is intentionally NOT overridden
+   here anymore — it's inherited from the shared styles.css, the
+   same file login.html uses, so the header sits in the exact
+   same place (and looks the same) on every page. Only the
+   scroll-hide behaviour below is specific to this page.
    ========================================================== */
 
 :root {
-  --tb-cream: #f3efe1;
-  --tb-cream-soft: #faf7ee;
+  --tb-green-dark: #173b22;
+  --tb-green: #24552d;
+  --tb-green-soft: rgba(23, 59, 34, 0.08);
+  --tb-cream: #f7f3e9;
+  --tb-cream-soft: #fffdf8;
   --tb-card: #fbf8f0;
-  --tb-ink: #2b1c12;
-  --tb-ink-soft: rgba(43, 28, 18, 0.68);
-  --tb-ink-faint: rgba(43, 28, 18, 0.45);
-  --tb-olive: #3f4a26;
-  --tb-olive-dark: #2f381c;
-  --tb-olive-soft: rgba(63, 74, 38, 0.1);
-  --tb-tan: #e7d9b8;
-  --tb-tan-dark: #d8c398;
-  --tb-border: rgba(43, 28, 18, 0.12);
-  --tb-shadow: 0 20px 45px rgba(43, 28, 18, 0.08);
+  --tb-white: #ffffff;
+  --tb-ink: #22281f;
+  --tb-ink-soft: rgba(34, 40, 31, 0.66);
+  --tb-ink-faint: rgba(34, 40, 31, 0.46);
+  --tb-muted: #6f716b;
+  --tb-border: #ddd8cc;
+  --tb-gold: #b08d57;
+  --tb-shadow: 0 30px 60px rgba(15, 35, 21, 0.22);
+  --tb-shadow-soft: 0 14px 30px rgba(15, 35, 21, 0.1);
   --font-display: "Cormorant Garamond", "PP Neue Montreal", serif;
   --font-body: "Inter", sans-serif;
 }
 
 .booking-body {
   min-height: 100vh;
-  background-color: var(--tb-cream);
-  /* Fixed pixel stops (not %) so the photo-to-cream fade always covers
-     the same amount of the page — header + hero title — no matter how
-     tall the rest of the page ends up being. */
+  background-color: var(--tb-green-dark);
   background-image:
-    linear-gradient(
-      180deg,
-      rgba(243, 239, 225, 0.08) 0px,
-      rgba(243, 239, 225, 0.35) 220px,
-      rgba(243, 239, 225, 0.85) 440px,
-      var(--tb-cream) 620px
-    ),
+    linear-gradient(180deg, rgba(12, 24, 15, 0.55) 0%, rgba(12, 24, 15, 0.32) 30%, rgba(12, 24, 15, 0.42) 100%),
     url("trail-hero-bg.jpg");
   background-repeat: no-repeat;
-  background-position: center 40%, center 40%;
-  background-size: 100% 620px, cover;
-  background-attachment: scroll, fixed;
+  background-position: center center;
+  background-size: cover;
+  background-attachment: fixed;
 }
 
-/* ---------- Header (sticky + auto-hide on scroll) ---------- */
+.visually-hidden-select {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Header ----------
+   Layout, logo sizing, and nav-link styling all come from the
+   shared styles.css (same as login.html) so the header lines up
+   identically on every page. Only the scroll-hide behaviour below
+   is specific to this page. */
 
 .site-header {
-  position: sticky;
-  top: 0;
-  z-index: 500;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  padding: 1rem 3rem;
-  background: transparent;
   transition: transform 0.35s ease;
   transform: translateY(0);
 }
 
-/* Toggled by header-scroll.js while the page is actively being
-   scrolled (either direction); removed again once scrolling
-   stops, so the header re-appears at rest. */
+.site-header-cart {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.site-header-cart-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.site-header-cart-count {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background-color: var(--tb-gold);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
 .site-header--hidden {
   transform: translateY(-100%);
   box-shadow: none;
 }
 
+/* Nudge the logo a little further into the upper-left corner.
+   Kept in sync with the same rule in login.css so both pages match. */
 .site-header-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-
-.site-header-logo-img {
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
-  background: transparent;
-}
-
-.site-header-nav {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-family: var(--font-body);
-}
-
-.site-header-nav a {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--tb-ink);
-  text-decoration: none;
-  background-color: rgba(230, 227, 219, 0.82);
-  padding: 0.65rem 1.35rem;
-  border-radius: 999px;
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
-}
-
-.site-header-nav a:hover {
-  background-color: rgba(255, 255, 255, 0.95);
-  transform: translateY(-1px);
-}
-
-.site-header-nav a.active {
-  background-color: #eef0a8;
-  color: var(--tb-ink);
-}
-
-.cart-badge {
-  position: relative;
-}
-
-.account-icon-link {
-  position: relative;
-  text-decoration: none;
-  font-size: 1.05rem;
-  background-color: rgba(230, 227, 219, 0.82);
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s ease, transform 0.15s ease;
-}
-
-.account-icon-link:hover {
-  background-color: rgba(255, 255, 255, 0.95);
-  transform: translateY(-1px);
-}
-
-.cart-count {
-  position: absolute;
-  top: -6px;
-  right: -10px;
-  background-color: var(--tb-olive-dark);
-  color: #fff;
-  font-size: 0.6rem;
-  font-weight: 700;
-  padding: 0.1rem 0.4rem;
-  border-radius: 999px;
-}
-
-@media (max-width: 900px) {
-  .site-header {
-    flex-wrap: wrap;
-    padding: 1rem 1.25rem;
-  }
-  .site-header-nav {
-    flex-wrap: wrap;
-    gap: 0.9rem;
-  }
+  transform: translate(-6px, -4px);
 }
 
 /* ---------- Hero / page header ---------- */
 
 .booking-page {
-  /* transparent so the photo + fade set on .booking-body (behind this
-     element) can actually show through instead of being blocked by a
-     solid color here */
   background-color: transparent;
-  padding: 3rem 3rem 6rem;
+  padding: 2.25rem 3rem 6rem;
   min-height: 100vh;
 }
 
 .booking-page-header {
   text-align: center;
   margin-bottom: 2.75rem;
+  margin-top: 8rem;
+  animation: tb-fade-up 0.6s ease both;
 }
 
 .booking-eyebrow {
   display: inline-block;
   font-family: var(--font-body);
   text-transform: uppercase;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 2px;
-  color: var(--tb-ink-soft);
-  margin-bottom: 0.9rem;
+  letter-spacing: 3px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 1rem;
+}
+
+.booking-eyebrow::before,
+.booking-eyebrow::after {
+  content: "";
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.55);
+  vertical-align: middle;
+  margin: 0 0.9rem 0.15rem;
 }
 
 .booking-page-header h1 {
   font-family: var(--font-display);
   font-style: normal;
   font-weight: 600;
-  font-size: clamp(2.4rem, 5vw, 4rem);
-  color: var(--tb-ink);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.booking-flourish {
-  font-size: 0.9rem;
-  color: var(--tb-tan-dark);
+  font-size: clamp(2.6rem, 5.4vw, 4.2rem);
+  color: #fff;
+  text-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
 }
 
 .booking-page-header p {
   font-family: var(--font-body);
-  color: var(--tb-ink-soft);
-  margin-top: 0.6rem;
-  font-size: 0.95rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.88);
+  margin-top: 0.75rem;
+  font-size: 1rem;
 }
 
 .booking-layout {
   display: grid;
-  grid-template-columns: 1.3fr 1fr;
+  grid-template-columns: 1.35fr 1fr;
   gap: 1.75rem;
-  max-width: 1300px;
+  max-width: 1280px;
   margin: 0 auto;
   align-items: start;
+  animation: tb-fade-up 0.7s ease 0.1s both;
+}
+
+@keyframes tb-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 900px) {
@@ -228,64 +182,70 @@
   }
 }
 
-/* ---------- Form ---------- */
+/* ---------- Form (left column) ---------- */
 
 .booking-form {
   background-color: var(--tb-card);
   border: 1px solid var(--tb-border);
   border-radius: 22px;
-  padding: 2.25rem;
+  padding: 2.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
   box-shadow: var(--tb-shadow);
 }
 
 .form-step {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 1.15rem;
 }
 
 .form-step-label {
   display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  margin-bottom: -0.2rem;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: -0.15rem;
 }
 
-.form-step-icon {
+.form-step-number {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
-  border-radius: 999px;
-  background-color: var(--tb-tan);
-  font-size: 1.05rem;
+  border-radius: 9px;
+  background-color: var(--tb-green-dark);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .form-step-heading {
   display: flex;
-  align-items: baseline;
-  gap: 0.55rem;
-  font-family: var(--font-body);
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.form-step-title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
   color: var(--tb-ink);
 }
 
-.form-step-number {
-  color: var(--tb-olive);
+.form-step-desc {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--tb-ink-soft);
 }
 
 .trail-divider {
   border: none;
   border-top: 1px solid var(--tb-border);
-  margin: 0.25rem 0;
+  margin: 0.1rem 0;
 }
 
 .form-row {
@@ -303,7 +263,7 @@
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
 }
 
 .form-group label {
@@ -320,7 +280,7 @@
   font-family: var(--font-body);
   font-size: 0.9rem;
   padding: 0.85rem 1.15rem;
-  border-radius: 999px;
+  border-radius: 12px;
   border: 1px solid var(--tb-border);
   background-color: var(--tb-cream-soft);
   color: var(--tb-ink);
@@ -328,10 +288,11 @@
   width: 100%;
   appearance: none;
   -webkit-appearance: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.form-group select {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%232b1c12' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+.form-group select:not(.visually-hidden-select) {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%2322281f' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   background-repeat: no-repeat;
   background-position: right 1.1rem center;
   padding-right: 2.4rem;
@@ -343,14 +304,15 @@
 
 .form-group input:focus,
 .form-group select:focus {
-  border-color: var(--tb-olive);
+  border-color: var(--tb-green);
+  box-shadow: 0 0 0 3px var(--tb-green-soft);
 }
 
 .form-group select:disabled {
   opacity: 0.45;
 }
 
-/* Inputs with a leading icon (name, email, phone, date, group size) */
+/* Inputs with a leading icon */
 .input-icon-wrapper {
   position: relative;
   display: flex;
@@ -374,21 +336,18 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  background-color: var(--tb-olive-soft);
+  background-color: var(--tb-green-soft);
   border-radius: 14px;
   padding: 1rem;
 }
 
 .trail-info-details {
   flex: 1;
-  order: 1;
 }
 
-/* Image sits to the right of the details, not the left */
 .trail-info img {
-  order: 2;
-  width: 90px;
-  height: 90px;
+  width: 84px;
+  height: 84px;
   border-radius: 10px;
   object-fit: cover;
   flex-shrink: 0;
@@ -403,27 +362,287 @@
 #trail-info-meta {
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--tb-olive);
+  color: var(--tb-green);
   margin-bottom: 0.3rem;
 }
 
 #trail-info-desc {
   font-size: 0.8rem;
   opacity: 0.75;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 #package-info-price {
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--tb-olive);
+  color: var(--tb-green);
   margin-bottom: 0.3rem;
 }
 
 #package-info-includes {
   font-size: 0.8rem;
   opacity: 0.75;
+  line-height: 1.45;
+}
+
+/* ---------- Package selection cards ---------- */
+
+.package-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+  transition: opacity 0.2s ease;
+}
+
+.package-cards--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.package-cards-placeholder {
+  grid-column: 1 / -1;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--tb-ink-faint);
+  border: 1px dashed var(--tb-border);
+  border-radius: 14px;
+  padding: 1rem;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .package-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.package-card {
+  position: relative;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background-color: var(--tb-cream-soft);
+  border: 1px solid var(--tb-border);
+  border-radius: 14px;
+  padding: 1.1rem 1.1rem 1.2rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
+}
+
+.package-card:hover {
+  border-color: var(--tb-green);
+  transform: translateY(-1px);
+}
+
+.package-card--selected {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green-soft);
+}
+
+.package-card-radio {
+  position: absolute;
+  top: 1.1rem;
+  right: 1.1rem;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--tb-border);
+  background-color: #fff;
+}
+
+.package-card--selected .package-card-radio {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green);
+  box-shadow: inset 0 0 0 3px #fff;
+}
+
+.package-card-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+  padding-right: 1.4rem;
+}
+
+.package-card-desc {
+  font-size: 0.76rem;
+  color: var(--tb-ink-soft);
   line-height: 1.4;
+  min-height: 2.1em;
+}
+
+.package-card-price {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--tb-green);
+  margin-top: 0.2rem;
+}
+
+.package-card-price small {
+  font-weight: 500;
+  color: var(--tb-ink-faint);
+  font-size: 0.72rem;
+}
+
+/* ---------- Booking summary (right column) ---------- */
+
+.booking-summary {
+  background-color: var(--tb-card);
+  border: 1px solid var(--tb-border);
+  border-radius: 22px;
+  padding: 1.85rem;
+  box-shadow: var(--tb-shadow);
+  position: sticky;
+  top: 6.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.booking-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.booking-summary-header h4 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--tb-ink);
+}
+
+.summary-edit-link {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--tb-ink-soft);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.summary-edit-link:hover {
+  color: var(--tb-green);
+}
+
+.summary-empty-state {
+  text-align: center;
+  padding: 1.75rem 0.5rem;
+}
+
+.summary-empty-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 0.9rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.7rem;
+  background: radial-gradient(circle at 35% 30%, #eef2df, var(--tb-cream) 70%);
+}
+
+.summary-empty-state p {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--tb-ink-soft);
+  line-height: 1.4;
+}
+
+.summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  animation: tb-fade-up 0.35s ease both;
+}
+
+.summary-trail-img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.summary-trail-meta h5 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--tb-ink);
+  margin-bottom: 0.35rem;
+}
+
+.summary-trail-location {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--tb-ink-soft);
+  margin-bottom: 0.6rem;
+}
+
+.summary-difficulty-badge {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  background-color: #dfead2;
+  color: var(--tb-green-dark);
+}
+
+.summary-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem 0.75rem;
+}
+
+.summary-details-full {
+  grid-column: 1 / -1;
+}
+
+.summary-details dt {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--tb-ink-faint);
+  margin-bottom: 0.25rem;
+}
+
+.summary-details dd {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--tb-ink);
+  line-height: 1.4;
+}
+
+.summary-price-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.summary-price-lines > div {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  color: var(--tb-ink-soft);
+}
+
+.summary-price-lines span:last-child {
+  color: var(--tb-ink);
+  font-weight: 600;
 }
 
 .price-summary {
@@ -435,14 +654,14 @@
   font-size: 1rem;
   font-weight: 700;
   color: var(--tb-ink);
-  padding-top: 0.5rem;
+  padding-top: 1rem;
   border-top: 1px solid var(--tb-border);
 }
 
 #price-total {
   font-family: var(--font-display);
-  color: var(--tb-olive);
-  font-size: 1.8rem;
+  color: var(--tb-green);
+  font-size: 1.9rem;
   font-weight: 600;
 }
 
@@ -452,21 +671,20 @@
   justify-content: center;
   gap: 0.55rem;
   font-family: var(--font-body);
-  text-transform: uppercase;
-  font-size: 0.85rem;
+  font-size: 0.92rem;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.2px;
   padding: 1.05rem;
   border: none;
   border-radius: 999px;
-  background-color: var(--tb-olive-dark);
+  background-color: var(--tb-green-dark);
   color: #fff;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
 .booking-submit-btn:hover {
-  background-color: var(--tb-olive);
+  background-color: var(--tb-green);
 }
 
 .booking-submit-btn:active {
@@ -478,214 +696,57 @@
   cursor: not-allowed;
 }
 
+.booking-submit-note {
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  color: var(--tb-ink-faint);
+  margin-top: -0.7rem;
+}
+
 .booking-feedback {
   text-align: center;
   font-family: var(--font-body);
-  text-transform: none;
   font-size: 0.85rem;
-  color: var(--tb-olive);
-  padding-top: 0.25rem;
+  color: var(--tb-green);
 }
 
 .booking-feedback--error {
   color: #b1462f;
 }
 
-/* ---------- Booking history ---------- */
-
-.booking-history {
-  background-color: var(--tb-card);
-  border: 1px solid var(--tb-border);
-  border-radius: 22px;
-  padding: 2.25rem;
-  box-shadow: var(--tb-shadow);
-  position: sticky;
-  top: 6rem;
-}
-
-.booking-history h4 {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-family: var(--font-body);
-  text-transform: uppercase;
-  color: var(--tb-ink);
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.6px;
-  margin-bottom: 1.5rem;
-}
-
-.booking-history h4 span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background-color: var(--tb-tan);
-  font-size: 0.95rem;
-}
-
-.bookings-empty-state {
-  text-align: center;
-  padding: 1.5rem 0.5rem 2rem;
-}
-
-.bookings-empty-icon {
-  width: 96px;
-  height: 96px;
-  margin: 0 auto 1.1rem;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.2rem;
-  background: radial-gradient(circle at 35% 30%, #fbe9c8, var(--tb-tan) 70%);
-}
-
-.bookings-empty-state h5 {
-  font-family: var(--font-display);
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: var(--tb-ink);
-  margin-bottom: 0.4rem;
-}
-
-.bookings-empty-state p {
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  color: var(--tb-ink-soft);
-  line-height: 1.4;
-}
-
-.bookings-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-  max-height: 420px;
-  overflow-y: auto;
-}
-
-.booking-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  background-color: var(--tb-cream-soft);
-  border: 1px solid var(--tb-border);
-  border-radius: 16px;
-  padding: 1.1rem 1.25rem;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.booking-item:hover {
-  box-shadow: 0 12px 24px rgba(43, 28, 18, 0.07);
-  transform: translateY(-1px);
-}
-
-.booking-item-main h5 {
-  font-family: var(--font-body);
-  text-transform: uppercase;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--tb-ink);
-  margin-bottom: 0.3rem;
-  letter-spacing: 0.2px;
-}
-
-.booking-item-main p {
-  text-transform: none;
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  color: var(--tb-ink-soft);
-  margin-bottom: 0.5rem;
-  line-height: 1.4;
-}
-
-.booking-item[data-status="cancelled"] .booking-item-main h5,
-.booking-item[data-status="cancelled"] .booking-item-price {
-  opacity: 0.55;
-}
-
-.booking-item[data-status="cancelled"] .booking-item-price {
-  text-decoration: line-through;
-}
-
-.booking-status {
-  display: inline-block;
-  font-family: var(--font-body);
-  text-transform: uppercase;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
-}
-
-.booking-status--pending {
-  background-color: #f2dfa0;
-  color: var(--tb-ink);
-}
-
-.booking-status--cancelled {
-  background-color: rgba(43, 28, 18, 0.12);
-  color: var(--tb-ink);
-}
-
-.booking-status--confirmed {
-  background-color: #a9d19c;
-  color: var(--tb-olive-dark);
-}
-
-.booking-item-side {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.booking-item-price {
-  font-family: var(--font-body);
-  font-weight: 700;
-  color: var(--tb-ink);
-  font-size: 0.9rem;
-}
-
-.booking-cancel-btn {
-  font-family: var(--font-body);
-  text-transform: uppercase;
-  font-size: 0.65rem;
-  font-weight: 700;
-  background: none;
-  border: 1px solid var(--tb-border);
-  color: var(--tb-ink);
-  padding: 0.35rem 0.7rem;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease;
-}
-
-.booking-cancel-btn:hover {
-  border-color: var(--tb-olive);
-  color: var(--tb-olive);
-}
-
-/* ---------- Trust / features list ---------- */
+/* ---------- Trust / features row ---------- */
 
 .trust-features {
   list-style: none;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.1rem;
-  padding-top: 0.5rem;
+  max-width: 1280px;
+  margin: 2.5rem auto 0;
+  padding: 1.6rem 2rem;
+  background-color: var(--tb-card);
+  border: 1px solid var(--tb-border);
+  border-radius: 22px;
+  box-shadow: var(--tb-shadow-soft);
+}
+
+@media (max-width: 900px) {
+  .trust-features {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .trust-features {
+    grid-template-columns: 1fr;
+  }
 }
 
 .trust-features li {
   display: flex;
   align-items: flex-start;
-  gap: 0.9rem;
+  gap: 0.85rem;
 }
 
 .trust-feature-icon {
@@ -696,61 +757,57 @@
   height: 42px;
   flex-shrink: 0;
   border-radius: 999px;
-  background-color: var(--tb-tan);
+  background-color: var(--tb-green-soft);
   font-size: 1.05rem;
-}
-
-/* A little variety instead of every icon sitting on the same tan chip */
-.trust-features li:nth-child(1) .trust-feature-icon {
-  background-color: #dce7f2;
-}
-.trust-features li:nth-child(2) .trust-feature-icon {
-  background-color: #f4dcdc;
-}
-.trust-features li:nth-child(3) .trust-feature-icon {
-  background-color: #dfead2;
-}
-.trust-features li:nth-child(4) .trust-feature-icon {
-  background-color: #e7ddf0;
-}
-
-.trust-features li {
-  border-radius: 14px;
-  padding: 0.5rem 0.6rem;
-  margin: 0 -0.6rem;
-  transition: background-color 0.2s ease;
-}
-
-.trust-features li:hover {
-  background-color: var(--tb-cream-soft);
 }
 
 .trust-features strong {
   display: block;
   font-family: var(--font-body);
-  text-transform: uppercase;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 0.4px;
   color: var(--tb-ink);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
 }
 
 .trust-features p {
   font-family: var(--font-body);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--tb-ink-soft);
   line-height: 1.4;
+}
+
+/* ---------- Footer ---------- */
+
+.booking-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background-color: var(--tb-green-dark);
+  color: rgba(255, 255, 255, 0.8);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  padding: 1.5rem 3rem;
+}
+
+@media (max-width: 640px) {
+  .booking-footer {
+    justify-content: center;
+    text-align: center;
+    padding: 1.5rem;
+  }
 }
 
 /* ---------- Focus visibility (a11y) ---------- */
 
 .booking-submit-btn:focus-visible,
 .booking-cancel-btn:focus-visible,
+.package-card:focus-visible,
 .form-group input:focus-visible,
-.form-group select:focus-visible,
-.site-header-nav a:focus-visible {
-  outline: 2px solid var(--tb-olive);
+.form-group select:focus-visible {
+  outline: 2px solid var(--tb-green);
   outline-offset: 2px;
 }
 
@@ -758,18 +815,22 @@
 
 @media (max-width: 640px) {
   .booking-page {
-    padding: 2.25rem 1.2rem 4rem;
+    padding: 1.75rem 1.2rem 4rem;
   }
 
   .booking-form,
-  .booking-history {
+  .booking-summary {
     padding: 1.5rem;
+  }
+
+  .booking-summary {
+    position: static;
   }
 }
 
 /* ==========================================================
-   Weather Forecast Modal — restyled to match the cream/olive
-   theme above instead of the old dark base-300 palette.
+   Weather Forecast Modal — restyled to match the cream/green
+   theme above.
    ========================================================== */
 
 .weather-modal {
@@ -789,7 +850,7 @@
 .weather-modal-backdrop {
   position: absolute;
   inset: 0;
-  background-color: rgba(43, 28, 18, 0.5);
+  background-color: rgba(15, 35, 21, 0.55);
   backdrop-filter: blur(3px);
 }
 
@@ -806,7 +867,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  box-shadow: 0 30px 60px rgba(43, 28, 18, 0.3);
+  box-shadow: 0 30px 60px rgba(15, 35, 21, 0.35);
 }
 
 .weather-modal-close {
@@ -817,7 +878,7 @@
   height: 34px;
   border-radius: 999px;
   border: none;
-  background-color: var(--tb-olive-soft);
+  background-color: var(--tb-green-soft);
   color: var(--tb-ink);
   font-size: 0.9rem;
   cursor: pointer;
@@ -828,7 +889,7 @@
 }
 
 .weather-modal-close:hover {
-  background-color: var(--tb-tan);
+  background-color: var(--tb-border);
 }
 
 .weather-modal-header {
@@ -913,14 +974,14 @@
 .weather-modal-location {
   display: block;
   font-family: var(--font-body);
-  color: var(--tb-olive);
+  color: var(--tb-green);
   font-size: 0.75rem;
   margin-top: 0.6rem;
   font-weight: 700;
 }
 
 .weather-modal-now {
-  background-color: var(--tb-olive-dark);
+  background-color: var(--tb-green-dark);
   border-radius: 16px;
   padding: 1rem 1.1rem;
   display: flex;
@@ -1017,7 +1078,7 @@
 }
 
 .weather-hour-card--selected {
-  border-color: var(--tb-olive);
+  border-color: var(--tb-green);
 }
 
 .weather-hour-time {
@@ -1116,13 +1177,13 @@
 }
 
 .weather-btn--solid {
-  background-color: var(--tb-olive-dark);
+  background-color: var(--tb-green-dark);
   border: none;
   color: #fff;
 }
 
 .weather-btn--solid:hover {
-  background-color: var(--tb-olive);
+  background-color: var(--tb-green);
 }
 
 .weather-modal-footnote {
@@ -1134,13 +1195,16 @@
 
 .weather-modal-close:focus-visible,
 .weather-btn:focus-visible {
-  outline: 2px solid var(--tb-olive);
+  outline: 2px solid var(--tb-green);
   outline-offset: 2px;
 }
 
 /* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  .site-header {
-    transition: none;
+  .site-header,
+  .booking-page-header,
+  .booking-layout,
+  .summary-content {
+    animation: none;
   }
 }

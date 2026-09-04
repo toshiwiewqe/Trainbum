@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
@@ -15,22 +15,38 @@
     <link rel="stylesheet" href="post-booking-modal.css" />
     <link rel="icon" href="/icons/favicon.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <meta name="theme-color" content="#f3efe1" />
+    <meta name="theme-color" content="#173B22" />
   </head>
   <body class="booking-body">
+<<<<<<< HEAD
     <div id="site-header-root"></div>
     <script src="header.js"></script>
     <script type="module" src="bootstrap-init.js"></script>
+=======
+    <header class="site-header" id="site-header">
+      <div class="site-header-logo">
+        <img src="finaltrailboundlogo.png" alt="TrailBound Adventures logo" class="site-header-logo-img" />
+      </div>
+
+      <nav class="site-header-nav" id="site-header-nav">
+        <a href="index.html">Home</a>
+        <a href="index.html#trails">Trails</a>
+        <a href="products.html">Products</a>
+        <a href="booking.html" class="active">Book Now</a>
+        <a href="#">Contact</a>
+        <a href="checkout.html" class="site-header-cart" id="site-header-cart" aria-label="View cart">
+          <span class="site-header-cart-icon" aria-hidden="true">🛒</span>
+          <span class="site-header-cart-count" id="site-header-cart-count" hidden>0</span>
+        </a>
+      </nav>
+    </header>
+>>>>>>> 9e49fed7aba88a8f93796eb72d0a07a4c2ed82bb
 
     <main class="booking-page">
       <div class="booking-page-header">
         <span class="booking-eyebrow">Plan your trip</span>
-        <h1>
-          <span class="booking-flourish" aria-hidden="true">&#10086;</span>
-          Book your hike
-          <span class="booking-flourish" aria-hidden="true">&#10086;</span>
-        </h1>
-        <p>Pick a trail, a date, and a certified guide to get started</p>
+        <h1>Book your hike</h1>
+        <p>Choose your trail, pick a date, and let nature do the rest.</p>
       </div>
 
       <div class="booking-layout">
@@ -39,33 +55,42 @@
 
           <div class="form-step">
             <div class="form-step-label">
-              <span class="form-step-icon" aria-hidden="true">🏔️</span>
+              <span class="form-step-number">01</span>
               <span class="form-step-heading">
-                <span class="form-step-number">01</span>
-                <span>Trail &amp; package</span>
+                <span class="form-step-title">Trail &amp; package</span>
+                <span class="form-step-desc">Choose your trail and the experience that fits you best.</span>
               </span>
             </div>
 
             <div class="form-group">
-              <label for="trail-select">Trail</label>
-              <select id="trail-select" required>
-                <option value="" disabled selected>Select a trail...</option>
-              </select>
+              <label for="trail-select">Select trail</label>
+              <div class="input-icon-wrapper">
+                <span class="input-icon" aria-hidden="true">🏔️</span>
+                <select id="trail-select" required>
+                  <option value="" disabled selected>Select a trail...</option>
+                </select>
+              </div>
             </div>
 
             <div id="trail-info" class="trail-info" hidden>
-              <img id="trail-info-img" src="" alt="" />
               <div class="trail-info-details">
                 <p id="trail-info-meta"></p>
                 <p id="trail-info-desc"></p>
               </div>
+              <img id="trail-info-img" src="" alt="" />
             </div>
 
             <div class="form-group">
-              <label for="package-select">Package</label>
-              <select id="package-select" required disabled>
+              <label>Choose your package</label>
+              <!-- Real <select>, kept for form semantics / data-binding. Visually
+                   hidden; the package-cards below drive it and stay in sync. -->
+              <select id="package-select" disabled class="visually-hidden-select">
                 <option value="" disabled selected>Select a trail first...</option>
               </select>
+
+              <div id="package-cards" class="package-cards package-cards--disabled">
+                <p class="package-cards-placeholder">Select a trail to see available packages.</p>
+              </div>
             </div>
 
             <div id="package-info" class="trail-info" hidden>
@@ -77,11 +102,14 @@
 
             <div class="form-group" id="activity-group" hidden>
               <label for="activity-select">Choose your activity</label>
-              <select id="activity-select">
-                <option value="" disabled selected>Select an activity...</option>
-                <option value="Waterfall Stop">Waterfall Stop</option>
-                <option value="Tree Planting">Tree Planting</option>
-              </select>
+              <div class="input-icon-wrapper">
+                <span class="input-icon" aria-hidden="true">🌲</span>
+                <select id="activity-select">
+                  <option value="" disabled selected>Select an activity...</option>
+                  <option value="Waterfall Stop">Waterfall Stop</option>
+                  <option value="Tree Planting">Tree Planting</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -89,18 +117,21 @@
 
           <div class="form-step">
             <div class="form-step-label">
-              <span class="form-step-icon" aria-hidden="true">📅</span>
+              <span class="form-step-number">02</span>
               <span class="form-step-heading">
-                <span class="form-step-number">02</span>
-                <span>Guide &amp; schedule</span>
+                <span class="form-step-title">Guide &amp; schedule</span>
+                <span class="form-step-desc">Pick a certified guide, a date, and your group size.</span>
               </span>
             </div>
 
             <div class="form-group">
               <label for="guide-select">Certified guide</label>
-              <select id="guide-select" required disabled>
-                <option value="" disabled selected>Select a trail first...</option>
-              </select>
+              <div class="input-icon-wrapper">
+                <span class="input-icon" aria-hidden="true">🧭</span>
+                <select id="guide-select" required disabled>
+                  <option value="" disabled selected>Select a trail first...</option>
+                </select>
+              </div>
             </div>
 
             <div class="form-row">
@@ -116,21 +147,21 @@
                 <div class="input-icon-wrapper">
                   <span class="input-icon" aria-hidden="true">👥</span>
                   <select id="group-size" required>
-                    <option value="1" selected>1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
-                    <option value="10">10</option>
-                    <option value="11">11</option>
-                    <option value="12">12</option>
-                    <option value="13">13</option>
-                    <option value="14">14</option>
-                    <option value="15">15</option>
+                    <option value="1" selected>1 person</option>
+                    <option value="2">2 people</option>
+                    <option value="3">3 people</option>
+                    <option value="4">4 people</option>
+                    <option value="5">5 people</option>
+                    <option value="6">6 people</option>
+                    <option value="7">7 people</option>
+                    <option value="8">8 people</option>
+                    <option value="9">9 people</option>
+                    <option value="10">10 people</option>
+                    <option value="11">11 people</option>
+                    <option value="12">12 people</option>
+                    <option value="13">13 people</option>
+                    <option value="14">14 people</option>
+                    <option value="15">15 people</option>
                   </select>
                 </div>
               </div>
@@ -141,10 +172,10 @@
 
           <div class="form-step">
             <div class="form-step-label">
-              <span class="form-step-icon" aria-hidden="true">🙂</span>
+              <span class="form-step-number">03</span>
               <span class="form-step-heading">
-                <span class="form-step-number">03</span>
-                <span>Your details</span>
+                <span class="form-step-title">Your details</span>
+                <span class="form-step-desc">We'll use this to send your booking confirmation.</span>
               </span>
             </div>
 
@@ -158,14 +189,14 @@
 
             <div class="form-row">
               <div class="form-group">
-                <label for="email">Email</label>
+                <label for="email">Email address</label>
                 <div class="input-icon-wrapper">
                   <span class="input-icon" aria-hidden="true">✉️</span>
                   <input type="email" id="email" placeholder="you@email.com" required />
                 </div>
               </div>
               <div class="form-group">
-                <label for="contact-number">Contact number</label>
+                <label for="contact-number">Phone number</label>
                 <div class="input-icon-wrapper">
                   <span class="input-icon" aria-hidden="true">📞</span>
                   <input type="tel" id="contact-number" placeholder="09XX XXX XXXX" required />
@@ -190,64 +221,115 @@
               </div>
             </div>
           </div>
+        </form>
+
+        <!-- Booking summary (live preview of the form on the left) -->
+        <aside class="booking-summary">
+          <div class="booking-summary-header">
+            <h4>Your booking</h4>
+            <a href="#booking-form" class="summary-edit-link">Edit <span aria-hidden="true">✏️</span></a>
+          </div>
+
+          <div id="summary-empty-state" class="summary-empty-state">
+            <div class="summary-empty-icon" aria-hidden="true">🏔️</div>
+            <p>Select a trail to preview your booking here.</p>
+          </div>
+
+          <div id="summary-content" class="summary-content" hidden>
+            <img id="summary-trail-img" class="summary-trail-img" src="" alt="" />
+
+            <div class="summary-trail-meta">
+              <h5 id="summary-trail-name"></h5>
+              <p class="summary-trail-location">
+                <span aria-hidden="true">📍</span> <span id="summary-trail-location"></span>
+              </p>
+              <span id="summary-trail-difficulty" class="summary-difficulty-badge"></span>
+            </div>
+
+            <div class="trail-divider" aria-hidden="true"></div>
+
+            <dl class="summary-details">
+              <div>
+                <dt><span aria-hidden="true">📅</span> Date</dt>
+                <dd id="summary-date">—</dd>
+              </div>
+              <div>
+                <dt><span aria-hidden="true">👥</span> Group size</dt>
+                <dd id="summary-group-size">—</dd>
+              </div>
+              <div>
+                <dt><span aria-hidden="true">🧭</span> Guide</dt>
+                <dd id="summary-guide">—</dd>
+              </div>
+              <div>
+                <dt><span aria-hidden="true">🎒</span> Package</dt>
+                <dd id="summary-package-name">—</dd>
+              </div>
+              <div class="summary-details-full">
+                <dt><span aria-hidden="true">✓</span> What's included</dt>
+                <dd id="summary-included">—</dd>
+              </div>
+            </dl>
+
+            <div class="trail-divider" aria-hidden="true"></div>
+
+            <div class="summary-price-lines">
+              <div>
+                <span>Price per person</span>
+                <span id="summary-price-per-person">₱0</span>
+              </div>
+              <div>
+                <span id="summary-subtotal-label">Subtotal</span>
+                <span id="summary-subtotal">₱0</span>
+              </div>
+            </div>
+          </div>
 
           <div class="price-summary">
             <span>Total</span>
             <span id="price-total">₱0</span>
           </div>
 
-          <button type="submit" class="booking-submit-btn">
-            <span aria-hidden="true">🗓️</span> Confirm booking
+          <button type="submit" form="booking-form" id="booking-submit-btn" class="booking-submit-btn">
+            <span aria-hidden="true">🔒</span> Confirm booking
           </button>
+          <p class="booking-submit-note">You won't be charged yet</p>
 
           <p id="booking-feedback" class="booking-feedback" hidden></p>
-        </form>
-
-        <!-- Booking history -->
-        <aside class="booking-history">
-          <h4><span aria-hidden="true">📅</span> My bookings</h4>
-          <div id="bookings-list" class="bookings-list">
-            <div class="bookings-empty-state">
-              <div class="bookings-empty-icon" aria-hidden="true">🏔️</div>
-              <h5>No bookings yet</h5>
-              <p>Your upcoming hikes will appear here.</p>
-            </div>
-          </div>
-
-          <div class="trail-divider" aria-hidden="true"></div>
-
-          <ul class="trust-features">
-            <li>
-              <span class="trust-feature-icon" aria-hidden="true">🛡️</span>
-              <div>
-                <strong>Certified guides</strong>
-                <p>Hike with experienced and certified guides.</p>
-              </div>
-            </li>
-            <li>
-              <span class="trust-feature-icon" aria-hidden="true">⛑️</span>
-              <div>
-                <strong>Safety first</strong>
-                <p>Your safety is our top priority.</p>
-              </div>
-            </li>
-            <li>
-              <span class="trust-feature-icon" aria-hidden="true">🌿</span>
-              <div>
-                <strong>Leave no trace</strong>
-                <p>We promote responsible and sustainable hiking.</p>
-              </div>
-            </li>
-            <li>
-              <span class="trust-feature-icon" aria-hidden="true">🎧</span>
-              <div>
-                <strong>24/7 support</strong>
-                <p>We're here to help you every step of the way.</p>
-              </div>
-            </li>
-          </ul>
         </aside>
       </div>
+
+      <!-- Trust features -->
+      <ul class="trust-features">
+        <li>
+          <span class="trust-feature-icon" aria-hidden="true">🛡️</span>
+          <div>
+            <strong>Certified guides</strong>
+            <p>Experienced &amp; accredited</p>
+          </div>
+        </li>
+        <li>
+          <span class="trust-feature-icon" aria-hidden="true">⛑️</span>
+          <div>
+            <strong>Safe &amp; secure</strong>
+            <p>Your data is protected</p>
+          </div>
+        </li>
+        <li>
+          <span class="trust-feature-icon" aria-hidden="true">🌿</span>
+          <div>
+            <strong>Leave no trace</strong>
+            <p>Responsible, sustainable hiking</p>
+          </div>
+        </li>
+        <li>
+          <span class="trust-feature-icon" aria-hidden="true">↺</span>
+          <div>
+            <strong>Easy cancellation</strong>
+            <p>Cancel up to 48hrs before</p>
+          </div>
+        </li>
+      </ul>
 
       <!-- Weather forecast popup: opens automatically when a hike date is selected -->
       <div id="weather-modal" class="weather-modal" hidden>
@@ -314,7 +396,7 @@
 
           <p class="weather-modal-footnote">You can reschedule up to 48 hours before your hike.</p>
         </div>
-      </div>  
+      </div>
     </main>
 
     <!-- Post-booking choice modal: add gear, or head to checkout -->
@@ -327,6 +409,11 @@
         <button type="button" class="post-booking-btn post-booking-btn--primary" id="post-booking-checkout">Proceed to checkout</button>
       </div>
     </div>
+
+    <footer class="booking-footer">
+      <span>© 2024 TrailBound Adventures. All rights reserved.</span>
+      <span>Adventure. Nature. You.</span>
+    </footer>
 
     <script type="module" src="booking.js"></script>
     <script type="module" src="auth-nav.js"></script>
