@@ -213,455 +213,235 @@ section {
   }
 }
 
-/* About section */
+/* ==========================================================
+   FRAME SEQUENCE HERO
+   The homepage. Pinned by ScrollTrigger in script.js for
+   window.innerHeight * 5, with three copy panels fading in and
+   out across that distance.
+   Frames live in public/frames/ and are served from /frames/.
+   ========================================================== */
 
-.about {
-  background-color: var(--base-300);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.framescene {
+  /* the global `section` rule already gives 100svh + overflow hidden */
+  background-color: #7f7e81; /* frame 001 seen through the tint below */
 }
 
-.about h3 {
-  text-align: center;
-  color: var(--base-100);
-  width: 60%;
-}
-
-/* Hero foreground / background layers */
-
-.hero-fg-content,
-.hero-bg-content {
+.framescene-canvas {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
-  transform-origin: center center;
+  display: block;
+  /* cover fit is computed in script.js, not object-fit */
+  opacity: 0;
+  transition: opacity 400ms ease;
 }
 
-.hero-fg-content {
-  background-color: var(--base-300);
-  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
-  will-change: clip-path, transform;
+.framescene-canvas.is-live {
+  opacity: 1;
+}
+
+/* Darkens the footage so every panel can use light type. Heavier at
+   the top (behind the transparent header) and at the foot, lighter
+   through the middle so the peaks keep their detail.
+   Raise the three alpha values together for a moodier scene. */
+.framescene-tint {
+  position: absolute;
+  inset: 0;
   z-index: 2;
+  background: linear-gradient(
+    to bottom,
+    rgba(31, 21, 18, 0.58) 0%,
+    rgba(31, 21, 18, 0.34) 38%,
+    rgba(31, 21, 18, 0.64) 100%
+  );
+  pointer-events: none;
 }
 
-.hero-fg-img {
+.framescene-veil {
   position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: #7f7e81;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 700ms ease;
+}
+
+.framescene-veil.is-done {
+  opacity: 0;
+}
+
+.framescene-veil-bar {
+  position: absolute;
+  left: 1.5rem;
+  right: 1.5rem;
+  bottom: 3rem;
+  height: 1px;
+  background: rgba(220, 219, 213, 0.25);
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .framescene-veil-bar {
+    left: 3rem;
+    right: 3rem;
+  }
+}
+
+.framescene-veil-fill {
+  display: block;
   width: 100%;
   height: 100%;
+  background: var(--base-100);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 250ms linear;
 }
 
-.hero-fg-img video {
-  transform: scale(1);
-  will-change: transform;
-}
-
-.hero-fg-img::after {
-  content: "";
+.framescene-overlay {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 15%;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+  inset: 0;
+  z-index: 3;
   pointer-events: none;
-  z-index: 1;
 }
 
-.hero-fg-header {
+.framescene-panel {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 95%;
-  padding: 2rem;
+  inset: 0;
+  display: flex;
+  padding: 0 1.5rem;
+  opacity: 0;
+}
+
+@media (min-width: 768px) {
+  .framescene-panel {
+    padding: 0 5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .framescene-panel {
+    padding: 0 8rem;
+  }
+}
+
+.framescene-panel .fs-rise {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.framescene-panel.is-visible .fs-rise {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.framescene-panel--one {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.framescene-panel--one h1 {
+  font-size: clamp(2.5rem, 9vw, 8rem);
+  line-height: 0.9;
   color: var(--base-100);
+}
+
+.framescene-panel--one p {
+  margin-top: 1.25rem;
+  letter-spacing: 0.28em;
+  color: var(--base-100);
+  opacity: 0.75;
+}
+
+.framescene-panel--two {
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
-.hero-fg-header h1 {
-  opacity: 0;
-  transform: translateY(20px);
-  will-change: opacity, transform;
+.framescene-panel--two h3 {
+  max-width: 900px;
+  font-size: clamp(1.5rem, 4.2vw, 4rem);
+  line-height: 1.15;
+  color: var(--base-100);
 }
 
-.hero-fg-overlay-dark,
-.hero-fg-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  will-change: opacity;
+.fs-dim-70 {
+  color: rgba(220, 219, 213, 0.68);
 }
 
-.hero-fg-overlay-dark {
-  background-color: var(--base-300);
+.fs-dim-45 {
+  color: rgba(220, 219, 213, 0.42);
 }
 
-.hero-fg-overlay {
-  background-color: var(--base-200);
-}
-
-.hero-bg-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  background-color: var(--base-100);
-  z-index: 0;
-}
-
-.hero-bg-content-col {
-  flex: 1;
-  height: 100%;
-  display: flex;
+.framescene-panel--three {
   align-items: center;
-  padding: 2rem;
-}
-
-.hero-bg-content-col:nth-child(2) {
-  display: flex;
   justify-content: flex-end;
 }
 
-.hero-bg-content-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 50%;
-  will-change: transform;
+.framescene-panel--three .fs-inner {
+  max-width: 42rem;
+  text-align: left;
 }
 
-.hero-bg-content-copy h3 {
-  color: var(--base-200);
-}
-
-.hero-bg-content-copy p {
-  color: var(--base-300);
-}
-
-.hero-outro-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  z-index: 1;
-}
-
-.hero-outro-img {
-  flex: 1;
-  height: 100%;
-  will-change: clip-path;
-}
-
-.hero-outro-img:nth-child(1) {
-  clip-path: polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%);
-}
-
-.hero-outro-img:nth-child(2) {
-  clip-path: polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%);
-}
-
-.hero-outro-header {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+.framescene-panel--three h3 {
+  font-size: clamp(2rem, 4.5vw, 4rem);
+  line-height: 1.05;
   color: var(--base-100);
-  text-align: center;
-  width: 60%;
+  margin-bottom: 2rem;
 }
 
-.hero-outro-header .line {
-  position: relative;
-  will-change: transform;
+.framescene-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  pointer-events: auto;
+  text-decoration: none;
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--base-100);
+}
+
+.framescene-cta-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--base-100);
+  color: var(--base-300);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 250ms ease, background-color 250ms ease;
+}
+
+.framescene-cta:hover .framescene-cta-dot {
+  transform: scale(1.1);
+  background: #f5f0a8;
 }
 
 @media (max-width: 1000px) {
-  .hero-bg-content-copy {
+  .framescene-panel--three {
+    justify-content: flex-start;
+  }
+
+  .framescene-panel--two h3 {
     width: 100%;
   }
+}
 
-  .hero-bg-content-col:nth-child(1) .hero-bg-content-copy {
-    margin-top: -50svh;
-  }
-
-  .hero-bg-content-col:nth-child(2) .hero-bg-content-copy {
-    margin-top: 50svh;
-  }
-
-  .about h3,
-  .hero-outro-header {
-    width: 100%;
-    padding: 2rem;
+@media (prefers-reduced-motion: reduce) {
+  .framescene-panel .fs-rise,
+  .framescene-veil-fill {
+    transition-duration: 0.01ms !important;
   }
 }
 
-/* ==========================================================
-   Slider takeover section (GlitchAndGrit)
-   ========================================================== */
-
-.slider-section {
-  /* plain spacer — pinned by ScrollTrigger in script.js */
-  background-color: #000;
-}
-
-.slider-wrap {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100svh;
-  background: #000;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 20;
-}
-
-.slider-wrap.active {
-  pointer-events: auto;
-}
-
-.slider {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  overflow: hidden;
-  font-family: "Inter", sans-serif;
-}
-
-.column {
-  flex: 1;
-  position: relative;
-  height: 100%;
-  overflow: hidden;
-}
-
-.slide {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.slide img {
-  will-change: transform;
-}
-
-.slide .overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-}
-
-.copy {
-  position: absolute;
-  top: 0;
-  width: 100vw;
-  height: 100%;
-  color: #fff;
-  pointer-events: none;
-  will-change: transform;
-}
-
-.left .copy {
-  left: 0;
-}
-
-.right .copy {
-  right: 0;
-}
-
-.slide-title {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-transform: uppercase;
-  font-size: clamp(3rem, 12vw, 18rem);
-  font-weight: 800;
-  letter-spacing: -2%;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.slide-tags {
-  position: absolute;
-  top: 32.5%;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  text-transform: uppercase;
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: -1%;
-  line-height: 1;
-}
-
-.slide-link {
-  position: absolute;
-  top: 62.5%;
-  left: 50%;
-  transform: translateX(-50%);
-  text-decoration: none;
-  text-transform: uppercase;
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: -1%;
-  line-height: 1;
-  color: inherit;
-  pointer-events: auto;
-  cursor: pointer;
-}
-
-/* ==========================================================
-   Part 3: WonJYou (marquee + horizontal scroll)
-   Classes scoped under .wonjyou / prefixed wonjyou- so they don't
-   collide with the Trailbound .hero and .outro-style classes above.
-   ========================================================== */
-
-.wonjyou {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  background-color: var(--light);
-  will-change: background-color;
-  font-family: "PP Neue Montreal", sans-serif;
-}
-
-.wonjyou h1 {
-  text-transform: none;
-  font-size: 4rem;
-  font-weight: 500;
-  letter-spacing: -0.075rem;
-  line-height: 1.125;
-}
-
-.wonjyou h3 {
-  text-transform: none;
-  font-size: 2.25rem;
-  font-weight: 500;
-  letter-spacing: -0.025rem;
-  line-height: 1.125;
-}
-
-.wonjyou-hero,
-.wonjyou-outro {
-  position: relative;
-  width: 100%;
-  height: 100svh;
-  padding: 2rem;
-  align-content: center;
-  text-align: center;
-}
-
-.wonjyou-hero h1,
-.wonjyou-outro h1 {
-  width: 75%;
-  margin: 0 auto;
-}
-
-.wonjyou-outro {
-  background-color: var(--dark);
-  color: var(--light);
-}
-
-/* Marquee */
-.marquee {
-  position: relative;
-  width: 100%;
-  height: 50svh;
-  overflow: hidden;
-}
-
-.marquee-wrapper {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-5deg);
-  width: 150%;
-  height: 100%;
-}
-
-.marquee-images {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-75%, -50%);
-  width: 200%;
-  height: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  will-change: transform;
-}
-
-.marquee-img {
-  flex: 1;
-  width: 100%;
-  aspect-ratio: 5/3;
-}
-
-/* Horizontal Scroll */
-.horizontal-scroll {
-  position: relative;
-  width: 100%;
-  height: 100svh;
-  overflow: hidden;
-}
-
-.horizontal-scroll-wrapper {
-  position: relative;
-  width: 300%;
-  height: 100svh;
-  display: flex;
-  will-change: transform;
-}
-
-.horizontal-slide {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  gap: 2rem;
-  padding: 2rem;
-}
-
-.horizontal-slide:not(.horizontal-spacer) {
-  background-color: var(--dark);
-  color: var(--light);
-}
-
-.horizontal-slide .col:nth-child(1) {
-  flex: 3;
-}
-
-.horizontal-slide .col:nth-child(2) {
-  flex: 2;
-}
-
-.horizontal-scroll .col {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.horizontal-slide .col h3,
-.horizontal-slide .col img {
-  width: 75%;
-}
-
-.horizontal-slide .col img {
-  height: 75%;
-}
 /* ==========================================================
    Trail Discovery Module (Home Page)
    ========================================================== */
@@ -864,80 +644,6 @@ section {
   pointer-events: none;
 }
 
-@media (max-width: 800px) {
-  .wonjyou h1 {
-    font-size: 2.25rem;
-    letter-spacing: -0.05rem;
-  }
-
-  .wonjyou h3 {
-    font-size: 1.5rem;
-  }
-
-  .wonjyou-hero h1,
-  .wonjyou-outro h1 {
-    width: 100%;
-  }
-
-  .marquee-wrapper {
-    width: 300%;
-  }
-
-  .horizontal-slide {
-    padding: 4rem;
-    flex-direction: column-reverse;
-    gap: 2rem;
-  }
-
-  .horizontal-slide .col:nth-child(1) {
-    align-items: flex-start;
-  }
-
-  .horizontal-slide .col h3 {
-    width: 100%;
-  }
-
-  .horizontal-slide .col img {
-    width: 100%;
-    height: 100%;
-  }
-}
-
-/* ==========================================================
-   Shop / Products Page (products.html)
-   Everything below powers the product listing page: the page
-   header, the sidebar (categories, price, size/color filters),
-   the search + sort toolbar, product cards, the cart icon/toast,
-   and the product detail drawer.
-
-   Reuses --base-100 / --base-200 / --base-300 and the site's two
-   type families so the shop matches the rest of Trailbound.
-
-   Layout concept: the light "layout" panel now overlaps the dark
-   hero by a couple rem and gets rounded top corners + a lifted
-   shadow, so the page reads as one continuous surface with a
-   deliberate seam — instead of a hero and a body that just happen
-   to be stacked. The sidebar is a single dark card (not loose
-   floating text) so its filters have a visible container, and the
-   active category is shown with an accent bar + tinted background
-   rather than a color change alone.
-   ========================================================== */
-
-/* ---- Page background + hero banner ---- */
-
-.products-hero {
-  /* height: auto + overflow: visible override the global `section` rule
-     (height: 100svh; overflow: hidden) in case this is ever placed
-     inside a <section> element instead of a <div>. */
-  height: auto;
-  overflow: visible;
-  position: relative;
-  z-index: 0;
-  padding: 7rem 1.5rem 4rem;
-  background-color: var(--base-300);
-  color: var(--base-100);
-  text-align: center;
-}
 
 .products-hero h1 {
   font-size: clamp(1.75rem, 3.2vw, 2.75rem);
@@ -1944,4 +1650,3 @@ section {
 /* ---- Responsive: below lg, the sidebar is a Bootstrap offcanvas
    drawer (handled by Bootstrap's own offcanvas-lg CSS) — this just
    covers the rest of the page's small-screen spacing. ---- */
-

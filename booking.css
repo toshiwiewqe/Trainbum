@@ -1,14 +1,3 @@
-/* ==========================================================
-   Booking page (booking.html) — forest green / cream theme
-   Self-contained token set (--tb-*) so the page looks right
-   even without styles.css's --base-100/200/300 tokens.
-
-   NOTE: header/nav/logo layout is intentionally NOT overridden
-   here anymore — it's inherited from the shared styles.css, the
-   same file login.html uses, so the header sits in the exact
-   same place (and looks the same) on every page. Only the
-   scroll-hide behaviour below is specific to this page.
-   ========================================================== */
 
 :root {
   --tb-green-dark: #173b22;

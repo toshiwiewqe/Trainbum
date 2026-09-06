@@ -8,175 +8,97 @@
     <link rel="icon" href="/icons/favicon.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="theme-color" content="#1a0401" />
+
+    <!-- first frame on the wire before any script parses -->
+    <link rel="preload" as="image" href="/frames/ezgif-frame-001.jpg" />
   </head>
   <body>
     <div id="site-header-root"></div>
     <script src="header.js"></script>
     <script type="module" src="bootstrap-init.js"></script>
-    <section class="hero">
-      <div class="hero-fg-content">
-        <div class="hero-fg-img">
-          <video src="/img/vid2.mp4" autoplay muted loop playsinline></video>
-        </div>
 
-        <div class="hero-fg-header">
-          <h1>Trailbound</h1>
-        </div>
+    <!--
+      The homepage. ScrollTrigger (in script.js) pins this for
+      window.innerHeight * 5 and scrubs a 300-frame JPG sequence
+      across that distance, fading the three copy panels in and out.
+      Frames live in public/frames/ and are served from /frames/.
+    -->
+    <section class="framescene" id="framescene">
+      <canvas id="frame-canvas" class="framescene-canvas"></canvas>
 
-        <div class="hero-fg-overlay-dark"></div>
-        <div class="hero-fg-overlay"></div>
-      </div>
+      <!-- darkens the footage so the copy reads as light type on it -->
+      <div class="framescene-tint"></div>
 
-      <div class="hero-bg-content">
-        <div class="hero-bg-content-col">
-          <div class="hero-bg-content-copy">
-            <h3>Your Adventure</h3>
-            <p>
-              Discover new horizons
+      <div class="framescene-overlay">
+        <div class="framescene-panel framescene-panel--one" data-panel="1">
+          <div>
+            <h1 class="fs-rise" style="transition-delay: 0ms">Trailbound</h1>
+            <p class="fs-rise" style="transition-delay: 150ms">
+              Luzon's peaks, one trail at a time
             </p>
           </div>
         </div>
-        <div class="hero-bg-content-col">
-          <div class="hero-bg-content-copy">
-            <h3>Your Trail</h3>
-            <p>Adventure starts here</p>
+
+        <div class="framescene-panel framescene-panel--two" data-panel="2">
+          <h3 class="fs-rise" style="transition-delay: 0ms">
+            From Pulag's sea of clouds
+            <span class="fs-dim-70">to Batulao's open ridges</span>
+            <span class="fs-dim-45">and every summit between</span>
+          </h3>
+        </div>
+
+        <div class="framescene-panel framescene-panel--three" data-panel="3">
+          <div class="fs-inner">
+            <h3 class="fs-rise" style="transition-delay: 150ms">
+              Plan it. Book it.<br />Climb it.
+            </h3>
+            <a href="#trails" class="framescene-cta fs-rise" style="transition-delay: 300ms">
+              <span>Find your trail</span>
+              <span class="framescene-cta-dot" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path>
+                </svg>
+              </span>
+            </a>
           </div>
         </div>
       </div>
 
-      <div class="hero-outro-content">
-        <div class="hero-outro-img">
-          <img src="/img/12.jpg" alt="" />
-        </div>
-        <div class="hero-outro-img">
-          <img src="/img/images(5).jpg" alt="" />
-        </div>
-        <div class="hero-outro-header">
-          <h3>MOUNTAINS</h3>
+      <div class="framescene-veil" id="frame-veil" aria-hidden="true">
+        <div class="framescene-veil-bar">
+          <span class="framescene-veil-fill" id="frame-veil-fill"></span>
         </div>
       </div>
     </section>
 
-    <section class="about">
-      <h3>
-        Explore Luzon in One Place
-      </h3>
-    </section>
+    <!-- Trail search / filter grid, populated by trails.js -->
+    <section class="trails-section" id="trails">
+      <div class="trails-header">
+        <h3>Find Your Trail</h3>
+        <p>Search hiking trails by difficulty, location, and price</p>
+      </div>
 
-    <!--
-      Handoff section: pinned for 3 "scrolls" worth of distance
-      (window.innerHeight * 3, set in script.js). Scrolling through it
-      fades .slider-wrap in and cycles the slides, tied to real scroll
-      progress — so scrolling back up reverses it. Add your next
-      section right after this one; there's spare pin distance saved
-      for it.
-    -->
-    <section class="slider-section">
-      <div class="slider-wrap">
-        <div class="slider">
-          <div class="column left"></div>
-          <div class="column right"></div>
-        </div>
+      <div class="trails-filters">
+        <input type="text" id="trail-search" placeholder="SEARCH TRAILS OR LOCATION..." />
+
+        <select id="trail-difficulty-filter">
+          <option value="">All Difficulties</option>
+          <option value="Easy">Easy</option>
+          <option value="Moderate">Moderate</option>
+          <option value="Hard">Hard</option>
+        </select>
+
+        <select id="trail-sort">
+          <option value="name">Sort: Name (A-Z)</option>
+          <option value="price-asc">Sort: Price (Low to High)</option>
+          <option value="price-desc">Sort: Price (High to Low)</option>
+        </select>
+      </div>
+
+      <div class="trails-grid" id="trails-grid">
+        <p class="trails-status">Loading trails...</p>
       </div>
     </section>
-
-    <!--
-      Part 3: WonJYou marquee + horizontal scroll. Picks up right where
-      the slider's pin releases. Classes that would've collided with
-      earlier sections (.hero, .outro, .container) are namespaced with
-      a wonjyou- prefix / .wonjyou wrapper.
-    -->
-    <div class="wonjyou">
-      <section class="wonjyou-hero">
-        <h1>
-          Discover Luzon’s mountains with Trailbound. From Pulag’s sea of clouds 
-          to Batulao’s ridges, our platform helps you plan, book, and enjoy unforgettable hikes with confidence.
-        </h1>
-      </section>
-
-      <section class="marquee">
-        <div class="marquee-wrapper">
-          <div class="marquee-images">
-            <div class="marquee-img"><img src="/daraitan.jpg" /></div>
-            <div class="marquee-img"><img src="/galugod baboy.png" /></div>
-            <div class="marquee-img"><img src="/kalisugan.jpg" /></div>
-            <div class="marquee-img pin"><img src="/maculot.jpg" /></div>
-            <div class="marquee-img"><img src="/paminitan.jpg" /></div>
-            <div class="marquee-img"><img src="/pinatubo.jpg" /></div>
-            <div class="marquee-img"><img src="/ulap.jpg" /></div>
-            <div class="marquee-img"><img src="/galugod baboy.jpg" /></div>
-            <div class="marquee-img"><img src="/batulao.jpg" /></div>
-            <div class="marquee-img"><img src="/apo.jpg" /></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="horizontal-scroll">
-        <div class="horizontal-scroll-wrapper">
-          <div class="horizontal-slide horizontal-spacer"></div>
-
-          <div class="horizontal-slide">
-            <div class="col">
-              <h3>
-                Mount Gulugod Baboy — a landscape in constant transition, where every
-                shape, sound, and shadow refuses to stay still. What seems stable
-                begins to dissolve, and what fades returns again in a new form.
-              </h3>
-            </div>
-            <div class="col">
-              <img src="/galugod baboy.jpg" />
-            </div>
-          </div>
-
-          <div class="horizontal-slide">
-            <div class="col">
-              <h3>
-                Mount Batulao — the rhythm of motion carries us forward into spaces
-                that feel familiar yet remain undefined. Each shift is subtle, yet
-                together they remind us that nothing we see is ever permanent.
-              </h3>
-            </div>
-            <div class="col">
-              <img src="/batulao.jpg" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="wonjyou-outro">
-        <h1>
-          Shadows fold into light across Luzon’s peaks. From Gulugod Baboy to
-          Batulao, Trailbound reminds us that stillness is only temporary.
-        </h1>
-      </section>
-    </div>
-<section class="trails-section" id="trails">
-  <div class="trails-header">
-    <h3>Find Your Trail</h3>
-    <p>Search hiking trails by difficulty, location, and price</p>
-  </div>
-
-  <div class="trails-filters">
-    <input type="text" id="trail-search" placeholder="SEARCH TRAILS OR LOCATION..." />
-
-    <select id="trail-difficulty-filter">
-      <option value="">All Difficulties</option>
-      <option value="Easy">Easy</option>
-      <option value="Moderate">Moderate</option>
-      <option value="Hard">Hard</option>
-    </select>
-
-    <select id="trail-sort">
-      <option value="name">Sort: Name (A-Z)</option>
-      <option value="price-asc">Sort: Price (Low to High)</option>
-      <option value="price-desc">Sort: Price (High to Low)</option>
-    </select>
-  </div>
-
-  <div class="trails-grid" id="trails-grid">
-    <p class="trails-status">Loading trails...</p>
-  </div>
-</section>
 
     <script type="module" src="trails.js"></script>
     <script type="module" src="script.js"></script>
