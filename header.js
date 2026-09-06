@@ -23,10 +23,13 @@
   if (!root) return;
 
   const path = window.location.pathname.split("/").pop() || "index.html";
-  const hash = window.location.hash;
 
-  const isTrails = path === "index.html" && hash === "#trails";
-  const isHome = path === "index.html" && !isTrails;
+  // Trails used to be a #trails section at the bottom of the
+  // homepage, so this link was "index.html#trails" and the active
+  // state was decided by the hash. It's a standalone page now, so
+  // the hash plays no part in routing anymore.
+  const isTrails = path === "trail.html";
+  const isHome = path === "index.html";
   const isProducts = path === "products.html";
   const isBooking = path === "booking.html";
   const isCart = path === "cart.html";
@@ -57,7 +60,7 @@
         <div class="collapse navbar-collapse" id="siteHeaderNav">
           <div class="site-header-nav">
             <a href="index.html"${cls(isHome)}>Home</a>
-            <a href="index.html#trails"${cls(isTrails)}>Trails</a>
+            <a href="trail.html"${cls(isTrails)}>Trails</a>
             <a href="products.html"${cls(isProducts)}>Products</a>
             <a href="booking.html"${cls(isBooking)}>Book Now</a>
             <a href="contact.html"${cls(isContact)}>Contact</a>

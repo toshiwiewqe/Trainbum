@@ -223,7 +223,19 @@ section {
 
 .framescene {
   /* the global `section` rule already gives 100svh + overflow hidden */
-  background-color: #7f7e81; /* frame 001 seen through the tint below */
+  background-color: var(--base-300);
+
+  --fs-clip-end: 22%;
+  --fs-lift-end: -78;
+}
+
+/* A 22% band eats too much of a short viewport, so on phones the
+   hero clears out further and clips less. */
+@media (max-width: 767.98px) {
+  .framescene {
+    --fs-clip-end: 8%;
+    --fs-lift-end: -86;
+  }
 }
 
 .framescene-canvas {
@@ -442,208 +454,84 @@ section {
   }
 }
 
-/* ==========================================================
-   Trail Discovery Module (Home Page)
-   ========================================================== */
+/* ---- HERO LIFT / CONTACT REVEAL ----
+   The last sixth of the frame scene's pinned scroll (driven in
+   script.js) translates .framescene-lift up and closes its
+   clip-path in from both sides, uncovering .framescene-under,
+   which has been sitting behind it the whole time.
 
-.trails-section {
-  height: auto;
-  min-height: 100svh;
-  overflow: visible;
-  background-color: var(--base-100);
-  padding: 5rem 3rem;
-}
+   Two dials, both here rather than in the JS so the breakpoint
+   override below actually takes effect:
+     --fs-clip-end   how far each side closes in
+     --fs-lift-end   how far up the hero travels, as a percentage
+                     of its own height. Stops short of -100 so a
+                     band stays parked at the top of the viewport
+                     instead of the hero clearing out entirely. */
 
-.trails-header {
-  text-align: center;
-  margin-bottom: 2.5rem;
-}
-
-.trails-header h3 {
-  color: var(--base-300);
-}
-
-.trails-header p {
-  color: var(--base-300);
-  opacity: 0.7;
-  margin-top: 0.5rem;
-}
-
-.trails-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: center;
-  margin-bottom: 2.5rem;
-}
-
-.trails-filters input,
-.trails-filters select {
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  letter-spacing: 0.5px;
-  padding: 0.8rem 1.2rem;
-  border-radius: 999px;
-  border: 1px solid var(--base-300);
-  background-color: var(--base-100);
-  color: var(--base-300);
-  outline: none;
-}
-
-.trails-filters input {
-  flex: 1;
-  min-width: 220px;
-  max-width: 400px;
-}
-
-.trails-filters input:focus,
-.trails-filters select:focus {
-  border-color: var(--base-200);
-}
-
-.trails-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.75rem;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.trails-status {
-  grid-column: 1 / -1;
-  text-align: center;
-  color: var(--base-300);
-  padding: 3rem 0;
-}
-
-.trail-card {
-  background-color: var(--base-300);
-  border-radius: 16px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.25s ease;
-}
-
-.trail-card:hover {
-  transform: translateY(-4px);
-}
-
-.trail-card--closed {
-  opacity: 0.6;
-}
-
-.trail-card-img {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 4/3;
-}
-
-.trail-badge {
+.framescene-lift {
   position: absolute;
-  top: 0.75rem;
-  left: 0.75rem;
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  background-color: var(--base-100);
-  color: var(--base-300);
+  inset: 0;
+  z-index: 1;
+  background-color: #7f7e81; /* frame 001 seen through the tint */
+  will-change: transform, clip-path;
 }
 
-.trail-badge--closed {
-  left: auto;
-  right: 0.75rem;
-  background-color: var(--base-200);
-  color: var(--base-100);
-}
-
-.trail-card-body {
-  padding: 1.25rem 1.5rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  flex: 1;
-}
-
-.trail-card-body h4 {
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: var(--base-100);
-}
-
-.trail-card-location {
-  font-family: "Inter", sans-serif;
-  text-transform: none;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--base-200);
-}
-
-.trail-card-desc {
-  font-family: "Inter", sans-serif;
-  text-transform: none;
-  font-size: 0.85rem;
-  font-weight: 400;
-  line-height: 1.4;
-  color: var(--base-100);
-  opacity: 0.75;
-  flex: 1;
-}
-
-.trail-card-footer {
+.framescene-under {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 0.75rem;
+  justify-content: center;
+  text-align: center;
+  padding: 0 1.5rem;
 }
 
-.trail-card-price {
-  font-family: "PP Neue Montreal", sans-serif;
-  font-size: 1.1rem;
-  font-weight: 600;
+@media (min-width: 768px) {
+  .framescene-under {
+    padding: 0 5rem;
+  }
+}
+
+.framescene-under-line {
+  font-size: clamp(2rem, 7vw, 6rem);
+  line-height: 1;
+  color: var(--base-100);
+  margin-bottom: 1.75rem;
+}
+
+.framescene-under-meta {
+  letter-spacing: 0.28em;
+  line-height: 2;
   color: var(--base-100);
 }
 
-.trail-card-price small {
-  font-size: 0.65rem;
-  opacity: 0.6;
-  text-transform: uppercase;
-  margin-left: 0.15rem;
+.framescene-under-dim {
+  color: rgba(220, 219, 213, 0.45);
 }
 
-.trail-card-btn {
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-decoration: none;
-  padding: 0.65rem 1.2rem;
-  border-radius: 999px;
-  background-color: var(--base-200);
-  color: var(--base-100);
-  transition: background-color 0.2s ease;
+/* Per-character wipe on the phone number. Each character is boxed
+   with overflow hidden so the inner span can start below its own
+   baseline and slide up into view. Driven in script.js. */
+.fs-ch {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
 }
 
-.trail-card-btn:hover {
-  background-color: #f5f0a8;
-  color: var(--base-300);
+.fs-ch i {
+  display: inline-block;
+  font-style: normal;
 }
 
-.trail-card-btn--disabled {
-  background-color: transparent;
-  border: 1px solid var(--base-100);
-  opacity: 0.5;
-  pointer-events: none;
-}
+/* ==========================================================
+   The Trail Discovery block that used to sit here now lives in
+   trail.css, loaded only by trail.html.
+   ========================================================== */
 
+/* ==========================================================
+   PRODUCTS PAGE
+   ========================================================== */
 
 .products-hero h1 {
   font-size: clamp(1.75rem, 3.2vw, 2.75rem);

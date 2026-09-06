@@ -18,89 +18,87 @@
     <script type="module" src="bootstrap-init.js"></script>
 
     <!--
-      The homepage. ScrollTrigger (in script.js) pins this for
-      window.innerHeight * 5 and scrubs a 300-frame JPG sequence
-      across that distance, fading the three copy panels in and out.
+      The homepage — the frame scene is the whole page.
+
+      ScrollTrigger (in script.js) pins this for innerHeight * 6 and
+      splits that distance in two:
+
+        first 5/6   scrubs the JPG sequence, fading the three copy
+                    panels in and out
+        last 1/6    lifts .framescene-lift up and clips it in from
+                    both sides, uncovering .framescene-under
+
+      Everything visual about the hero lives inside .framescene-lift
+      so the whole thing travels as one piece. The contact block is
+      a sibling behind it, in place from the start and simply
+      covered until the lift begins.
+
       Frames live in public/frames/ and are served from /frames/.
+      The trail search/filter grid moved to trail.html (trail.js +
+      trail.css). The panel-three CTA links out to it.
     -->
     <section class="framescene" id="framescene">
-      <canvas id="frame-canvas" class="framescene-canvas"></canvas>
+      <!-- revealed as the hero lifts away -->
+      <div class="framescene-under">
+        <div>
+          <h3 class="framescene-under-line" data-fs-split>+63 (917) 402-118</h3>
+          <p class="framescene-under-meta">
+            syempre pogi ako<br />
+            <span class="framescene-under-dim">bahay ni kuya</span>
+          </p>
+        </div>
+      </div>
 
-      <!-- darkens the footage so the copy reads as light type on it -->
-      <div class="framescene-tint"></div>
+      <!-- the hero itself — this is what lifts and clips -->
+      <div class="framescene-lift" id="framescene-lift">
+        <canvas id="frame-canvas" class="framescene-canvas"></canvas>
 
-      <div class="framescene-overlay">
-        <div class="framescene-panel framescene-panel--one" data-panel="1">
-          <div>
-            <h1 class="fs-rise" style="transition-delay: 0ms">Trailbound</h1>
-            <p class="fs-rise" style="transition-delay: 150ms">
-              Luzon's peaks, one trail at a time
-            </p>
+        <!-- darkens the footage so the copy reads as light type on it -->
+        <div class="framescene-tint"></div>
+
+        <div class="framescene-overlay">
+          <div class="framescene-panel framescene-panel--one" data-panel="1">
+            <div>
+              <h1 class="fs-rise" style="transition-delay: 0ms">Trailbound</h1>
+              <p class="fs-rise" style="transition-delay: 150ms">
+                Luzon's peaks, one trail at a time
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div class="framescene-panel framescene-panel--two" data-panel="2">
-          <h3 class="fs-rise" style="transition-delay: 0ms">
-            From Pulag's sea of clouds
-            <span class="fs-dim-70">to Batulao's open ridges</span>
-            <span class="fs-dim-45">and every summit between</span>
-          </h3>
-        </div>
-
-        <div class="framescene-panel framescene-panel--three" data-panel="3">
-          <div class="fs-inner">
-            <h3 class="fs-rise" style="transition-delay: 150ms">
-              Plan it. Book it.<br />Climb it.
+          <div class="framescene-panel framescene-panel--two" data-panel="2">
+            <h3 class="fs-rise" style="transition-delay: 0ms">
+              From Pulag's sea of clouds
+              <span class="fs-dim-70">to Batulao's open ridges</span>
+              <span class="fs-dim-45">and every summit between</span>
             </h3>
-            <a href="#trails" class="framescene-cta fs-rise" style="transition-delay: 300ms">
-              <span>Find your trail</span>
-              <span class="framescene-cta-dot" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path>
-                </svg>
-              </span>
-            </a>
+          </div>
+
+          <div class="framescene-panel framescene-panel--three" data-panel="3">
+            <div class="fs-inner">
+              <h3 class="fs-rise" style="transition-delay: 150ms">
+                Plan it. Book it.<br />Climb it.
+              </h3>
+              <a href="trail.html" class="framescene-cta fs-rise" style="transition-delay: 300ms">
+                <span>Find your trail</span>
+                <span class="framescene-cta-dot" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path>
+                  </svg>
+                </span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="framescene-veil" id="frame-veil" aria-hidden="true">
+          <div class="framescene-veil-bar">
+            <span class="framescene-veil-fill" id="frame-veil-fill"></span>
           </div>
         </div>
       </div>
-
-      <div class="framescene-veil" id="frame-veil" aria-hidden="true">
-        <div class="framescene-veil-bar">
-          <span class="framescene-veil-fill" id="frame-veil-fill"></span>
-        </div>
-      </div>
     </section>
 
-    <!-- Trail search / filter grid, populated by trails.js -->
-    <section class="trails-section" id="trails">
-      <div class="trails-header">
-        <h3>Find Your Trail</h3>
-        <p>Search hiking trails by difficulty, location, and price</p>
-      </div>
-
-      <div class="trails-filters">
-        <input type="text" id="trail-search" placeholder="SEARCH TRAILS OR LOCATION..." />
-
-        <select id="trail-difficulty-filter">
-          <option value="">All Difficulties</option>
-          <option value="Easy">Easy</option>
-          <option value="Moderate">Moderate</option>
-          <option value="Hard">Hard</option>
-        </select>
-
-        <select id="trail-sort">
-          <option value="name">Sort: Name (A-Z)</option>
-          <option value="price-asc">Sort: Price (Low to High)</option>
-          <option value="price-desc">Sort: Price (High to Low)</option>
-        </select>
-      </div>
-
-      <div class="trails-grid" id="trails-grid">
-        <p class="trails-status">Loading trails...</p>
-      </div>
-    </section>
-
-    <script type="module" src="trails.js"></script>
     <script type="module" src="script.js"></script>
     <script type="module" src="auth-nav.js"></script>
   </body>

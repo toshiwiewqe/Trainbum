@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Find Your Trail — Trailbound</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="trail.css" />
+    <link rel="icon" href="/icons/favicon.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#1a0401" />
+  </head>
+  <body>
+    <div id="site-header-root"></div>
+    <script src="header.js"></script>
+    <script type="module" src="bootstrap-init.js"></script>
+
+    <!--
+      Trail discovery. Markup only — trail.js owns the data load,
+      the filter/sort state, and everything inside #trails-grid.
+      The IDs below are the contract with that file; renaming one
+      silently breaks the page.
+
+      This lived at the bottom of index.html under the pinned hero.
+      On its own now, so .trails-section--page supplies the top
+      padding the hero used to provide.
+    -->
+    <section class="trails-section trails-section--page" id="trails">
+      <div class="trails-header">
+        <h3>Find Your Trail</h3>
+        <p>Search hiking trails by difficulty, location, and price</p>
+      </div>
+
+      <div class="trails-filters">
+        <input type="text" id="trail-search" placeholder="SEARCH TRAILS OR LOCATION..." />
+
+        <select id="trail-difficulty-filter">
+          <option value="">All Difficulties</option>
+          <option value="Easy">Easy</option>
+          <option value="Moderate">Moderate</option>
+          <option value="Hard">Hard</option>
+        </select>
+
+        <select id="trail-sort">
+          <option value="name">Sort: Name (A-Z)</option>
+          <option value="price-asc">Sort: Price (Low to High)</option>
+          <option value="price-desc">Sort: Price (High to Low)</option>
+        </select>
+      </div>
+
+      <div class="trails-grid" id="trails-grid">
+        <p class="trails-status">Loading trails...</p>
+      </div>
+    </section>
+
+    <script type="module" src="trail.js"></script>
+    <script type="module" src="script.js"></script>
+    <script type="module" src="auth-nav.js"></script>
+  </body>
+</html>

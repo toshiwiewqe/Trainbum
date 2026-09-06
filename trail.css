@@ -1,0 +1,241 @@
+/* ==========================================================
+   TRAIL DISCOVERY
+   Owns trail.html — the section shell, filter bar and card grid.
+   Depends on the :root custom properties in styles.css, so that
+   file must be linked before this one.
+   ========================================================== */
+
+.trails-section {
+  /* the global `section` rule pins height to 100svh and hides
+     overflow — a scrolling grid needs neither */
+  height: auto;
+  min-height: 100svh;
+  overflow: visible;
+  background-color: var(--base-100);
+  padding: 5rem 3rem;
+}
+
+/* Standalone page: no hero above the grid, so it has to clear the
+   80px fixed header itself. */
+.trails-section--page {
+  padding-top: calc(80px + 4rem);
+}
+
+@media (max-width: 767.98px) {
+  .trails-section {
+    padding: 4rem 1.25rem;
+  }
+
+  .trails-section--page {
+    padding-top: calc(80px + 2.5rem);
+  }
+}
+
+/* ---- Header ---- */
+
+.trails-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.trails-header h3 {
+  color: var(--base-300);
+}
+
+.trails-header p {
+  color: var(--base-300);
+  opacity: 0.7;
+  margin-top: 0.5rem;
+}
+
+/* ---- Filter bar ---- */
+
+.trails-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+}
+
+.trails-filters input,
+.trails-filters select {
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  padding: 0.8rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--base-300);
+  background-color: var(--base-100);
+  color: var(--base-300);
+  outline: none;
+}
+
+.trails-filters input {
+  flex: 1;
+  min-width: 220px;
+  max-width: 400px;
+}
+
+.trails-filters input:focus,
+.trails-filters select:focus {
+  border-color: var(--base-200);
+}
+
+/* ---- Grid ---- */
+
+.trails-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.75rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.trails-status {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--base-300);
+  padding: 3rem 0;
+}
+
+.trails-status--error {
+  color: var(--base-200);
+}
+
+/* ---- Card ---- */
+
+.trail-card {
+  background-color: var(--base-300);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s ease;
+}
+
+.trail-card:hover {
+  transform: translateY(-4px);
+}
+
+.trail-card--closed {
+  opacity: 0.6;
+}
+
+.trail-card-img {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  background-color: #2f1409; /* shows through until the photo decodes */
+}
+
+/* A broken src leaves the alt text floating over the card — hide
+   the text and let the background stand in instead. */
+.trail-card-img img {
+  color: transparent;
+}
+
+.trail-badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background-color: var(--base-100);
+  color: var(--base-300);
+}
+
+.trail-badge--closed {
+  left: auto;
+  right: 0.75rem;
+  background-color: var(--base-200);
+  color: var(--base-100);
+}
+
+.trail-card-body {
+  padding: 1.25rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.trail-card-body h4 {
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--base-100);
+}
+
+.trail-card-location {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--base-200);
+}
+
+.trail-card-desc {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--base-100);
+  opacity: 0.75;
+  flex: 1;
+}
+
+.trail-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+}
+
+.trail-card-price {
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--base-100);
+}
+
+.trail-card-price small {
+  font-size: 0.65rem;
+  opacity: 0.6;
+  text-transform: uppercase;
+  margin-left: 0.15rem;
+}
+
+.trail-card-btn {
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  padding: 0.65rem 1.2rem;
+  border-radius: 999px;
+  background-color: var(--base-200);
+  color: var(--base-100);
+  transition: background-color 0.2s ease;
+}
+
+.trail-card-btn:hover {
+  background-color: #f5f0a8;
+  color: var(--base-300);
+}
+
+.trail-card-btn--disabled {
+  background-color: transparent;
+  border: 1px solid var(--base-100);
+  opacity: 0.5;
+  pointer-events: none;
+}

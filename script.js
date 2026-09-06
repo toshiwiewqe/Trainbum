@@ -21,6 +21,11 @@ gsap.ticker.lagSmoothing(0);
    when ScrollTrigger reports a change.
 
    Frames live in public/frames/ and are served from /frames/.
+
+   This file is loaded on every page for Lenis + the header
+   behaviour at the bottom; initHeroFrames() returns early on
+   pages with no .framescene, so nothing here breaks trail.html,
+   products.html, etc.
    ========================================================== */
 
 /* ---------- config ---------- */
@@ -33,10 +38,23 @@ const FRAMES = {
   count: 241,
 };
 
-// How much scroll the scene occupies. 5 viewport heights over 241
-// frames is roughly 18px of scroll per frame — raise it for a slower,
-// more cinematic scrub, lower it to get through the scene faster.
+// How much scroll the frame sequence occupies. 5 viewport heights
+// over 241 frames is roughly 18px of scroll per frame — raise it for
+// a slower, more cinematic scrub, lower it to get through the scene
+// faster.
 const SCENE_SCROLL = () => window.innerHeight * 5;
+
+// Appended to SCENE_SCROLL: the distance over which the hero lifts
+// away and uncovers the contact block. One viewport height.
+const LIFT_SCROLL = () => window.innerHeight;
+const TOTAL_SCROLL = () => SCENE_SCROLL() + LIFT_SCROLL();
+
+// Where the lift begins, inside the timeline of the whole pin.
+const CLIP_START = 0.35; // edges hold still, then close in
+const CLIP_SPAN = 0.65;
+const CH_START = 0.45; // phone number starts wiping in
+const CH_SPAN = 0.28;
+const CH_STAGGER = 0.01;
 
 const STRIDES = [12, 4, 1]; // load every 12th, then every 4th, then the rest
 const REVEAL_PASS = 2; // drop the loading veil after this many passes
@@ -237,8 +255,73 @@ function initHeroFrames() {
       if (Math.abs(values[i] - lastOpacity[i]) > 0.001) {
         panels[i].style.opacity = values[i];
         panels[i].classList.toggle("is-visible", values[i] > 0.3);
+        // Panel three holds the "Find your trail" link, which turns
+        // pointer events back on for itself. Without this, that link
+        // stays clickable while the panel is still invisible earlier
+        // in the scrub, so a stray click navigates away mid-scene.
+        panels[i].style.pointerEvents = values[i] > 0.3 ? "" : "none";
         lastOpacity[i] = values[i];
       }
+    }
+  }
+
+  /* ---------- hero lift ----------
+     Runs across the last LIFT_SCROLL of the pin. Painted by hand
+     from progress, same as paintPanels above — no GSAP timeline,
+     because the timeline positions would have to be rebuilt on
+     every resize to track the scene/lift split. */
+
+  const lift = document.getElementById("framescene-lift");
+  const chars = [];
+
+  const splitLine = () => {
+    const target = scene.querySelector("[data-fs-split]");
+    if (!target) return;
+    const text = target.textContent;
+    // aria-label first, so the accessible name survives the split —
+    // a screen reader shouldn't have to reassemble 18 spans.
+    target.setAttribute("aria-label", text);
+    target.textContent = "";
+    for (const c of text) {
+      const box = document.createElement("span");
+      box.className = "fs-ch";
+      const glyph = document.createElement("i");
+      glyph.textContent = c === " " ? "\u00A0" : c;
+      box.appendChild(glyph);
+      target.appendChild(box);
+      chars.push(glyph);
+    }
+  };
+  splitLine();
+
+  // Read from CSS every paint so the media query override is picked
+  // up on a resize across the md breakpoint without a refresh hook.
+  const dials = () => {
+    const cs = getComputedStyle(scene);
+    return {
+      clip: parseFloat(cs.getPropertyValue("--fs-clip-end")) || 0,
+      lift: parseFloat(cs.getPropertyValue("--fs-lift-end")) || 0,
+    };
+  };
+
+  let lastLift = -1;
+
+  function paintLift(q) {
+    if (!lift || Math.abs(q - lastLift) < 0.0005) return;
+    lastLift = q;
+
+    const d = dials();
+
+    lift.style.transform = `translate3d(0, ${d.lift * q}%, 0)`;
+
+    const c = d.clip * clamp((q - CLIP_START) / CLIP_SPAN, 0, 1);
+    lift.style.clipPath = `inset(0% ${c}% 0% ${c}%)`;
+
+    for (let i = 0; i < chars.length; i++) {
+      const t = clamp((q - CH_START - i * CH_STAGGER) / CH_SPAN, 0, 1);
+      const e = 1 - (1 - t) * (1 - t); // power2.out
+      chars[i].style.transform = `translateY(${(1 - e) * 110}%)`;
+      chars[i].style.opacity = e;
     }
   }
 
@@ -246,19 +329,26 @@ function initHeroFrames() {
   sizeCanvas();
   pump();
   paintPanels(0);
+  paintLift(0);
 
   ScrollTrigger.create({
     trigger: ".framescene",
     start: "top top",
-    end: () => `+=${SCENE_SCROLL()}`,
+    end: () => `+=${TOTAL_SCROLL()}`,
     pin: true,
     pinSpacing: true,
     scrub: 1, // ScrollTrigger + Lenis already ease this — no extra lerp needed
     invalidateOnRefresh: true,
     onRefresh: sizeCanvas,
     onUpdate: (self) => {
-      const p = self.progress;
+      // One trigger, two phases. The split is recomputed per frame
+      // rather than cached, so it survives a resize mid-scroll.
+      const split = SCENE_SCROLL() / TOTAL_SCROLL();
+      const p = clamp(self.progress / split, 0, 1);
+      const q = clamp((self.progress - split) / (1 - split), 0, 1);
+
       paintPanels(p);
+      paintLift(q);
 
       const idx = clamp(Math.round(p * (N - 1)), 0, N - 1);
       if (idx !== want) {
@@ -273,7 +363,8 @@ function initHeroFrames() {
   window.addEventListener("resize", sizeCanvas);
 }
 
-// Pins .framescene for innerHeight * 5 and drives the whole scene.
+// Pins .framescene for innerHeight * 6 and drives the whole scene,
+// hero lift included. No-ops on pages without the hero.
 initHeroFrames();
 
 // Header hide/show on scroll
