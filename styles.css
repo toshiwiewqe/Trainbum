@@ -478,7 +478,17 @@ section {
 
 .framescene-under {
   position: absolute;
-  inset: 0;
+  /* Only the area below the permanently-covered top band is ever
+     visible (see --fs-lift-end). Anchoring to that instead of the
+     full section means content — even if it grows, e.g. a bigger
+     wordmark, or the viewport shrinks, e.g. browser zoom — centers
+     within the space that's actually shown, instead of centering
+     across the whole section and getting its top clipped by the
+     still-covered band. */
+  top: calc((100 + var(--fs-lift-end)) * 1svh);
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 0;
   display: flex;
   flex-direction: column;
