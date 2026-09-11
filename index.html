@@ -17,26 +17,8 @@
     <script src="header.js"></script>
     <script type="module" src="bootstrap-init.js"></script>
 
-    <!--
-      The homepage — the frame scene is the whole page.
-
-      ScrollTrigger (in script.js) pins this for innerHeight * 6 and
-      splits that distance in two:
-
-        first 5/6   scrubs the JPG sequence, fading the three copy
-                    panels in and out
-        last 1/6    lifts .framescene-lift up and clips it in from
-                    both sides, uncovering .framescene-under
-
-      Everything visual about the hero lives inside .framescene-lift
-      so the whole thing travels as one piece. The contact block is
-      a sibling behind it, in place from the start and simply
-      covered until the lift begins.
-
-      Frames live in public/frames/ and are served from /frames/.
-      The trail search/filter grid moved to trail.html (trail.js +
-      trail.css). The panel-three CTA links out to it.
-    -->
+    
+    
     <section class="framescene" id="framescene">
       <!-- revealed as the hero lifts away -->
       <div class="framescene-under">
