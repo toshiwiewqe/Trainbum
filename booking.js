@@ -22,6 +22,35 @@ import {
 import { addBookingToCart } from "./cart-store.js";
 import { fetchHourlyForecast, buildHikerTip, buildAlertMessage } from "./Weather-api.js";
 
+/* ---------- TEMPORARY DIAGNOSTICS ----------
+   These two blocks exist to show which Firestore fields are
+   missing or wrong. Delete both once the trail documents are
+   filled in. */
+
+// Logs the full URL of any image that fails to load.
+document.addEventListener(
+  "error",
+  (e) => {
+    if (e.target && e.target.tagName === "IMG") {
+      console.warn("IMG failed to load →", e.target.src);
+    }
+  },
+  true, // capture phase: <img> error events don't bubble
+);
+
+// Prints every trail document as a table, and names the fields
+// that are missing from each one.
+function auditTrails(list) {
+  const expected = ["trail_id", "name", "location", "difficulty", "duration", "image", "guide_ids", "status"];
+  console.table(list);
+  list.forEach((t) => {
+    const missing = expected.filter((f) => t[f] === undefined);
+    if (missing.length) {
+      console.warn(`Trail "${t.trail_id || t.name || "(unnamed)"}" is missing:`, missing.join(", "));
+    }
+  });
+}
+
 const trailSelect = document.getElementById("trail-select");
 const guideSelect = document.getElementById("guide-select");
 const packageSelect = document.getElementById("package-select");
@@ -123,7 +152,26 @@ let weatherRequestToken = 0; // guards against out-of-order responses if the use
 /* ---------- Helpers ---------- */
 
 function formatPrice(value) {
-  return `₱${value.toLocaleString("en-PH")}`;
+  const n = Number(value) || 0;
+  return `₱${n.toLocaleString("en-PH")}`;
+}
+
+/* Some trail photos have spaces in the filename (e.g. "galugod baboy.jpg").
+   A raw space in a URL is not valid and some servers will 404 on it, so
+   escape it. Only spaces are touched, to avoid double-encoding paths that
+   are already percent-encoded. */
+function resolveImageSrc(path) {
+  if (!path) return "";
+  return path.includes(" ") ? path.replace(/ /g, "%20") : path;
+}
+
+/* Builds the "Hard · Arayat, Pampanga · 8 hours" line. Fields that are
+   missing from the document are left out rather than printed as the
+   string "undefined". */
+function buildMetaLine(trail) {
+  return [trail.difficulty, trail.location, trail.duration]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function getTrailById(id) {
@@ -150,6 +198,8 @@ async function loadData() {
   trails = trailsSnap.docs.map((d) => d.data());
   guides = guidesSnap.docs.map((d) => d.data());
   packages = packagesSnap.docs.map((d) => d.data());
+
+  auditTrails(trails); // TEMPORARY — see diagnostics block at the top
 
   populateTrailSelect();
   populatePackageSelectOptions();
@@ -250,10 +300,18 @@ function handleTrailChange() {
   }
 
   trailInfo.hidden = false;
-  trailInfoImg.src = trail.image;
-  trailInfoImg.alt = trail.name;
-  trailInfoMeta.textContent = `${trail.difficulty} · ${trail.location} · ${trail.duration}`;
-  trailInfoDesc.textContent = trail.description;
+
+  // A missing image leaves the <img> out of the layout entirely rather
+  // than showing a broken-image icon with the alt text next to it.
+  const imgSrc = resolveImageSrc(trail.image);
+  trailInfoImg.hidden = !imgSrc;
+  if (imgSrc) {
+    trailInfoImg.src = imgSrc;
+    trailInfoImg.alt = trail.name || "";
+  }
+
+  trailInfoMeta.textContent = buildMetaLine(trail);
+  trailInfoDesc.textContent = trail.description || "";
 
   packageSelect.disabled = false;
   packageSelect.innerHTML = packageSelect.dataset.optionsHtml;
@@ -265,20 +323,27 @@ function handleTrailChange() {
     renderPackageCards();
   }
 
-  const availableGuides = trail.guide_ids
+  // A trail document that's missing `guide_ids` (or has it stored as
+  // something other than an array) used to throw here, which killed the
+  // rest of this function — including updatePrice() → updateSummaryPanel().
+  // That's why the summary panel never appeared. Guard it so one
+  // incomplete document can't take down the whole page.
+  const availableGuides = (Array.isArray(trail.guide_ids) ? trail.guide_ids : [])
     .map(getGuideById)
     .filter(Boolean)
     .filter((g) => g.status === "Active");
 
   guideSelect.disabled = false;
   guideSelect.innerHTML =
-    `<option value="" disabled selected>Select a guide...</option>` +
-    availableGuides
-      .map(
-        (g) =>
-          `<option value="${g.guide_id}">${g.full_name} — ${g.specialty} (★${g.rating})</option>`,
-      )
-      .join("");
+    availableGuides.length > 0
+      ? `<option value="" disabled selected>Select a guide...</option>` +
+        availableGuides
+          .map(
+            (g) =>
+              `<option value="${g.guide_id}">${g.full_name} — ${g.specialty} (★${g.rating})</option>`,
+          )
+          .join("")
+      : `<option value="" disabled selected>No guides available for this trail</option>`;
 
   updatePrice();
 
@@ -322,7 +387,7 @@ function handlePackageChange() {
 
   packageInfo.hidden = false;
   packageInfoPrice.textContent = `${formatPrice(pkg.price_per_pax)} per person`;
-  packageInfoIncludes.textContent = `Includes: ${pkg.includes.join(", ")}`;
+  packageInfoIncludes.textContent = `Includes: ${(pkg.includes || []).join(", ")}`;
 
   activityGroup.hidden = !pkg.requires_activity_choice;
   activitySelect.required = pkg.requires_activity_choice;
@@ -338,7 +403,7 @@ function handlePackageChange() {
 function updatePrice() {
   const pkg = getPackageById(packageSelect.value);
   const groupSize = Math.max(1, parseInt(groupSizeInput.value, 10) || 1);
-  const total = pkg ? pkg.price_per_pax * groupSize : 0;
+  const total = pkg ? (Number(pkg.price_per_pax) || 0) * groupSize : 0;
   priceTotalEl.textContent = formatPrice(total);
   updateSummaryPanel();
 }
@@ -360,19 +425,25 @@ function updateSummaryPanel() {
   summaryContent.hidden = false;
   summaryEmptyState.hidden = true;
 
-  summaryTrailImg.src = trail.image;
-  summaryTrailImg.alt = trail.name;
-  summaryTrailName.textContent = trail.name;
-  summaryTrailLocation.textContent = trail.location;
-  summaryTrailDifficulty.textContent = trail.difficulty;
+  const imgSrc = resolveImageSrc(trail.image);
+  summaryTrailImg.hidden = !imgSrc;
+  if (imgSrc) {
+    summaryTrailImg.src = imgSrc;
+    summaryTrailImg.alt = trail.name || "";
+  }
+
+  summaryTrailName.textContent = trail.name || "";
+  summaryTrailLocation.textContent = trail.location || "";
+  summaryTrailDifficulty.textContent = trail.difficulty || "";
+  summaryTrailDifficulty.hidden = !trail.difficulty;
 
   summaryDate.textContent = dateInput.value ? formatDateForDisplay(dateInput.value).dateLabel : "Not selected yet";
   summaryGroupSize.textContent = `${groupSize} ${groupSize === 1 ? "person" : "people"}`;
   summaryGuide.textContent = guide ? guide.full_name : "Not selected yet";
   summaryPackageName.textContent = pkg ? pkg.name : "Not selected yet";
-  summaryIncluded.textContent = pkg ? pkg.includes.join(", ") : "—";
+  summaryIncluded.textContent = pkg ? (pkg.includes || []).join(", ") : "—";
 
-  const perPerson = pkg ? pkg.price_per_pax : 0;
+  const perPerson = pkg ? Number(pkg.price_per_pax) || 0 : 0;
   const subtotal = perPerson * groupSize;
   summaryPricePerPerson.textContent = formatPrice(perPerson);
   summarySubtotalLabel.textContent = `Subtotal (${groupSize} × ${formatPrice(perPerson)})`;
@@ -424,7 +495,9 @@ function setWeatherLoadingState(dateStr, trail) {
   const { dateLabel, weekdayLabel } = formatDateForDisplay(dateStr);
   weatherModalDate.textContent = dateLabel;
   weatherModalWeekday.textContent = weekdayLabel;
-  weatherModalLocation.textContent = trail ? `${trail.name} · ${trail.location}` : "";
+  weatherModalLocation.textContent = trail
+    ? [trail.name, trail.location].filter(Boolean).join(" · ")
+    : "";
 
   weatherModalTempBig.textContent = "—°C";
   weatherModalConditionBig.textContent = "Loading...";
@@ -449,7 +522,7 @@ async function openWeatherModalForCurrentSelection() {
   document.body.style.overflow = "hidden";
   setWeatherLoadingState(dateStr, trail);
 
-  const locationForForecast = trail ? trail.location : "Manila, Philippines"; // sensible default while no trail is picked yet
+  const locationForForecast = trail && trail.location ? trail.location : "Manila, Philippines";
 
   try {
     const { slots, featured, isFallback } = await fetchHourlyForecast(dateStr, locationForForecast);
@@ -556,7 +629,7 @@ form.addEventListener("submit", async (e) => {
     contact_number: document.getElementById("contact-number").value.trim(),
     emergency_name: document.getElementById("emergency-name").value.trim(),
     emergency_number: document.getElementById("emergency-number").value.trim(),
-    total_price: pkg.price_per_pax * groupSize,
+    total_price: (Number(pkg.price_per_pax) || 0) * groupSize,
     status: "Pending",
     payment_status: "Unpaid",
     created_at: new Date().toISOString(),
