@@ -17,8 +17,16 @@
     <script src="header.js"></script>
     <script type="module" src="bootstrap-init.js"></script>
 
-    
-    
+    <!--
+      script.js looks these up by id and by attribute. If any is
+      renamed or dropped, that part of the scene silently stops:
+        #framescene-lift      the element that travels and clips
+        #frame-canvas         the frame sequence
+        #frame-veil           the loading cover
+        #frame-veil-fill      the loading bar
+        [data-panel="1|2|3"]  the three copy panels
+        [data-fs-split]       the wordmark that wipes in per character
+    -->
     <section class="framescene" id="framescene">
       <!-- revealed as the hero lifts away -->
       <div class="framescene-under">

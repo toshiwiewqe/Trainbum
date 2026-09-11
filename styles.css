@@ -216,8 +216,9 @@ section {
 /* ==========================================================
    FRAME SEQUENCE HERO
    The homepage. Pinned by ScrollTrigger in script.js for
-   window.innerHeight * 5, with three copy panels fading in and
-   out across that distance.
+   window.innerHeight * 6, with three copy panels fading in and
+   out across the first five, then the compress/lift across the
+   last one.
    Frames live in public/frames/ and are served from /frames/.
    ========================================================== */
 
@@ -225,6 +226,11 @@ section {
   /* the global `section` rule already gives 100svh + overflow hidden */
   background-color: var(--base-300);
 
+  /* --- the two dials for the compress, read live by script.js ---
+     Keep them on .framescene itself. script.js calls
+     getComputedStyle() on this exact element, so moving them to
+     :root, to a child, or into a nested block means the values come
+     back empty and the hero never moves. */
   --fs-clip-end: 22%;
   --fs-lift-end: -78;
 }
@@ -454,19 +460,25 @@ section {
   }
 }
 
-/* ---- HERO LIFT / CONTACT REVEAL ----
+/* ---- HERO COMPRESS / CONTACT REVEAL ----
    The last sixth of the frame scene's pinned scroll (driven in
    script.js) translates .framescene-lift up and closes its
    clip-path in from both sides, uncovering .framescene-under,
    which has been sitting behind it the whole time.
 
-   Two dials, both here rather than in the JS so the breakpoint
-   override below actually takes effect:
+   Two dials, both on .framescene above rather than in the JS so the
+   breakpoint override actually takes effect:
      --fs-clip-end   how far each side closes in
      --fs-lift-end   how far up the hero travels, as a percentage
                      of its own height. Stops short of -100 so a
                      band stays parked at the top of the viewport
-                     instead of the hero clearing out entirely. */
+                     instead of the hero clearing out entirely.
+
+   Nothing else may set `transform` or `clip-path` on
+   .framescene-lift. script.js writes both as inline styles every
+   frame, so a normal declaration doesn't fight it — but an
+   `!important` rule anywhere would beat the inline style and freeze
+   the hero in place with no error. */
 
 .framescene-lift {
   position: absolute;
@@ -478,17 +490,7 @@ section {
 
 .framescene-under {
   position: absolute;
-  /* Only the area below the permanently-covered top band is ever
-     visible (see --fs-lift-end). Anchoring to that instead of the
-     full section means content — even if it grows, e.g. a bigger
-     wordmark, or the viewport shrinks, e.g. browser zoom — centers
-     within the space that's actually shown, instead of centering
-     across the whole section and getting its top clipped by the
-     still-covered band. */
-  top: calc((100 + var(--fs-lift-end)) * 1svh);
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0;
   z-index: 0;
   display: flex;
   flex-direction: column;
@@ -497,11 +499,26 @@ section {
   text-align: center;
   gap: clamp(2rem, 5vw, 3.5rem);
   padding: 0 1.5rem;
+
+  /* The hero parks as a band across the top of the viewport rather
+     than clearing out entirely, so the footer has to start below
+     that band — centring alone put the wordmark underneath it.
+     Keep this roughly in step with --fs-lift-end: a deeper lift
+     leaves a shorter band and needs less offset here. */
+  padding-top: 24svh;
 }
 
 @media (min-width: 768px) {
   .framescene-under {
     padding: 0 5rem;
+    padding-top: 24svh;
+  }
+}
+
+@media (max-width: 767.98px) {
+  /* --fs-lift-end is -86 on phones, so the band is thinner */
+  .framescene-under {
+    padding-top: 16svh;
   }
 }
 
@@ -585,7 +602,7 @@ section {
   }
 }
 
-/* Per-character wipe on the phone number. Each character is boxed
+/* Per-character wipe on the wordmark. Each character is boxed
    with overflow hidden so the inner span can start below its own
    baseline and slide up into view. Driven in script.js. */
 .fs-ch {

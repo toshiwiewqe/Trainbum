@@ -56,6 +56,14 @@ const CH_START = 0.45; // brand wordmark starts wiping in
 const CH_SPAN = 0.28;
 const CH_STAGGER = 0.01;
 
+// Fallbacks, used only if the CSS custom properties can't be read.
+// The old code defaulted these to 0, which made a missing variable
+// look exactly like "the animation is broken" — silently, with no
+// error anywhere. Defaulting to the real values means a CSS problem
+// degrades into "the dials aren't tunable" instead of "nothing moves".
+const CLIP_END_FALLBACK = 22; // % each side closes in
+const LIFT_END_FALLBACK = -78; // % of its own height the hero travels
+
 const STRIDES = [12, 4, 1]; // load every 12th, then every 4th, then the rest
 const REVEAL_PASS = 2; // drop the loading veil after this many passes
 const CONCURRENCY = 8; // parallel image requests
@@ -70,7 +78,7 @@ const noop = () => {};
 function initHeroFrames() {
   const scene = document.querySelector(".framescene");
   const canvas = document.getElementById("frame-canvas");
-  if (!scene || !canvas) return;
+  if (!scene || !canvas) return; // not the homepage — nothing to do
 
   const ctx = canvas.getContext("2d", { alpha: false });
   const veil = document.getElementById("frame-veil");
@@ -265,13 +273,34 @@ function initHeroFrames() {
     }
   }
 
-  /* ---------- hero lift ----------
+  /* ---------- hero lift / compress ----------
      Runs across the last LIFT_SCROLL of the pin. Painted by hand
      from progress, same as paintPanels above — no GSAP timeline,
      because the timeline positions would have to be rebuilt on
-     every resize to track the scene/lift split. */
+     every resize to track the scene/lift split.
+
+     Two motions at once:
+       transform   the hero travels up to --fs-lift-end% of its own
+                   height, so what's left is a band parked at the top
+                   of the viewport showing the bottom of the footage
+       clip-path   both sides close in by --fs-clip-end%, but only
+                   after CLIP_START of the lift has already happened,
+                   so the compress reads as a second beat rather than
+                   one uniform shrink */
 
   const lift = document.getElementById("framescene-lift");
+
+  // The old version just returned early from paintLift when this was
+  // missing, which is indistinguishable from "the animation is off".
+  // Say so out loud instead — a renamed or dropped id is by far the
+  // most common way this breaks.
+  if (!lift) {
+    console.warn(
+      "[framescene] #framescene-lift not found — the hero compress/lift " +
+        "cannot run. Check that the element still carries id=\"framescene-lift\"."
+    );
+  }
+
   const chars = [];
 
   const splitLine = () => {
@@ -298,16 +327,19 @@ function initHeroFrames() {
   // up on a resize across the md breakpoint without a refresh hook.
   const dials = () => {
     const cs = getComputedStyle(scene);
+    const clip = parseFloat(cs.getPropertyValue("--fs-clip-end"));
+    const liftEnd = parseFloat(cs.getPropertyValue("--fs-lift-end"));
     return {
-      clip: parseFloat(cs.getPropertyValue("--fs-clip-end")) || 0,
-      lift: parseFloat(cs.getPropertyValue("--fs-lift-end")) || 0,
+      clip: Number.isFinite(clip) ? clip : CLIP_END_FALLBACK,
+      lift: Number.isFinite(liftEnd) ? liftEnd : LIFT_END_FALLBACK,
     };
   };
 
   let lastLift = -1;
 
   function paintLift(q) {
-    if (!lift || Math.abs(q - lastLift) < 0.0005) return;
+    if (!lift) return;
+    if (Math.abs(q - lastLift) < 0.0005) return;
     lastLift = q;
 
     const d = dials();
@@ -360,11 +392,20 @@ function initHeroFrames() {
     },
   });
 
+  // Webfonts and late images change the pin's measurements. Without a
+  // recalc the trigger can end up with a start/end computed against the
+  // wrong page height, which shows up as a scene that scrubs partway and
+  // then stops — or doesn't move at all.
+  window.addEventListener("load", () => ScrollTrigger.refresh());
+  if (document.fonts?.ready) {
+    document.fonts.ready.then(() => ScrollTrigger.refresh()).catch(noop);
+  }
+
   window.addEventListener("resize", sizeCanvas);
 }
 
 // Pins .framescene for innerHeight * 6 and drives the whole scene,
-// hero lift included. No-ops on pages without the hero.
+// hero compress included. No-ops on pages without the hero.
 initHeroFrames();
 
 // Header hide/show on scroll
