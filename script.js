@@ -52,7 +52,7 @@ const TOTAL_SCROLL = () => SCENE_SCROLL() + LIFT_SCROLL();
 // Where the lift begins, inside the timeline of the whole pin.
 const CLIP_START = 0.35; // edges hold still, then close in
 const CLIP_SPAN = 0.65;
-const CH_START = 0.45; // phone number starts wiping in
+const CH_START = 0.45; // brand wordmark starts wiping in
 const CH_SPAN = 0.28;
 const CH_STAGGER = 0.01;
 

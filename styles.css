@@ -481,9 +481,11 @@ section {
   inset: 0;
   z-index: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+  gap: clamp(2rem, 5vw, 3.5rem);
   padding: 0 1.5rem;
 }
 
@@ -494,20 +496,83 @@ section {
 }
 
 .framescene-under-line {
-  font-size: clamp(2rem, 7vw, 6rem);
+  font-size: clamp(3.375rem, 10.5vw, 7.5rem);
   line-height: 1;
   color: var(--base-100);
-  margin-bottom: 1.75rem;
+  margin-bottom: 1rem;
 }
 
-.framescene-under-meta {
-  letter-spacing: 0.28em;
-  line-height: 2;
+.footer-tagline {
+  font-size: 1.05rem;
+  color: rgba(220, 219, 213, 0.55);
+  letter-spacing: 0.04em;
+}
+
+/* three link groups: where to go, where to follow, how to reach us */
+.footer-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem 4.5rem;
+  max-width: 680px;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.footer-col-label {
+  display: block;
+  font-family: "Inter", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(220, 219, 213, 0.4);
+}
+
+.footer-col a {
+  font-family: "Inter", sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   color: var(--base-100);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-col a:hover,
+.footer-col a:focus-visible {
+  color: var(--base-200);
+}
+
+.framescene-under-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(220, 219, 213, 0.15);
+  font-family: "Inter", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .framescene-under-dim {
   color: rgba(220, 219, 213, 0.45);
+
+}
+
+@media (max-width: 640px) {
+  .footer-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 420px;
+  }
 }
 
 /* Per-character wipe on the phone number. Each character is boxed
