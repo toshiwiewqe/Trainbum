@@ -44,7 +44,7 @@
     <header class="site-header${variant}" id="site-header">
       <nav class="navbar navbar-expand-md w-100 p-0">
         <div class="site-header-logo">
-          <img src="finaltrailboundlogo.png" alt="TrailBound Adventures logo" />
+          <img src="public/logoo2.jpg" alt="Trailbound Adventures logo" />
         </div>
         <button
           class="navbar-toggler site-header-toggler"

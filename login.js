@@ -1,11 +1,12 @@
 // ==========================================================
 // Trailbound Login Page — Functionality
 // ==========================================================
-import { auth } from "./firebase-init.js";
+import { auth, db } from "./firebase-init.js";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
   const form            = document.querySelector('.login-box');
@@ -111,7 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Firebase login success:', user);
 
       submitBtn.textContent = 'Success!';
-      window.location.href = 'index.html';
+      const adminSnapshot = await getDoc(doc(db, 'admins', user.uid));
+      window.location.href = adminSnapshot.exists() ? 'admin-dashboard.html' : 'index.html';
     } catch (err) {
       const message = err.code === 'auth/wrong-provider'
         ? err.message

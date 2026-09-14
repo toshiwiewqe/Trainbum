@@ -1,78 +1,36 @@
 /* ==========================================================
-   TRAIL DISCOVERY
-   Loads the trail list, then filters / sorts / renders it into
-   #trails-grid on trail.html.
+   Trail Discovery Module
+   Fetches trails from Firestore and renders them as
+   searchable, filterable cards into #trails-grid.
 
-   Reads the "trails" collection from Firestore via the shared
-   connection in firebase-config.js. If that read fails (offline,
-   rules, empty collection) it falls back to TRAIL_SEED below so
-   the page still renders something.
+   Each card links to booking.html?trail=<trail_id>, which
+   booking.js reads in preselectTrailFromURL() to pre-select
+   the trail — so the trail_id here must match the trail_id
+   field booking.js looks up. Same collection, same field
+   names, one source of truth.
+
+   Safe to load on any page: if #trails-grid isn't present
+   the module exits quietly.
    ========================================================== */
 
 import { db } from "./firebase-config.js";
 import { collection, getDocs } from "firebase/firestore";
 
-/* ---------- fallback data ----------
-   Only used when the Firestore read fails. Delete once the
-   collection is populated and rules allow reads. */
-const TRAIL_SEED = [
-  {
-    id: "pulag",
-    name: "Mt. Pulag",
-    location: "Kabayan, Benguet",
-    difficulty: "Hard",
-    price: 2800,
-    description:
-      "Luzon's highest peak, famous for the sea of clouds at sunrise over the Ambangeg trail.",
-    image: "/trails/pulag.jpg",
-    status: "open",
-  },
-  {
-    id: "batulao",
-    name: "Mt. Batulao",
-    location: "Nasugbu, Batangas",
-    difficulty: "Moderate",
-    price: 900,
-    description:
-      "Rolling open ridges and a steady scramble to the summit. A classic first overnight or long day hike.",
-    image: "/trails/batulao.jpg",
-    status: "open",
-  },
-  {
-    id: "ulap",
-    name: "Mt. Ulap",
-    location: "Itogon, Benguet",
-    difficulty: "Easy",
-    price: 750,
-    description:
-      "Grassland ridges, pine forest and the Gungal rock viewpoint on a well-marked eco-trail.",
-    image: "/trails/ulap.jpg",
-    status: "open",
-  },
-];
-
-/* ---------- config ---------- */
-const BOOKING_URL = (id) => `booking.html?trail=${encodeURIComponent(id)}`;
-const IMAGE_BASE = "/trails/"; // where bare filenames resolve from
-const PLACEHOLDER_IMG = "/trails/placeholder.jpg";
-const DIFFICULTIES = ["Easy", "Moderate", "Hard"];
-
 /* ---------- elements ---------- */
 const grid = document.getElementById("trails-grid");
 const searchInput = document.getElementById("trail-search");
-const difficultySelect = document.getElementById("trail-difficulty-filter");
+const difficultyFilter = document.getElementById("trail-difficulty-filter");
 const sortSelect = document.getElementById("trail-sort");
 
 /* ---------- state ---------- */
 let allTrails = [];
-const filters = { query: "", difficulty: "", sort: "name" };
 
 /* ---------- helpers ---------- */
-const peso = new Intl.NumberFormat("en-PH", {
-  style: "currency",
-  currency: "PHP",
-  maximumFractionDigits: 0,
-});
+
+function formatPrice(value) {
+  const n = Number(value) || 0;
+  return `₱${n.toLocaleString("en-PH")}`;
+}
 
 // Cards are built with innerHTML, so anything coming out of the
 // database gets escaped on the way in.
@@ -98,107 +56,110 @@ function debounce(fn, wait = 150) {
   };
 }
 
-function titleCase(s) {
-  const v = String(s || "").trim();
-  return v ? v[0].toUpperCase() + v.slice(1).toLowerCase() : "";
+/* Only an exact "closed" shuts a trail down. Real statuses in this
+   collection include things like "Open (monolith closed)" and
+   "Restricted / intermittent (requires LGU/military permits)" —
+   those trails are still bookable, so a plain `status !== "Open"`
+   test wrongly greys them out. An explicit isOpen field wins if
+   a document has one. */
+function isTrailOpen(trail) {
+  if (trail.isOpen !== undefined) return Boolean(trail.isOpen);
+  const status = String(trail.status ?? "open").trim();
+  return !/^closed$/i.test(status);
 }
 
-// A bare "pulag.jpg" or "images/pulag.jpg" would resolve against
-// whatever page is open, which breaks now that the grid isn't on
-// the homepage. Force everything to an absolute path.
-function imageURL(raw) {
+// The image path is used exactly as stored in Firestore — no base
+// path is prepended, no folder is assumed. The only change is
+// escaping literal spaces (e.g. "galugod baboy.jpg"), which aren't
+// valid in a URL.
+function imageSrc(raw) {
   const src = String(raw || "").trim();
-  if (!src) return PLACEHOLDER_IMG;
-  if (/^(https?:)?\/\//.test(src) || src.startsWith("/")) return src;
-  return IMAGE_BASE + src.replace(/^\.?\/*/, "").replace(/^images\//, "");
-}
-
-// Firestore docs and seed objects converge on one shape here, so
-// nothing downstream cares where a trail came from.
-function normalizeTrail(raw, id) {
-  const difficulty = titleCase(raw.difficulty);
-  const status = String(raw.status ?? "open").trim();
-
-  return {
-    id: raw.id || id || "",
-    name: raw.name || "Untitled trail",
-    location: raw.location || "",
-    difficulty: DIFFICULTIES.includes(difficulty) ? difficulty : "Moderate",
-    price: Number(raw.price) || 0,
-    description: raw.description || raw.desc || "",
-    image: imageURL(raw.image || raw.photo),
-    // Only an exact "closed" shuts a trail down — a status like
-    // "open (monolith closed)" is still bookable.
-    isOpen:
-      raw.isOpen !== undefined ? Boolean(raw.isOpen) : !/^closed$/i.test(status),
-  };
-}
-
-function setStatus(message, isError = false) {
-  grid.innerHTML = `<p class="trails-status${
-    isError ? " trails-status--error" : ""
-  }">${esc(message)}</p>`;
+  return src.includes(" ") ? src.replace(/ /g, "%20") : src;
 }
 
 /* ---------- loading ---------- */
+
 async function loadTrails() {
   try {
-    const snap = await getDocs(collection(db, "trails"));
-    if (snap.empty) throw new Error("no trail documents");
-    return snap.docs.map((doc) => normalizeTrail(doc.data(), doc.id));
+    const snapshot = await getDocs(collection(db, "trails"));
+    allTrails = snapshot.docs.map((doc) => doc.data());
+    renderTrails();
   } catch (err) {
-    console.warn("[trail] Firestore read failed, using seed data:", err);
-    return TRAIL_SEED.map((t) => normalizeTrail(t, t.id));
+    console.error("[trail] Firestore read failed:", err);
+    grid.innerHTML = `<p class="trails-status trails-status--error">Couldn't load trails right now. Please refresh.</p>`;
   }
 }
 
 /* ---------- filtering + sorting ---------- */
-function visibleTrails() {
-  const q = filters.query.trim().toLowerCase();
 
-  const matched = allTrails.filter((t) => {
-    if (filters.difficulty && t.difficulty !== filters.difficulty) return false;
-    if (!q) return true;
-    return (
-      t.name.toLowerCase().includes(q) ||
-      t.location.toLowerCase().includes(q) ||
-      t.description.toLowerCase().includes(q)
-    );
+function getFilteredSortedTrails() {
+  const query = (searchInput?.value || "").trim().toLowerCase();
+  const difficulty = difficultyFilter?.value || "";
+  const sortBy = sortSelect?.value || "name";
+
+  const result = allTrails.filter((trail) => {
+    const name = String(trail.name || "").toLowerCase();
+    const location = String(trail.location || "").toLowerCase();
+    const description = String(trail.description || "").toLowerCase();
+
+    const matchesQuery =
+      !query ||
+      name.includes(query) ||
+      location.includes(query) ||
+      description.includes(query);
+
+    const matchesDifficulty = !difficulty || trail.difficulty === difficulty;
+    return matchesQuery && matchesDifficulty;
   });
 
-  const sorters = {
-    name: (a, b) => a.name.localeCompare(b.name),
-    "price-asc": (a, b) => a.price - b.price || a.name.localeCompare(b.name),
-    "price-desc": (a, b) => b.price - a.price || a.name.localeCompare(b.name),
-  };
+  const priceOf = (t) => Number(t.base_price ?? t.price) || 0;
+  const nameOf = (t) => String(t.name || "");
 
-  return matched.sort(sorters[filters.sort] || sorters.name);
+  if (sortBy === "price-asc") {
+    return result.sort(
+      (a, b) => priceOf(a) - priceOf(b) || nameOf(a).localeCompare(nameOf(b)),
+    );
+  }
+  if (sortBy === "price-desc") {
+    return result.sort(
+      (a, b) => priceOf(b) - priceOf(a) || nameOf(a).localeCompare(nameOf(b)),
+    );
+  }
+  return result.sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
 }
 
 /* ---------- rendering ---------- */
-function cardHTML(t) {
-  const closed = !t.isOpen;
 
-  const action = closed
-    ? `<span class="trail-card-btn trail-card-btn--disabled">Closed</span>`
-    : `<a class="trail-card-btn" href="${esc(BOOKING_URL(t.id))}">Book</a>`;
+function cardHTML(trail) {
+  const open = isTrailOpen(trail);
+  const difficulty = String(trail.difficulty || "");
+  const difficultyClass = difficulty
+    ? ` trail-badge--${esc(difficulty.toLowerCase())}`
+    : "";
+
+  // Location and duration are joined only when both exist, so a
+  // missing field doesn't leave a stray separator on the card.
+  const metaLine = [trail.location, trail.duration].filter(Boolean).join(" · ");
+
+  const action = open
+    ? `<a class="trail-card-btn" href="booking.html?trail=${encodeURIComponent(
+        trail.trail_id || "",
+      )}">Book</a>`
+    : `<span class="trail-card-btn trail-card-btn--disabled">Closed</span>`;
 
   return `
-    <article class="trail-card${closed ? " trail-card--closed" : ""}">
+    <article class="trail-card${open ? "" : " trail-card--closed"}">
       <div class="trail-card-img">
-        <img src="${esc(t.image)}" alt="${esc(t.name)}" loading="lazy"
-             onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}'" />
-        <span class="trail-badge">${esc(t.difficulty)}</span>
-        ${closed ? `<span class="trail-badge trail-badge--closed">Closed</span>` : ""}
+        <img src="${esc(imageSrc(trail.image))}" alt="${esc(trail.name)}" loading="lazy" />
+        ${difficulty ? `<span class="trail-badge${difficultyClass}">${esc(difficulty)}</span>` : ""}
+        ${open ? "" : `<span class="trail-badge trail-badge--closed">Closed</span>`}
       </div>
       <div class="trail-card-body">
-        <h4>${esc(t.name)}</h4>
-        ${t.location ? `<p class="trail-card-location">${esc(t.location)}</p>` : ""}
-        ${t.description ? `<p class="trail-card-desc">${esc(t.description)}</p>` : ""}
+        <h4>${esc(trail.name)}</h4>
+        ${metaLine ? `<p class="trail-card-location">${esc(metaLine)}</p>` : ""}
+        ${trail.description ? `<p class="trail-card-desc">${esc(trail.description)}</p>` : ""}
         <div class="trail-card-footer">
-          <span class="trail-card-price">
-            ${peso.format(t.price)}<small>/person</small>
-          </span>
+          <span class="trail-card-price">${formatPrice(trail.base_price ?? trail.price)}<small>/person</small></span>
           ${action}
         </div>
       </div>
@@ -206,11 +167,11 @@ function cardHTML(t) {
   `;
 }
 
-function render() {
-  const trails = visibleTrails();
+function renderTrails() {
+  const trails = getFilteredSortedTrails();
 
-  if (!trails.length) {
-    setStatus("No trails match those filters. Try a different search.");
+  if (trails.length === 0) {
+    grid.innerHTML = `<p class="trails-status">No trails match your search.</p>`;
     return;
   }
 
@@ -218,31 +179,17 @@ function render() {
 }
 
 /* ---------- wire it up ---------- */
-async function init() {
-  if (!grid) return; // not on trail.html
 
-  setStatus("Loading trails...");
+function init() {
+  if (!grid) return; // page doesn't have the trail grid
 
-  searchInput?.addEventListener(
-    "input",
-    debounce((e) => {
-      filters.query = e.target.value;
-      render();
-    }),
-  );
+  grid.innerHTML = `<p class="trails-status">Loading trails...</p>`;
 
-  difficultySelect?.addEventListener("change", (e) => {
-    filters.difficulty = e.target.value;
-    render();
-  });
+  searchInput?.addEventListener("input", debounce(renderTrails));
+  difficultyFilter?.addEventListener("change", renderTrails);
+  sortSelect?.addEventListener("change", renderTrails);
 
-  sortSelect?.addEventListener("change", (e) => {
-    filters.sort = e.target.value;
-    render();
-  });
-
-  allTrails = await loadTrails();
-  render();
+  loadTrails();
 }
 
 init();

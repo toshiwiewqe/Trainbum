@@ -216,8 +216,9 @@ section {
 /* ==========================================================
    FRAME SEQUENCE HERO
    The homepage. Pinned by ScrollTrigger in script.js for
-   window.innerHeight * 5, with three copy panels fading in and
-   out across that distance.
+   window.innerHeight * 6, with three copy panels fading in and
+   out across the first five, then the compress/lift across the
+   last one.
    Frames live in public/frames/ and are served from /frames/.
    ========================================================== */
 
@@ -225,6 +226,11 @@ section {
   /* the global `section` rule already gives 100svh + overflow hidden */
   background-color: var(--base-300);
 
+  /* --- the two dials for the compress, read live by script.js ---
+     Keep them on .framescene itself. script.js calls
+     getComputedStyle() on this exact element, so moving them to
+     :root, to a child, or into a nested block means the values come
+     back empty and the hero never moves. */
   --fs-clip-end: 22%;
   --fs-lift-end: -78;
 }
@@ -454,19 +460,25 @@ section {
   }
 }
 
-/* ---- HERO LIFT / CONTACT REVEAL ----
+/* ---- HERO COMPRESS / CONTACT REVEAL ----
    The last sixth of the frame scene's pinned scroll (driven in
    script.js) translates .framescene-lift up and closes its
    clip-path in from both sides, uncovering .framescene-under,
    which has been sitting behind it the whole time.
 
-   Two dials, both here rather than in the JS so the breakpoint
-   override below actually takes effect:
+   Two dials, both on .framescene above rather than in the JS so the
+   breakpoint override actually takes effect:
      --fs-clip-end   how far each side closes in
      --fs-lift-end   how far up the hero travels, as a percentage
                      of its own height. Stops short of -100 so a
                      band stays parked at the top of the viewport
-                     instead of the hero clearing out entirely. */
+                     instead of the hero clearing out entirely.
+
+   Nothing else may set `transform` or `clip-path` on
+   .framescene-lift. script.js writes both as inline styles every
+   frame, so a normal declaration doesn't fight it — but an
+   `!important` rule anywhere would beat the inline style and freeze
+   the hero in place with no error. */
 
 .framescene-lift {
   position: absolute;
@@ -481,36 +493,116 @@ section {
   inset: 0;
   z-index: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+  gap: clamp(2rem, 5vw, 3.5rem);
   padding: 0 1.5rem;
+
+  /* The hero parks as a band across the top of the viewport rather
+     than clearing out entirely, so the footer has to start below
+     that band — centring alone put the wordmark underneath it.
+     Keep this roughly in step with --fs-lift-end: a deeper lift
+     leaves a shorter band and needs less offset here. */
+  padding-top: 24svh;
 }
 
 @media (min-width: 768px) {
   .framescene-under {
     padding: 0 5rem;
+    padding-top: 24svh;
+  }
+}
+
+@media (max-width: 767.98px) {
+  /* --fs-lift-end is -86 on phones, so the band is thinner */
+  .framescene-under {
+    padding-top: 16svh;
   }
 }
 
 .framescene-under-line {
-  font-size: clamp(2rem, 7vw, 6rem);
+  font-size: clamp(3.375rem, 10.5vw, 7.5rem);
   line-height: 1;
   color: var(--base-100);
-  margin-bottom: 1.75rem;
+  margin-bottom: 1rem;
 }
 
-.framescene-under-meta {
-  letter-spacing: 0.28em;
-  line-height: 2;
+.footer-tagline {
+  font-size: 1.05rem;
+  color: rgba(220, 219, 213, 0.55);
+  letter-spacing: 0.04em;
+}
+
+/* three link groups: where to go, where to follow, how to reach us */
+.footer-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem 4.5rem;
+  max-width: 680px;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.footer-col-label {
+  display: block;
+  font-family: "Inter", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(220, 219, 213, 0.4);
+}
+
+.footer-col a {
+  font-family: "Inter", sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   color: var(--base-100);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-col a:hover,
+.footer-col a:focus-visible {
+  color: var(--base-200);
+}
+
+.framescene-under-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(220, 219, 213, 0.15);
+  font-family: "Inter", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .framescene-under-dim {
   color: rgba(220, 219, 213, 0.45);
+
 }
 
-/* Per-character wipe on the phone number. Each character is boxed
+@media (max-width: 640px) {
+  .footer-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 420px;
+  }
+}
+
+/* Per-character wipe on the wordmark. Each character is boxed
    with overflow hidden so the inner span can start below its own
    baseline and slide up into view. Driven in script.js. */
 .fs-ch {

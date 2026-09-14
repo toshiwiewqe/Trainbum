@@ -18,34 +18,48 @@
     <script type="module" src="bootstrap-init.js"></script>
 
     <!--
-      The homepage — the frame scene is the whole page.
-
-      ScrollTrigger (in script.js) pins this for innerHeight * 6 and
-      splits that distance in two:
-
-        first 5/6   scrubs the JPG sequence, fading the three copy
-                    panels in and out
-        last 1/6    lifts .framescene-lift up and clips it in from
-                    both sides, uncovering .framescene-under
-
-      Everything visual about the hero lives inside .framescene-lift
-      so the whole thing travels as one piece. The contact block is
-      a sibling behind it, in place from the start and simply
-      covered until the lift begins.
-
-      Frames live in public/frames/ and are served from /frames/.
-      The trail search/filter grid moved to trail.html (trail.js +
-      trail.css). The panel-three CTA links out to it.
+      script.js looks these up by id and by attribute. If any is
+      renamed or dropped, that part of the scene silently stops:
+        #framescene-lift      the element that travels and clips
+        #frame-canvas         the frame sequence
+        #frame-veil           the loading cover
+        #frame-veil-fill      the loading bar
+        [data-panel="1|2|3"]  the three copy panels
+        [data-fs-split]       the wordmark that wipes in per character
     -->
     <section class="framescene" id="framescene">
       <!-- revealed as the hero lifts away -->
       <div class="framescene-under">
         <div>
-          <h3 class="framescene-under-line" data-fs-split>+63 (917) 402-118</h3>
-          <p class="framescene-under-meta">
-            syempre pogi ako<br />
-            <span class="framescene-under-dim">bahay ni kuya</span>
-          </p>
+          <h3 class="framescene-under-line" data-fs-split>Trailbound</h3>
+          <p class="footer-tagline">Your basecamp for Luzon's trails.</p>
+        </div>
+
+        <div class="footer-columns">
+          <div class="footer-col">
+            <span class="footer-col-label">Explore</span>
+            <a href="trail.html">Trails</a>
+            <a href="about.html">About</a>
+            <a href="booking.html">Book a trek</a>
+          </div>
+
+          <div class="footer-col">
+            <span class="footer-col-label">Connect</span>
+            <a href="https://instagram.com/trailbound.ph" target="_blank" rel="noopener">Instagram</a>
+            <a href="https://facebook.com/trailbound.ph" target="_blank" rel="noopener">Facebook</a>
+          </div>
+
+          <div class="footer-col">
+            <span class="footer-col-label">Reach us</span>
+            <a href="tel:+639261234567">+63 926 123 4567</a>
+            <a href="mailto:hello@trailbound.ph">hello@trailbound.ph</a>
+          </div>
+        </div>
+
+        <div class="framescene-under-bottom">
+          <span class="framescene-under-dim">&copy; 2026 Trailbound</span>
+
+          <span class="framescene-under-dim">Based in the Philippines</span>
         </div>
       </div>
 
