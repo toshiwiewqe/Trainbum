@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trailbound Admin - Products</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="admin-products.css">
+  </head>
+  <body class="admin-body">
+    <div class="admin-layout">
+      <aside class="admin-sidebar">
+        <div class="admin-sidebar-brand">
+          <img src="icons/trail_logo.png" alt="" class="admin-sidebar-logo">
+          <div>
+            <p class="admin-sidebar-brand-name">TRAILBOUND</p>
+            <p class="admin-sidebar-brand-sub">ADMIN PANEL</p>
+          </div>
+        </div>
+        <nav class="admin-nav">
+          <p class="admin-nav-label">Menu</p>
+          <a href="admin-dashboard.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Dashboard</a>
+          <a href="admin-products.html" class="admin-nav-link active"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 7l-8-4-8 4v10l8 4 8-4V7zm-8-2.3L17.5 7 12 9.3 6.5 7 12 4.7zM5 8.6l6 2.7v7.9l-6-2.7V8.6zm8 10.6v-7.9l6-2.7v7.9l-6 2.7z"/></svg>Products</a>
+          <a href="admin-bookings.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm12 8H5v10h14V10z"/></svg>Bookings</a>
+          <a href="admin-users.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Users</a>
+          <p class="admin-nav-label admin-nav-label--system">System</p>
+          <a href="admin-settings.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Settings</a>
+        </nav>
+        <div class="admin-sidebar-profile">
+          <img id="admin-avatar" class="admin-sidebar-avatar" src="" alt="" hidden>
+          <div id="admin-avatar-fallback" class="admin-sidebar-avatar-fallback"></div>
+          <div class="admin-sidebar-profile-info">
+            <p id="admin-name" class="admin-sidebar-profile-name">Loading...</p>
+            <p class="admin-sidebar-profile-role">Super Admin</p>
+          </div>
+                    <button id="admin-logout-btn" class="admin-sidebar-logout-btn" type="button" aria-label="Log out">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/></svg>
+          </button>
+        </div>
+      </aside>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <p class="admin-breadcrumb">Admin &nbsp;/&nbsp; <span>Product Management</span></p>
+          <div class="admin-topbar-actions">
+            <label class="admin-search-wrap" aria-label="Search products">
+              <span aria-hidden="true">⌕</span>
+              <input id="product-search" type="search" placeholder="Search products...">
+            </label>
+            <button class="admin-bell-btn" type="button" aria-label="Notifications">●</button>
+          </div>
+        </header>
+
+        <div class="admin-content">
+          <div class="admin-overview-header">
+            <div>
+              <h1>Products</h1>
+              <p>Manage your trail offerings and booking details</p>
+            </div>
+            <button class="admin-export-btn" id="add-product-btn" type="button">+ Add New Product</button>
+          </div>
+
+          <div class="admin-stats-grid admin-product-stats">
+            <div class="admin-stat-card"><p class="admin-stat-label">Total Products</p><p class="admin-stat-value" id="product-total">-</p></div>
+            <div class="admin-stat-card"><p class="admin-stat-label">Active Products</p><p class="admin-stat-value" id="product-active">-</p></div>
+            <div class="admin-stat-card"><p class="admin-stat-label">Inventory Value</p><p class="admin-stat-value" id="product-value">₱0</p></div>
+            <div class="admin-stat-card"><p class="admin-stat-label">Categories</p><p class="admin-stat-value" id="product-categories">-</p></div>
+          </div>
+
+          <section class="admin-panel admin-products-panel">
+            <div class="admin-panel-header">
+              <h3>Product Inventory</h3>
+              <select id="product-status-filter" class="admin-panel-select" aria-label="Filter product status">
+                <option value="all">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <p id="product-feedback" class="admin-product-feedback" hidden></p>
+            <div class="admin-product-table-wrap">
+              <table class="admin-activity-table admin-product-table">
+                <thead><tr><th>Preview</th><th>Name & Description</th><th>Category</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="product-list"><tr><td colspan="6" class="admin-empty">Loading products...</td></tr></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="admin-modal-backdrop" id="product-modal-backdrop" hidden></div>
+    <section class="admin-modal admin-product-modal" id="product-modal" role="dialog" aria-modal="true" aria-labelledby="product-modal-title" hidden>
+      <div class="admin-modal-header">
+        <div><p class="admin-modal-kicker">Product management</p><h2 id="product-modal-title">Add New Product</h2></div>
+        <button class="admin-modal-close" id="product-modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      <form id="product-form" class="admin-product-form">
+        <label>Product name<input id="product-name" required maxlength="80" placeholder="e.g. Mt. Pulag Expedition"></label>
+        <label>Category<input id="product-category" required maxlength="50" placeholder="e.g. Major Climb"></label>
+        <label>Description<textarea id="product-description" rows="3" placeholder="Describe the trail or product..."></textarea></label>
+        <div class="admin-product-form-row">
+          <label>Price (PHP)<input id="product-price" type="number" min="0" step="1" required placeholder="2500"></label>
+          <label>Status<select id="product-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+        </div>
+        <label>Image URL<input id="product-image" type="url" placeholder="https://..."></label>
+        <div class="admin-modal-actions">
+          <button class="admin-modal-cancel" id="product-modal-cancel" type="button">Cancel</button>
+          <button class="admin-modal-submit" type="submit">Save Product <span aria-hidden="true">›</span></button>
+        </div>
+      </form>
+    </section>
+    <script type="module" src="admin-products.js"></script>
+  </body>
+</html>

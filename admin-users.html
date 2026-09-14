@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trailbound Admin - Users</title>
+    <link rel="stylesheet" href="admin.css">
+  </head>
+  <body class="admin-body">
+    <div class="admin-layout">
+      <aside class="admin-sidebar">
+        <div class="admin-sidebar-brand">
+          <img src="icons/trail_logo.png" alt="" class="admin-sidebar-logo">
+          <div>
+            <p class="admin-sidebar-brand-name">TRAILBOUND</p>
+            <p class="admin-sidebar-brand-sub">ADMIN PANEL</p>
+          </div>
+        </div>
+        <nav class="admin-nav">
+          <p class="admin-nav-label">Menu</p>
+          <a href="admin-dashboard.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Dashboard</a>
+          <a href="admin-products.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 7l-8-4-8 4v10l8 4 8-4V7zm-8-2.3L17.5 7 12 9.3 6.5 7 12 4.7zM5 8.6l6 2.7v7.9l-6-2.7V8.6zm8 10.6v-7.9l6-2.7v7.9l-6 2.7z"/></svg>Products</a>
+          <a href="admin-bookings.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm12 8H5v10h14V10z"/></svg>Bookings</a>
+          <a href="admin-users.html" class="admin-nav-link active"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Users</a>
+          <p class="admin-nav-label admin-nav-label--system">System</p>
+          <a href="admin-settings.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Settings</a>
+        </nav>
+        <div class="admin-sidebar-profile">
+          <img id="admin-avatar" class="admin-sidebar-avatar" src="" alt="" hidden>
+          <div id="admin-avatar-fallback" class="admin-sidebar-avatar-fallback"></div>
+          <div class="admin-sidebar-profile-info">
+            <p id="admin-name" class="admin-sidebar-profile-name">Loading...</p>
+            <p class="admin-sidebar-profile-role">Super Admin</p>
+          </div>
+          <button id="admin-logout-btn" class="admin-sidebar-logout-btn" type="button" aria-label="Log out">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/></svg>
+          </button>
+        </div>
+      </aside>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <p class="admin-breadcrumb">Admin &nbsp;/&nbsp; <span>User Management</span></p>
+          <div class="admin-topbar-actions">
+            <label class="admin-search-wrap" aria-label="Search users">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              <input id="user-search" type="search" placeholder="Search users...">
+            </label>
+            <button class="admin-bell-btn" type="button" aria-label="Notifications">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a2.2 2.2 0 0 0 2.2-2.2h-4.4A2.2 2.2 0 0 0 12 22zm7-6.2V11c0-3.4-1.8-6.2-5-6.9V3a2 2 0 0 0-4 0v1.1C6.8 4.8 5 7.6 5 11v4.8L3 17.8V19h18v-1.2l-2-2z"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <div class="admin-content">
+          <div class="admin-overview-header">
+            <div>
+              <h1>User Management</h1>
+              <p>Manage your administrative and customer accounts</p>
+            </div>
+            <button class="admin-export-btn admin-export-btn--light" id="add-user-btn" type="button">+ Add New User</button>
+          </div>
+
+          <div class="admin-stats-grid">
+            <div class="admin-stat-card">
+              <p class="admin-stat-label">Total Users</p>
+              <p class="admin-stat-value" id="user-total">—</p>
+              <p class="admin-stat-delta" id="user-total-delta"></p>
+            </div>
+            <div class="admin-stat-card">
+              <p class="admin-stat-label">Active Users</p>
+              <p class="admin-stat-value" id="user-active">—</p>
+              <p class="admin-stat-delta" id="user-active-delta"></p>
+            </div>
+            <div class="admin-stat-card">
+              <p class="admin-stat-label">New Registrations</p>
+              <p class="admin-stat-value" id="user-new">—</p>
+              <p class="admin-stat-delta">Past 24h</p>
+            </div>
+            <div class="admin-stat-card">
+              <p class="admin-stat-label">Average Session</p>
+              <p class="admin-stat-value" id="user-session">—</p>
+              <p class="admin-stat-delta">Daily Avg</p>
+            </div>
+          </div>
+
+          <section class="admin-panel admin-users-panel">
+            <div class="admin-panel-header">
+              <h3>Active Accounts</h3>
+              <div class="admin-panel-header-actions">
+                <select id="user-role-filter" class="admin-panel-select" aria-label="Filter role">
+                  <option value="all">Filter Roles</option>
+                  <option value="admin">Super Admin</option>
+                  <option value="editor">Editor</option>
+                  <option value="customer">Customer</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="admin-table-wrap">
+              <table class="admin-activity-table admin-users-table">
+                <thead>
+                  <tr><th>Avatar</th><th>Name & Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="user-list">
+                  <tr><td colspan="5" class="admin-empty">Loading users...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-pagination" id="user-pagination"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="admin-modal-backdrop" id="edit-user-backdrop" hidden></div>
+    <section class="admin-modal admin-edit-user-modal" id="edit-user-modal" hidden aria-labelledby="edit-user-title" role="dialog" aria-modal="true">
+      <div class="admin-modal-header">
+        <div><p class="admin-modal-kicker">User Management</p><h2 id="edit-user-title">Edit User</h2></div>
+        <button class="admin-modal-close" id="edit-user-close" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div class="admin-edit-user-identity">
+        <div class="admin-table-avatar" id="edit-user-avatar"></div>
+        <div><p class="admin-edit-user-name" id="edit-user-name">User</p><p class="admin-edit-user-email" id="edit-user-email"></p></div>
+      </div>
+      <label class="admin-form-field"><span class="admin-form-subheading">Role</span>
+        <select class="admin-text-input" id="edit-user-role"><option value="customer">Customer</option><option value="editor">Editor</option><option value="admin">Super Admin</option></select>
+      </label>
+      <p class="admin-form-subheading">Access Control</p>
+      <div class="admin-permission-grid">
+        <label class="admin-permission-row"><span>View Financial Revenue</span><input type="checkbox" checked><span class="admin-toggle-switch"></span></label>
+        <label class="admin-permission-row"><span>Add/Delete Products</span><input type="checkbox" checked><span class="admin-toggle-switch"></span></label>
+        <label class="admin-permission-row"><span>Export Performance Reports</span><input type="checkbox" checked><span class="admin-toggle-switch"></span></label>
+        <label class="admin-permission-row"><span>Manage Price Lists</span><input type="checkbox" checked><span class="admin-toggle-switch"></span></label>
+        <label class="admin-permission-row"><span>Override Reservation Policy</span><input type="checkbox" checked><span class="admin-toggle-switch"></span></label>
+        <label class="admin-permission-row"><span>Edit Staff Permissions</span><input type="checkbox"><span class="admin-toggle-switch"></span></label>
+        <label class="admin-permission-row"><span>Process Refunds</span><input type="checkbox" checked><span class="admin-toggle-switch"></span></label>
+        <label class="admin-permission-row"><span>Audit System Logs</span><input type="checkbox"><span class="admin-toggle-switch"></span></label>
+        <label class="admin-permission-row"><span>Modify API Keys</span><input type="checkbox"><span class="admin-toggle-switch"></span></label>
+        <label class="admin-permission-row"><span>Update Site Configuration</span><input type="checkbox"><span class="admin-toggle-switch"></span></label>
+      </div>
+      <div class="admin-modal-actions"><button class="admin-modal-cancel" id="edit-user-cancel" type="button">Discard Changes</button><button class="admin-modal-submit" id="edit-user-save" type="button">Save Permissions</button></div>
+    </section>
+
+    <script type="module" src="admin-users.js"></script>
+  </body>
+</html>

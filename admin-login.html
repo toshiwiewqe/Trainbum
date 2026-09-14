@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trailbound Admin — Login</title>
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body class="admin-auth-body">
+    <main class="admin-login-page">
+      <div class="admin-login-brand">
+        <img src="icons/trail_logo.png" alt="Trailbound" class="admin-login-logo">
+        <div>
+          <p class="admin-login-brand-name">TRAILBOUND</p>
+          <p class="admin-login-brand-sub">ADMIN PANEL</p>
+        </div>
+      </div>
+
+      <div class="admin-login-card">
+        <h3>Welcome Back</h3>
+        <p class="admin-login-desc">Please enter your credentials to access the panel.</p>
+
+        <div class="admin-input-group">
+          <label for="admin-email">Email Address</label>
+          <div class="admin-input-icon-wrap">
+            <svg class="admin-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="email" id="admin-email" placeholder="admin@trailbound.com" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="admin-input-group">
+          <div class="admin-input-label-row">
+            <label for="admin-password">Password</label>
+            <a href="#" class="admin-forgot-link">Forgot?</a>
+          </div>
+          <div class="admin-input-icon-wrap">
+            <svg class="admin-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input type="password" id="admin-password" placeholder="••••••••••••" autocomplete="off">
+            <button type="button" class="admin-toggle-password" id="toggle-password" aria-label="Show password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <label class="admin-remember-row">
+          <input type="checkbox" id="admin-remember">
+          Remember this device
+        </label>
+
+        <p id="admin-login-error" class="admin-login-error" hidden></p>
+
+        <button type="button" id="admin-secure-login-btn" class="admin-secure-login-btn">
+          Secure Login <span aria-hidden="true">›</span>
+        </button>
+
+        <div class="admin-divider"><span>or continue with</span></div>
+
+        <button type="button" id="admin-google-btn" class="admin-google-btn">
+          <img src="https://www.google.com/favicon.ico" alt="" class="admin-google-icon"> Sign in with Google
+        </button>
+      </div>
+
+      <p class="admin-login-footer">© 2026 Trailbound Admin &nbsp;·&nbsp; 🔒 Secure Access</p>
+    </main>
+
+    <script type="module" src="admin.js"></script>
+  </body>
+</html>

@@ -38,6 +38,7 @@ export default defineConfig({
         // Firestore data itself won't work offline (it needs internet),
         // but your pages, styles, and scripts will still load instantly.
         globPatterns: ["**/*.{js,css,html,png,svg,jpg,jpeg}"],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
     }),
   ],
