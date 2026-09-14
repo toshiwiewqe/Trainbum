@@ -18,7 +18,8 @@
 
 import { db } from './firebase-config.js';
 import { collection, getDocs, query, where, addDoc } from 'firebase/firestore';
-import { addProductToCart, updateCartBadge, onCartUpdated, getCart } from './cart-store.js';
+import { CATEGORY_TREE, COLORS, SIZES } from './taxonomy.js';
+import { getCart, addProductToCart, updateCartBadge, onCartUpdated } from './cart-store.js';
 
 let PRODUCTS = [];
 

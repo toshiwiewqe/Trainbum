@@ -3,12 +3,13 @@
    Shared category tree, colors, and sizes.
 
    Used in TWO places:
-   1. Browser: loaded as a classic <script> tag before products.js
-        <script src="taxonomy.js"></script>
+   1. Browser: loaded as an ES module, imported by products.js
+        <script type="module" src="taxonomy.js"></script>
         <script type="module" src="products.js"></script>
-      products.js reads CATEGORY_TREE / COLORS / SIZES as globals.
+      products.js imports CATEGORY_TREE / COLORS / SIZES directly:
+        import { CATEGORY_TREE, COLORS, SIZES } from "./taxonomy.js";
 
-   2. Node: required by products-seed.js during the one-time
+   2. Node: required by the seed script during the one-time
       Firestore seed:
         const { COLORS, SIZES } = require("./taxonomy.js");
    ========================================================== */
@@ -57,9 +58,12 @@ const COLORS = [
 
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
-/* Export for Node (seed script). In the browser this block is skipped,
-   and CATEGORY_TREE / COLORS / SIZES remain as top-level globals that
-   products.js can reference directly. */
+// Browser: proper ES module export — products.js imports these directly now.
+export { CATEGORY_TREE, COLORS, SIZES };
+
+/* Node (seed script): keep this working the same way as before, so
+   require("./taxonomy.js") in your seed script still gets the same
+   { CATEGORY_TREE, COLORS, SIZES } shape. */
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { CATEGORY_TREE, COLORS, SIZES };
 }
