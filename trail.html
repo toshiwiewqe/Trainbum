@@ -53,7 +53,11 @@
       </div>
     </section>
 
-    <script type="module" src="trails.js"></script>
+    <!-- trail.js — singular. The file on disk is trail.js; pointing
+         this at trails.js makes Vite fail its dependency scan and
+         leaves the "Loading trails..." placeholder above on screen
+         forever, because the module that replaces it never runs. -->
+    <script type="module" src="trail.js"></script>
     <script type="module" src="script.js"></script>
     <script type="module" src="auth-nav.js"></script>
   </body>
