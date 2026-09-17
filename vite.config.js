@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { resolve } from "path";
-import basicSsl from "@vitejs/plugin-basic-ssl";
 
 export default defineConfig({
   build: {
@@ -20,7 +19,6 @@ export default defineConfig({
     },
   },
   plugins: [
-    basicSsl(),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["icons/favicon.png", "icons/apple-touch-icon.png"],
