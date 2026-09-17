@@ -172,44 +172,234 @@ section {
   align-items: center;
   justify-content: center;
   z-index: 11;
+  /* the two bars inside are positioned absolutely against this */
+  position: relative;
 }
 
 .site-header-toggler:focus {
   box-shadow: none;
 }
 
-.site-header-toggler .navbar-toggler-icon {
-  width: 1.2em;
-  height: 1.2em;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%234E220F' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2.5' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+/* ---- Toggler bars: two lines that rotate into an X ----
+   header.js renders <span class="tb-bar"></span> twice inside the
+   button instead of Bootstrap's .navbar-toggler-icon, because a
+   single background-image can't be rotated into a cross. */
+
+.site-header-toggler .tb-bar {
+  position: absolute;
+  left: 11px;
+  right: 11px;
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--base-300);
+  /* top and transform animate together: the bars first meet in the
+     middle, then rotate — that's what reads as a morph rather than
+     a swap. Same easing as the header's own hide/show. */
+  transition: top 0.4s cubic-bezier(0.65, 0, 0.35, 1),
+    transform 0.4s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-/* Matches Bootstrap's own md breakpoint (navbar-expand-md) so the
-   toggler and collapse panel switch on together, not at two
-   different widths. */
+.site-header-toggler .tb-bar:nth-of-type(1) { top: 15px; }
+.site-header-toggler .tb-bar:nth-of-type(2) { top: 25px; }
+
+/* 20px is the vertical middle of the 42px button. The angle is
+   deliberately shallow — a wide X, not a 45deg cross. Raise both to
+   45deg/-45deg for the conventional close icon. */
+.site-header-toggler.is-open .tb-bar:nth-of-type(1) {
+  top: 20px;
+  transform: rotate(20deg);
+}
+
+.site-header-toggler.is-open .tb-bar:nth-of-type(2) {
+  top: 20px;
+  transform: rotate(-20deg);
+}
+
+/* ---- Desktop (>=md): keep the pill row on the right ----
+   The panel used to be .navbar-collapse, which carries flex-grow:1
+   — that's what let `.site-header-nav { margin-left:auto }` push
+   the pills to the right edge. Bootstrap's responsive offcanvas
+   doesn't grow on its own, so grant it here. */
+@media (min-width: 768px) {
+  .site-header-menu,
+  .site-header-menu > .offcanvas-body {
+    flex-grow: 1;
+  }
+}
+
+/* ==========================================================
+   MOBILE MENU (<md)
+   The panel is a Bootstrap RESPONSIVE offcanvas (.offcanvas-md):
+   below 768px it's a full-screen panel, at >=768px Bootstrap strips
+   the offcanvas styling itself and the links sit inline as pills,
+   exactly as before. Matches navbar-expand-md in header.js so the
+   toggler and the panel switch over at the same width.
+   ========================================================== */
 @media (max-width: 767.98px) {
-  /* Collapsed panel: solid card dropped below the fixed header so
-     the pill links are readable no matter what's behind the header */
-  .navbar-collapse {
-    position: absolute;
-    top: 80px;
-    left: 0;
+  /* Bootstrap slides an offcanvas in with a transform. Killing the
+     transform and animating opacity instead turns the same
+     component into a fade — Bootstrap still handles ESC, focus
+     trapping, the scroll lock and the toggle button.
+     .showing / .show / .hiding are Bootstrap's own state classes:
+     .showing is present for the whole opening transition, .show
+     once it's open, .hiding while it closes. */
+  .site-header-menu.offcanvas-md {
+    /* Bootstrap paints the height from this variable (30vh for
+       offcanvas-top), and it beats a plain `height` declaration on
+       some pages — so override the variable itself, same as
+       .products-sidebar does with --bs-offcanvas-bg-color below. */
+    --bs-offcanvas-height: 100svh;
+    /* fixed + inset:0 pins the panel to the viewport, so the height
+       resolves against the screen rather than whatever wrapper the
+       page happens to use. booking.html and contact.html have no
+       <section> (and so don't inherit the global 100svh), which is
+       what collapsed the panel to a strip at the top. */
+    position: fixed;
+    inset: 0;
     width: 100%;
-    background-color: var(--base-300);
-    padding: 1.25rem 1.5rem 1.75rem;
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+    height: 100svh;
+    border: 0;
+    /* --base-300 (#4E220F) at 93% so the dimmed page ghosts through */
+    background-color: rgba(78, 34, 15, 0.93);
+    transform: none !important;
+    opacity: 0;
+    transition: opacity 0.45s ease, visibility 0.45s;
+  }
+
+  .site-header-menu.offcanvas-md.showing,
+  .site-header-menu.offcanvas-md.show {
+    opacity: 1;
+  }
+
+  .site-header-menu.offcanvas-md.hiding {
+    opacity: 0;
+  }
+
+  .site-header-menu .offcanvas-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 1.5rem 2rem; /* 80px clears the fixed header */
   }
 
   .site-header-nav {
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
+    gap: 0.35rem;
     margin: 0;
-    gap: 0.6rem;
+    width: 100%;
   }
 
-  .site-header-nav a,
-  .site-header-nav .cart-badge {
-    text-align: center;
+  /* Each item starts 22px high and transparent. That's half the
+     animation; the per-item delay further down is the other half. */
+  .site-header-nav > * {
+    opacity: 0;
+    transform: translateY(-22px);
+    transition: opacity 0.55s ease,
+      transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Pills off, big type on */
+  .site-header-nav a {
+    position: relative;
+    background-color: transparent;
+    color: var(--base-100);
+    font-size: 1.5rem;
+    letter-spacing: 1px;
+    padding: 0.45rem 0.25rem;
+    border-radius: 0;
+  }
+
+  /* Higher specificity than `.site-header-nav a.active` above, which
+     would otherwise paint a yellow pill in the middle of the panel. */
+  .site-header-nav a.active,
+  .site-header-nav a:hover {
+    background-color: transparent;
+    color: #f5f0a8;
+  }
+
+  /* Arrival. Both state classes, because .showing is the one present
+     while the panel is actually opening. */
+  .site-header-menu.showing .site-header-nav > *,
+  .site-header-menu.show .site-header-nav > * {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* 7 children: Home, Trails, Products, Book Now, Contact, Log In,
+     cart. ~70ms apart, top to bottom. Add an :nth-child if you add a
+     link — an item with no delay simply arrives first. */
+  .site-header-nav > *:nth-child(1) { transition-delay: 0.07s; }
+  .site-header-nav > *:nth-child(2) { transition-delay: 0.14s; }
+  .site-header-nav > *:nth-child(3) { transition-delay: 0.21s; }
+  .site-header-nav > *:nth-child(4) { transition-delay: 0.28s; }
+  .site-header-nav > *:nth-child(5) { transition-delay: 0.35s; }
+  .site-header-nav > *:nth-child(6) { transition-delay: 0.42s; }
+  .site-header-nav > *:nth-child(7) { transition-delay: 0.49s; }
+
+  /* On the way out everything leaves together — a staggered exit
+     makes a menu feel slow to dismiss. */
+  .site-header-menu.hiding .site-header-nav > * {
+    transition-delay: 0s !important;
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  /* Hover underline wipe. Skips the cart, which is an icon. */
+  .site-header-nav a:not(.account-icon-link)::after {
+    content: "";
+    position: absolute;
+    left: 0.25rem;
+    right: 0.25rem;
+    bottom: 0.3rem;
+    height: 1px;
+    background-color: currentColor;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  .site-header-nav a:not(.account-icon-link):hover::after,
+  .site-header-nav a:not(.account-icon-link):focus-visible::after {
+    transform: scaleX(1);
+  }
+
+  /* ---- The page behind ----
+     Everything at the top level of <body> except the header fades
+     back while the menu is open, so the panel reads as a layer over
+     the site rather than a separate screen. The transition sits on
+     the unqualified selector so it eases on the way back too.
+     body.nav-open / body.nav-busy are set in header.js. */
+  body > *:not(.site-header):not(script):not(style):not(.cart-toast):not(.drawer-backdrop):not(.product-drawer) {
+    transition: opacity 0.45s ease;
+  }
+
+  body.nav-open > *:not(.site-header):not(script):not(style):not(.cart-toast):not(.drawer-backdrop):not(.product-drawer) {
+    opacity: 0.12;
+  }
+
+  /* Bootstrap's offcanvas sits at z-index 1045 and .site-header at
+     10, so without this the panel covers its own close button.
+     Raised only while the menu is busy, so the product drawer keeps
+     sitting above the header everywhere else. */
+  body.nav-busy .site-header {
+    z-index: 1050;
+  }
+
+  /* script.js hides the header on scroll-down. Two classes here beat
+     the single-class `.site-header.hide`, so no !important needed. */
+  body.nav-open .site-header.hide {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header-toggler .tb-bar,
+  .site-header-menu.offcanvas-md,
+  .site-header-nav > *,
+  .site-header-nav a::after {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
   }
 }
 
