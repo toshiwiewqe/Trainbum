@@ -12,7 +12,7 @@
    ========================================================== */
 
 import { db } from "./firebase-config.js";
-import { doc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
 import {
   getCart,
   updateQty,

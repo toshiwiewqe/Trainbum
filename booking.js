@@ -156,6 +156,17 @@ function formatPrice(value) {
   return `₱${n.toLocaleString("en-PH")}`;
 }
 
+/* Must match the identical rule in trail.js — see the comment there for
+   why a plain `status !== "Open"` check is wrong (statuses like "Open
+   (monolith closed)" are still bookable; only an exact "closed" really
+   shuts a trail down). Keeping this in sync with trail.js is what makes
+   the "Book" button on trail.html actually work for every open trail. */
+function isTrailOpen(trail) {
+  if (trail.isOpen !== undefined) return Boolean(trail.isOpen);
+  const status = String(trail.status ?? "open").trim();
+  return !/^closed$/i.test(status);
+}
+
 /* Some trail photos have spaces in the filename (e.g. "galugod baboy.jpg").
    A raw space in a URL is not valid and some servers will 404 on it, so
    escape it. Only spaces are touched, to avoid double-encoding paths that
@@ -211,7 +222,7 @@ async function loadData() {
 }
 
 function populateTrailSelect() {
-  const openTrails = trails.filter((t) => t.status === "Open");
+  const openTrails = trails.filter(isTrailOpen);
   trailSelect.innerHTML =
     `<option value="" disabled selected>Select a trail...</option>` +
     openTrails

@@ -624,6 +624,10 @@ section {
 /* ==========================================================
    PRODUCTS PAGE
    ========================================================== */
+.products-hero {
+  padding: 140px 1.5rem 3rem;
+  text-align: center;
+}
 
 .products-hero h1 {
   font-size: clamp(1.75rem, 3.2vw, 2.75rem);

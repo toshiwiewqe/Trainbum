@@ -2,9 +2,13 @@
    Trailbound — Checkout
    3-step wizard: Shipping -> Payment (simulated) -> Review.
    On "Place Order":
-     - writes an order doc to Firestore ("orders" collection)
      - flips any booking cart lines from Pending -> Confirmed
+     - writes an order doc to Firestore ("orders" collection)
      - clears the cart
+
+   Bookings are updated BEFORE the order doc is written: if the
+   booking update is rejected (e.g. by Firestore rules), no
+   orphan order document is left behind and the user can retry.
 
    Payment here is entirely simulated (no network call to a
    processor) — the "payment" object saved on the order records
@@ -18,6 +22,10 @@
    cards (instead of a <select> / fixed fields) — shippingCost()
    and handlePlaceOrder() read the currently-checked radio inputs
    rather than a single form control.
+
+   NOTE: anything read from the cart (totals, hasProducts) must be
+   captured BEFORE clearCart() runs — afterwards the cart is empty
+   and those helpers all return 0 / false.
 
    TODO (after Auth is added): attach `user_id` to the order doc
    here, same as the TODO already in booking.js, and add a
@@ -295,6 +303,7 @@ async function handlePlaceOrder(e) {
   };
 
   const createdAt = new Date();
+  const hadProducts = hasProducts(); // capture BEFORE clearCart()
 
   const order = {
     items: productItems.map((i) => ({
@@ -306,7 +315,7 @@ async function handlePlaceOrder(e) {
       color: i.color,
     })),
     booking_ids: bookingItems.map((i) => i.bookingId),
-    shipping: hasProducts() ? shipping : null,
+    shipping: hadProducts ? shipping : null,
     payment,
     subtotal: getSubtotal(),
     shipping_fee: shippingCost(),
@@ -316,9 +325,10 @@ async function handlePlaceOrder(e) {
     // TODO: add `user_id: currentUser.uid` here once Auth is wired up
   };
 
-  try {
-    const orderRef = await addDoc(collection(db, "orders"), order);
+  const orderTotal = order.total; // read before the cart is emptied
 
+  try {
+    // Bookings first: if this throws, no orphan order doc is left behind.
     await Promise.all(
       bookingItems.map((i) =>
         updateDoc(doc(db, "bookings", i.bookingId), {
@@ -328,17 +338,30 @@ async function handlePlaceOrder(e) {
       )
     );
 
+    const orderRef = await addDoc(collection(db, "orders"), order);
+
     clearCart();
-    showConfirmation(orderRef.id, createdAt, order.total, bookingItems.length > 0, hasProducts());
+    showConfirmation(
+      orderRef.id,
+      createdAt,
+      orderTotal,
+      bookingItems.length > 0,
+      hadProducts
+    );
   } catch (err) {
     console.error("Failed to place order:", err);
-    els.checkoutError.textContent = "Something went wrong placing your order. Please try again.";
+    els.checkoutError.textContent =
+      "Something went wrong placing your order. Please try again.";
     els.checkoutError.hidden = false;
     els.placeOrderBtn.disabled = false;
     els.placeOrderBtn.textContent = "Place Order";
   }
 }
 
+/* ---------- Helpers ---------- */
+// Reads a form field by id and trims it. Used throughout
+// renderReview() and handlePlaceOrder() — if this goes missing,
+// both of those die with "val is not defined".
 function val(id) {
   return document.getElementById(id).value.trim();
 }
