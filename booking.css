@@ -1,4 +1,3 @@
-
 :root {
   --tb-green-dark: #173b22;
   --tb-green: #24552d;
@@ -44,11 +43,20 @@
    Layout, logo sizing, and nav-link styling all come from the
    shared styles.css (same as login.html) so the header lines up
    identically on every page. Only the scroll-hide behaviour below
-   is specific to this page. */
+   is specific to this page.
+
+   DO NOT add `transform: translateY(0)` (or any other transform)
+   to .site-header here. The mobile menu panel is a position:fixed
+   element INSIDE this header, and any transform other than `none`
+   turns its ancestor into the containing block for fixed
+   descendants — so the panel would size itself against the 80px
+   header instead of the viewport and collapse into a strip.
+   The scroll-hide still works without it: .site-header--hidden
+   below supplies its own transform, and the menu can't be open
+   while the header is hidden. */
 
 .site-header {
   transition: transform 0.35s ease;
-  transform: translateY(0);
 }
 
 .site-header-cart {
@@ -87,7 +95,9 @@
 }
 
 /* Nudge the logo a little further into the upper-left corner.
-   Kept in sync with the same rule in login.css so both pages match. */
+   Kept in sync with the same rule in login.css so both pages match.
+   Safe to transform: the logo is a sibling of the menu panel, not
+   an ancestor of it. */
 .site-header-logo {
   transform: translate(-6px, -4px);
 }
