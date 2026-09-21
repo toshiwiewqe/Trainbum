@@ -17,7 +17,12 @@
    ========================================================== */
 
 import { db } from './firebase-config.js';
-import { collection, getDocs, query, where, addDoc } from 'firebase/firestore';
+// CHANGED: was `from "firebase/firestore"` (the bundled npm SDK).
+// firebase-config.js built its Firestore on a SECOND Firebase app, while
+// auth lived on the app in firebase-init.js — so Firestore never saw the
+// signed-in user and every authenticated write failed with
+// "Missing or insufficient permissions". One app, one SDK now.
+import { collection, getDocs, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { CATEGORY_TREE, COLORS, SIZES } from './taxonomy.js';
 import { getCart, addProductToCart, updateCartBadge, onCartUpdated } from './cart-store.js';
 
@@ -37,6 +42,34 @@ async function loadProducts() {
         ? data.dateAdded.toDate().toISOString()
         : data.dateAdded
     };
+  })
+  // ADDED: honour the admin panel's active/inactive switch.
+  // Without this, disabling a product in Admin -> Gear changed
+  // nothing on the shop — this page listed every document in the
+  // collection regardless of status.
+  //
+  // Filtered here rather than in the Firestore query on purpose: a
+  // status-based security rule would fail the whole unfiltered list
+  // query and blank the shop, and products seeded before the admin
+  // panel existed have no `status` field at all — those are treated
+  // as active so nothing disappears retroactively.
+  .filter(p => !p.status || String(p.status).toLowerCase() === "active");
+
+  // Defensive: several places below assume these exist
+  // (p.attributes.size, p.images[0], p.specs). A product added
+  // through the admin panel has none of them, which would throw
+  // and leave the grid stuck on "Loading gear…".
+  PRODUCTS.forEach(p => {
+    p.images = Array.isArray(p.images) && p.images.length
+      ? p.images
+      : [p.image || ""];
+    p.attributes = p.attributes || {};
+    p.attributes.size = Array.isArray(p.attributes.size) ? p.attributes.size : [];
+    p.attributes.color = Array.isArray(p.attributes.color) ? p.attributes.color : [];
+    p.specs = p.specs || {};
+    p.price = Number(p.price) || 0;
+    p.subcategory = p.subcategory || p.category || "Gear";
+    if (p.inStock === undefined) p.inStock = true;
   });
 }
 

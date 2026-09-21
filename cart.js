@@ -12,7 +12,12 @@
    ========================================================== */
 
 import { db } from "./firebase-config.js";
-import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
+// CHANGED: was `from "firebase/firestore"` (the bundled npm SDK).
+// firebase-config.js built its Firestore on a SECOND Firebase app, while
+// auth lived on the app in firebase-init.js — so Firestore never saw the
+// signed-in user and every authenticated write failed with
+// "Missing or insufficient permissions". One app, one SDK now.
+import { collection, addDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getCart,
   updateQty,

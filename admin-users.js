@@ -1,145 +1,325 @@
-import { auth, db, isAdmin } from "./firebase-init.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { collection, getDocs, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { attachLogoutConfirm, renderAdminSidebarProfile } from "./admin.js";
+/* ==========================================================
+   Admin — Users
+   ----------------------------------------------------------
+   Live stream of the `users` collection, cross-referenced against
+   `admins` so real admins show the Super Admin badge.
 
-const avatarImg      = document.getElementById('admin-avatar');
-const avatarFallback = document.getElementById('admin-avatar-fallback');
-const nameEl         = document.getElementById('admin-name');
-const logoutBtn      = document.getElementById('admin-logout-btn');
-const roleFilter      = document.getElementById('user-role-filter');
-const searchInput     = document.getElementById('user-search');
-const editModal       = document.getElementById('edit-user-modal');
-const editBackdrop    = document.getElementById('edit-user-backdrop');
-const editRole        = document.getElementById('edit-user-role');
+   Two behaviour fixes vs the old version:
+
+   1. Saving a role now actually WRITES to Firestore. Before, it
+      only changed a local variable, so the change vanished on
+      refresh and the customer never saw it.
+
+   2. "Active users" and "New registrations" are computed from
+      real lastActiveAt / createdAt stamps, which the data layer
+      now writes on every sign-in, instead of being placeholders.
+
+   Note on the delete button: a browser cannot delete a Firebase
+   Auth account — that needs the Admin SDK on a server. It
+   disables the profile instead, which the user-side guard honours.
+   ========================================================== */
+
+import {
+  attachLogoutConfirm,
+  collectUnsubscribers,
+  describeError,
+  escapeHtml,
+  renderAdminSidebarProfile,
+  requireAdmin,
+  setUserRole,
+  toDate,
+  updateUserProfile,
+  watchUsers
+} from "./trailbound-data.js";
+
+const track = collectUnsubscribers();
+
+const el = {
+  avatarImg: document.getElementById("admin-avatar"),
+  avatarFallback: document.getElementById("admin-avatar-fallback"),
+  nameEl: document.getElementById("admin-name"),
+  logoutBtn: document.getElementById("admin-logout-btn"),
+  roleFilter: document.getElementById("user-role-filter"),
+  search: document.getElementById("user-search"),
+  list: document.getElementById("user-list"),
+  modal: document.getElementById("edit-user-modal"),
+  backdrop: document.getElementById("edit-user-backdrop"),
+  role: document.getElementById("edit-user-role"),
+  saveBtn: document.getElementById("edit-user-save"),
+  panel: document.querySelector(".admin-users-panel")
+};
+
+let users = [];
 let editingUser = null;
+/** null = still loading, "" = loaded fine, otherwise the reason it failed. */
+let loadProblem = null;
 
-attachLogoutConfirm(logoutBtn);
+attachLogoutConfirm(el.logoutBtn);
 
-let allUsers = [];
-let adminUidSet = new Set();
+requireAdmin((user) => {
+  renderAdminSidebarProfile(user, {
+    avatarImg: el.avatarImg,
+    avatarFallback: el.avatarFallback,
+    nameEl: el.nameEl
+  });
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user) { window.location.href = 'admin-login.html'; return; }
-
-  const admin = await isAdmin(user.uid);
-  if (!admin) { await signOut(auth); window.location.href = 'admin-login.html'; return; }
-
-  renderAdminSidebarProfile(user, { avatarImg, avatarFallback, nameEl });
-  loadUsers();
+  track(
+    watchUsers(
+      (items) => {
+        loadProblem = "";
+        users = items;
+        renderStats();
+        renderTable();
+      },
+      {
+        // Without this the page rendered "No users found." whether the
+        // collection was genuinely empty or Firestore refused the read —
+        // two very different problems with one misleading message.
+        onError: (err, which) => {
+          if (which === "users") {
+            loadProblem = describeError(err);
+            users = [];
+            renderStats();
+            renderTable();
+          } else {
+            console.warn("Admin badges unavailable:", err?.code);
+          }
+        }
+      }
+    )
+  );
 });
 
-async function loadUsers() {
-  try {
-    // Cross-reference against the admins collection so real admins
-    // show a Super Admin badge instead of the default Customer badge.
-    const adminsSnap = await getDocs(collection(db, 'admins'));
-    adminUidSet = new Set(adminsSnap.docs.map(d => d.id));
-
-    const usersSnap = await getDocs(collection(db, 'users'));
-    allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    const countSnap = await getCountFromServer(collection(db, 'users'));
-    document.getElementById('user-total').textContent = countSnap.data().count.toLocaleString();
-  } catch (err) {
-    console.error('Users load error:', err);
-    allUsers = [];
-    document.getElementById('user-total').textContent = '0';
+/** A banner above the table, created on demand so the HTML needs no change. */
+function showProblem(html) {
+  let box = document.getElementById("user-load-problem");
+  if (!box) {
+    box = document.createElement("p");
+    box.id = "user-load-problem";
+    box.className = "admin-product-feedback";
+    el.panel?.parentNode?.insertBefore(box, el.panel);
   }
-
-  // "Active" / "New Registrations" / "Average Session" need dedicated
-  // tracking fields (lastActiveAt, createdAt with a real timestamp,
-  // session logs) that don't exist in the current schema — these are
-  // placeholders until that data is captured elsewhere in the app.
-  document.getElementById('user-active').textContent = allUsers.length.toLocaleString();
-  document.getElementById('user-new').textContent = '—';
-  document.getElementById('user-session').textContent = '—';
-
-  renderTable();
+  box.innerHTML = html;
+  box.hidden = false;
 }
 
-function getInitials(name, email) {
-  const source = name || email || '?';
-  return source.trim().charAt(0).toUpperCase();
+function clearProblem() {
+  const box = document.getElementById("user-load-problem");
+  if (box) box.hidden = true;
+}
+
+/* ---------- stats ---------- */
+
+const DAY = 24 * 60 * 60 * 1000;
+
+function renderStats() {
+  const now = Date.now();
+  const activeCount = users.filter((u) => {
+    const seen = toDate(u.lastActiveAt);
+    return seen && now - seen.getTime() < 30 * DAY;
+  }).length;
+
+  const newCount = users.filter((u) => {
+    const joined = toDate(u.createdAt);
+    return joined && now - joined.getTime() < DAY;
+  }).length;
+
+  setText("user-total", users.length.toLocaleString());
+  setText("user-active", activeCount.toLocaleString());
+  setText("user-new", newCount.toLocaleString());
+  setText("user-session", users.filter((u) => u.disabled).length.toLocaleString());
+
+  const sessionLabel = document.querySelector("#user-session")?.previousElementSibling;
+  if (sessionLabel) sessionLabel.textContent = "Disabled Accounts";
+  const sessionDelta = document.querySelector("#user-session")?.nextElementSibling;
+  if (sessionDelta) sessionDelta.textContent = "Blocked from signing in";
+
+  setText("user-total-delta", `${users.length} profile${users.length === 1 ? "" : "s"} on file`);
+  setText("user-active-delta", "Seen in the last 30 days");
+}
+
+function setText(id, value) {
+  const node = document.getElementById(id);
+  if (node) node.textContent = value;
+}
+
+/* ---------- table ---------- */
+
+function roleLabel(role) {
+  return role === "admin" ? "Super Admin" : role === "editor" ? "Editor" : "Customer";
+}
+
+function roleClass(role) {
+  return role === "admin"
+    ? "admin-role-badge--admin"
+    : role === "editor"
+    ? "admin-role-badge--editor"
+    : "";
+}
+
+function initials(user) {
+  return (user.displayName || user.email || "?").trim().charAt(0).toUpperCase();
 }
 
 function renderTable() {
-  const tbody = document.getElementById('user-list');
-  const filter = roleFilter.value;
-  const searchTerm = (searchInput.value || '').toLowerCase();
+  const filter = el.roleFilter?.value || "all";
+  const term = (el.search?.value || "").toLowerCase();
 
-  const rows = allUsers
-    .map(u => ({ ...u, role: adminUidSet.has(u.id) ? 'admin' : (u.role || 'customer') }))
-    .filter(u => {
-      const matchesRole = filter === 'all' || u.role === filter;
-      const matchesSearch = !searchTerm ||
-        (u.displayName || '').toLowerCase().includes(searchTerm) ||
-        (u.email || '').toLowerCase().includes(searchTerm);
-      return matchesRole && matchesSearch;
-    });
+  const rows = users.filter((u) => {
+    const matchesRole = filter === "all" || u.role === filter;
+    const matchesTerm =
+      !term ||
+      u.displayName.toLowerCase().includes(term) ||
+      u.email.toLowerCase().includes(term);
+    return matchesRole && matchesTerm;
+  });
 
-  if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="admin-empty">No users found.</td></tr>';
+  if (!rows.length) {
+    // Three different reasons the table can be empty. Say which.
+    if (loadProblem === null) {
+      el.list.innerHTML =
+        '<tr><td colspan="5" class="admin-empty">Loading users...</td></tr>';
+    } else if (loadProblem) {
+      clearProblem();
+      showProblem(escapeHtml(loadProblem));
+      el.list.innerHTML =
+        '<tr><td colspan="5" class="admin-empty">Couldn\'t read the users collection — see above.</td></tr>';
+    } else if (!users.length) {
+      clearProblem();
+      showProblem(
+        "The <code>users</code> collection came back empty. Firebase <strong>Authentication</strong> accounts do not create these documents — " +
+          "a <code>users/{uid}</code> document is written the first time someone signs in through the patched <code>login.js</code>, " +
+          "or opens <code>account.html</code>. Sign in once on the customer site and this table will fill."
+      );
+      el.list.innerHTML =
+        '<tr><td colspan="5" class="admin-empty">No user profiles in Firestore yet.</td></tr>';
+    } else {
+      clearProblem();
+      el.list.innerHTML =
+        '<tr><td colspan="5" class="admin-empty">No users match this filter.</td></tr>';
+    }
     return;
   }
 
-  tbody.innerHTML = '';
-  rows.forEach(u => {
-    const roleLabel = u.role === 'admin' ? 'Super Admin' : u.role === 'editor' ? 'Editor' : 'Customer';
-    const roleClass = u.role === 'admin' ? 'admin-role-badge--admin' : u.role === 'editor' ? 'admin-role-badge--editor' : '';
+  clearProblem();
 
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>
-        ${u.photoURL
-          ? `<img src="${u.photoURL}" class="admin-table-avatar" alt="">`
-          : `<div class="admin-table-avatar" style="display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#1a0401;">${getInitials(u.displayName, u.email)}</div>`}
-      </td>
-      <td>
-        ${u.displayName || 'Unnamed'}
-        <div class="admin-table-subtext">${u.email || ''}</div>
-      </td>
-      <td><span class="admin-role-badge ${roleClass}">${roleLabel}</span></td>
-      <td><span class="admin-status-badge admin-status-badge--confirmed">Active</span></td>
-      <td>
-        <div class="admin-actions-cell">
-          <button class="admin-icon-btn" type="button" aria-label="Edit user">✎</button>
-          <button class="admin-icon-btn" type="button" aria-label="Delete user">🗑</button>
-        </div>
-      </td>
-    `;
-    row.querySelector('[aria-label="Edit user"]').addEventListener('click', () => openEditUser(u));
-    tbody.appendChild(row);
-  });
+  el.list.innerHTML = rows
+    .map(
+      (u) => `<tr>
+      <td>${
+        u.photoURL
+          ? `<img src="${escapeHtml(u.photoURL)}" class="admin-table-avatar" alt="" referrerpolicy="no-referrer">`
+          : `<div class="admin-table-avatar" style="display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#1a0401;">${escapeHtml(
+              initials(u)
+            )}</div>`
+      }</td>
+      <td>${escapeHtml(u.displayName)}<div class="admin-table-subtext">${escapeHtml(
+        u.email
+      )}</div></td>
+      <td><span class="admin-role-badge ${roleClass(u.role)}">${roleLabel(u.role)}</span></td>
+      <td><span class="admin-status-badge admin-status-badge--${
+        u.disabled ? "cancelled" : "completed"
+      }">${u.disabled ? "Disabled" : "Active"}</span></td>
+      <td><div class="admin-actions-cell">
+        <button class="admin-icon-btn" type="button" data-action="edit" data-id="${
+          u.id
+        }" aria-label="Edit user">✎</button>
+        <button class="admin-icon-btn" type="button" data-action="toggle" data-id="${
+          u.id
+        }" aria-label="${u.disabled ? "Enable user" : "Disable user"}">${
+        u.disabled ? "↺" : "🚫"
+      }</button>
+      </div></td>
+    </tr>`
+    )
+    .join("");
 }
+
+el.list?.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  const user = users.find((u) => u.id === button.dataset.id);
+  if (!user) return;
+
+  if (button.dataset.action === "edit") {
+    openEditUser(user);
+    return;
+  }
+
+  const next = !user.disabled;
+  if (!window.confirm(`${next ? "Disable" : "Re-enable"} ${user.displayName || user.email}?`))
+    return;
+
+  try {
+    await updateUserProfile(
+      user.id,
+      { disabled: next },
+      user.displayName || user.email
+    );
+  } catch (err) {
+    console.error("Could not update account state:", err);
+    window.alert("That change could not be saved. Check your Firestore rules.");
+  }
+});
+
+el.roleFilter?.addEventListener("change", renderTable);
+el.search?.addEventListener("input", renderTable);
+
+/* ---------- edit modal ---------- */
 
 function openEditUser(user) {
   editingUser = user;
-  document.getElementById('edit-user-name').textContent = user.displayName || 'Unnamed';
-  document.getElementById('edit-user-email').textContent = user.email || '';
-  document.getElementById('edit-user-avatar').textContent = getInitials(user.displayName, user.email);
-  editRole.value = user.role;
-  editModal.hidden = false;
-  editBackdrop.hidden = false;
+  document.getElementById("edit-user-name").textContent = user.displayName;
+  document.getElementById("edit-user-email").textContent = user.email;
+  document.getElementById("edit-user-avatar").textContent = initials(user);
+  el.role.value = user.role;
+  el.modal.hidden = false;
+  el.backdrop.hidden = false;
 }
 
 function closeEditUser() {
-  editModal.hidden = true;
-  editBackdrop.hidden = true;
+  el.modal.hidden = true;
+  el.backdrop.hidden = true;
   editingUser = null;
 }
 
-document.getElementById('edit-user-close')?.addEventListener('click', closeEditUser);
-document.getElementById('edit-user-cancel')?.addEventListener('click', closeEditUser);
-editBackdrop?.addEventListener('click', closeEditUser);
-document.getElementById('edit-user-save')?.addEventListener('click', () => {
-  if (!editingUser) return;
-  editingUser.role = editRole.value;
-  if (editingUser.role === 'admin') adminUidSet.add(editingUser.id);
-  else adminUidSet.delete(editingUser.id);
-  closeEditUser();
-  renderTable();
-});
+document.getElementById("edit-user-close")?.addEventListener("click", closeEditUser);
+document.getElementById("edit-user-cancel")?.addEventListener("click", closeEditUser);
+el.backdrop?.addEventListener("click", closeEditUser);
 
-roleFilter?.addEventListener('change', renderTable);
-searchInput?.addEventListener('input', renderTable);
+el.saveBtn?.addEventListener("click", async () => {
+  if (!editingUser) return;
+
+  const newRole = el.role.value;
+  el.saveBtn.disabled = true;
+  el.saveBtn.textContent = "Saving...";
+
+  try {
+    if (newRole !== editingUser.role) {
+      // previousRole + label are what turn the log line from
+      // "user updated" into "Nikko changed Ana's role: customer → admin".
+      await setUserRole(
+        editingUser.id,
+        newRole,
+        editingUser.role,
+        editingUser.displayName || editingUser.email
+      );
+      if (newRole === "admin") {
+        window.alert(
+          "Role saved.\n\nNote: full admin-panel access also needs a document at " +
+            `admins/${editingUser.id} in Firestore. That one stays a console action on purpose ` +
+            "so admin rights can never be granted from a browser."
+        );
+      }
+    }
+    closeEditUser();
+    // The users stream re-renders the row on its own.
+  } catch (err) {
+    console.error("Role save failed:", err);
+    window.alert("Could not save that role. Check your Firestore rules.");
+  } finally {
+    el.saveBtn.disabled = false;
+    el.saveBtn.textContent = "Save Permissions";
+  }
+});

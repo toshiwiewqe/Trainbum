@@ -13,8 +13,12 @@
    the module exits quietly.
    ========================================================== */
 
-import { db } from "./firebase-config.js";
-import { collection, getDocs } from "firebase/firestore";
+// CHANGED: was a one-shot getDocs read. watchTrails() is a live
+// Firestore listener, so a trail added, edited, closed or re-opened in
+// Admin -> Catalog appears on this page within about a second, with no
+// refresh. Everything below still works on the raw document shape
+// (trail_id, base_price, guide_id...), so none of the rendering changed.
+import { watchTrails } from "./trailbound-data.js";
 
 /* ---------- elements ---------- */
 const grid = document.getElementById("trails-grid");
@@ -79,15 +83,21 @@ function imageSrc(raw) {
 
 /* ---------- loading ---------- */
 
-async function loadTrails() {
-  try {
-    const snapshot = await getDocs(collection(db, "trails"));
-    allTrails = snapshot.docs.map((doc) => doc.data());
-    renderTrails();
-  } catch (err) {
-    console.error("[trail] Firestore read failed:", err);
-    grid.innerHTML = `<p class="trails-status trails-status--error">Couldn't load trails right now. Please refresh.</p>`;
-  }
+function loadTrails() {
+  watchTrails(
+    (items) => {
+      // `_raw` is the untouched Firestore document, so the filter and
+      // card code below keeps reading the same field names it always did.
+      allTrails = items.map((t) => t._raw);
+      renderTrails();
+    },
+    {
+      onError: (err) => {
+        console.error("[trail] Firestore read failed:", err);
+        grid.innerHTML = `<p class="trails-status trails-status--error">Couldn't load trails right now. Please refresh.</p>`;
+      },
+    },
+  );
 }
 
 /* ---------- filtering + sorting ---------- */

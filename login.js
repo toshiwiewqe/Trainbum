@@ -7,6 +7,11 @@ import {
   createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// ADDED: creates users/{uid} on first sign-in, so a new account shows
+// up in the admin Users table straight away instead of only once the
+// person happens to open account.html. Also seeds their welcome
+// notification and logs the sign-up to the dashboard activity feed.
+import { ensureUserDoc, touchUser } from "./trailbound-data.js";
 
 document.addEventListener('DOMContentLoaded', () => {
   const form            = document.querySelector('.login-box');
@@ -110,6 +115,12 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const user = await loginOrSignupWithEmail(emailInput.value.trim(), passwordInput.value);
       console.log('Firebase login success:', user);
+
+      // ADDED: make sure this account exists in Firestore before we
+      // send them anywhere. Safe to call on every sign-in — it only
+      // writes when the profile doesn't exist yet.
+      await ensureUserDoc(user);
+      touchUser(user).catch(() => {});
 
            submitBtn.textContent = 'Success!';
       const adminSnapshot = await getDoc(doc(db, 'admins', user.uid));

@@ -1,0 +1,229 @@
+/* ==========================================================
+   Trailbound — storefront cards (customer side)
+   Styles the products that storefront.js renders from Firestore.
+   Uses the existing site tokens (--base-100/200/300) so the cards
+   sit inside the current design rather than beside it.
+   ========================================================== */
+
+.tb-products {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.tb-products--grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.5rem;
+}
+
+.tb-products--list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tb-products-empty {
+    font-family: "Inter", sans-serif;
+    text-transform: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 2.5rem 0;
+    grid-column: 1 / -1;
+}
+
+/* ---------- card ---------- */
+
+.tb-product-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    overflow: hidden;
+
+    transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.tb-product-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.tb-products--list .tb-product-card {
+    flex-direction: row;
+    align-items: stretch;
+}
+
+/* ---------- media ---------- */
+
+.tb-product-media {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.tb-products--list .tb-product-media {
+    width: 190px;
+}
+
+.tb-product-img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.tb-products--list .tb-product-img {
+    height: 100%;
+    aspect-ratio: auto;
+}
+
+.tb-product-img--placeholder {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05));
+}
+
+/* ---------- wishlist heart ---------- */
+
+.tb-wishlist-btn {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+
+    border: none;
+    border-radius: 50%;
+    background: rgba(12, 12, 12, 0.55);
+    backdrop-filter: blur(4px);
+    color: rgba(255, 255, 255, 0.75);
+
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.tb-wishlist-btn svg {
+    width: 17px;
+    height: 17px;
+}
+
+.tb-wishlist-btn:hover {
+    background: rgba(12, 12, 12, 0.75);
+    transform: scale(1.08);
+}
+
+.tb-wishlist-btn.is-saved {
+    color: #ff6b6b;
+}
+
+.tb-wishlist-btn:disabled {
+    opacity: 0.55;
+    cursor: wait;
+}
+
+/* ---------- body ---------- */
+
+.tb-product-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    gap: 0.4rem;
+    padding: 1rem 1.1rem 1.1rem;
+}
+
+.tb-product-category {
+    font-family: "Inter", sans-serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.tb-product-name {
+    font-family: "PP Neue Montreal", sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-transform: none;
+    color: var(--base-100, #fff);
+    margin: 0;
+}
+
+.tb-product-desc {
+    font-family: "Inter", sans-serif;
+    text-transform: none;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.65);
+
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.tb-product-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 0.75rem;
+}
+
+.tb-product-price {
+    font-family: "PP Neue Montreal", sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--base-100, #fff);
+}
+
+.tb-product-book {
+    font-family: "PP Neue Montreal", sans-serif;
+    text-transform: uppercase;
+    text-decoration: none;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+
+    background: var(--base-200, #d9502f);
+    color: var(--base-100, #fff);
+
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+}
+
+.tb-product-book:hover {
+    opacity: 0.85;
+}
+
+/* ---------- mobile ---------- */
+
+@media (max-width: 600px) {
+    .tb-products--grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .tb-products--list .tb-product-card {
+        flex-direction: column;
+    }
+
+    .tb-products--list .tb-product-media {
+        width: 100%;
+    }
+
+    .tb-products--list .tb-product-img {
+        height: auto;
+        aspect-ratio: 4 / 3;
+    }
+}

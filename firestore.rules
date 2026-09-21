@@ -1,0 +1,290 @@
+rules_version = '2';
+
+// ==========================================================
+// Trailbound — Firestore security rules
+// ----------------------------------------------------------
+// Deploy:  firebase deploy --only firestore:rules
+//
+// IMPORTANT — this REPLACES the earlier version of this file.
+// That one only knew about products, bookings, users, settings
+// and activity, so its closing `allow read, write: if false`
+// silently blocked trails, guides, packages, orders and contact.
+// Deploying it would have broken the booking page and checkout.
+// Every collection the site actually touches is covered below.
+//
+// Collections, and who each one is for:
+//
+//   trails     guides    packages   -> the booking page's three
+//                                      dropdowns. Public read.
+//   products                        -> gear in the shop. Public
+//                                      read when active.
+//   bookings                        -> a reserved trail slot.
+//   orders                          -> a paid gear/checkout order.
+//   contact                         -> support messages.
+//   users  (+ wishlist, notifications)
+//   settings   activity   admins
+// ==========================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ---------- helpers ---------- */
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // The booking/order documents the site writes today have no uid
+    // (booking.js and checkout.js both still carry a "TODO: add
+    // user_id" comment). These rules accept a document either way,
+    // so deploying them does NOT require the JS patches to land
+    // first. Once uid is being written, ownership checks start
+    // working on their own.
+    //
+    // TRADE-OFF, worth understanding: while a document has no uid,
+    // this returns true for ANY signed-in user. So until the two
+    // patches in INTEGRATION.md §3 land, any logged-in customer could
+    // read another customer's booking or order if they guessed the
+    // document id. That is strictly better than the current state
+    // (where the rules are wide open) and it closes by itself as soon
+    // as uid is being written. If you want it closed today, apply
+    // those patches, backfill uid on existing documents, then delete
+    // the two `!(field in resource.data)` lines below.
+    // REWRITTEN: this took a field name as a parameter and read it back
+    // with resource.data[field] — bracket access with a VARIABLE key,
+    // which the rules language does not reliably compile. A ruleset that
+    // fails to compile is rejected wholesale and your previous rules stay
+    // live, so the symptom is "I published and nothing changed".
+    // Literal field access only now.
+    function ownsUid() {
+      return signedIn()
+             && (!('uid' in resource.data)
+                 || resource.data.uid == null
+                 || resource.data.uid == request.auth.uid);
+    }
+
+    function emailMatches() {
+      return signedIn()
+             && 'email' in resource.data
+             && resource.data.email == request.auth.token.email;
+    }
+
+    // Fields a customer must never set on their own profile —
+    // without this, anyone could make themselves an admin.
+    function touchesPrivilegedFields() {
+      return request.resource.data.diff(resource.data)
+        .affectedKeys()
+        .hasAny(['role', 'disabled']);
+    }
+
+    /* ==========================================================
+       ADMIN GATE
+       The document that opens the whole panel. Never writable
+       from a browser — add admins in the Firebase console.
+       ========================================================== */
+
+    match /admins/{uid} {
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin();
+      allow write: if false;
+    }
+
+    /* ==========================================================
+       BOOKING CATALOG — trails, guides, packages
+       Read by booking.js and trail.html to build the form.
+       Public read so the trails page works signed-out; only an
+       admin can change what is bookable.
+       ========================================================== */
+
+    match /trails/{trailId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /guides/{guideId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /packages/{packageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ==========================================================
+       GEAR — products
+       Published gear is public so the shop renders for visitors.
+       Inactive items are admin-only, which is why the customer
+       side filters on status server-side.
+       ========================================================== */
+
+    // Public read, deliberately. products.js lists the whole
+    // collection unfiltered (`getDocs(collection(db,"products"))`),
+    // and Firestore evaluates a list query against every document it
+    // could return — so a status-based read rule would fail the WHOLE
+    // query as soon as one inactive item existed, blanking the shop.
+    // Hiding inactive gear is therefore done in products.js instead;
+    // see the patch in INTEGRATION.md.
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Written from the product drawer. No auth on these yet — matching
+    // how the page works today — but a review can never be edited or
+    // removed from the browser once posted.
+    match /product_reviews/{reviewId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    /* ==========================================================
+       BOOKINGS
+       Created by booking.js when a slot is reserved. An admin
+       changes the status, which is what notifies the customer.
+       A customer may cancel their own — cart.js does exactly
+       that when a booking line is removed from the cart.
+       ========================================================== */
+
+    match /bookings/{bookingId} {
+      allow read: if isAdmin() || (signedIn() && ownsUid()) || emailMatches();
+
+      allow create: if signedIn();
+
+      // A customer may change ONLY the status fields on their own
+      // booking, never the trail, date, group size or price.
+      //
+      // Both client paths that do this are legitimate:
+      //   cart.js           removing the cart line -> "Cancelled"
+      //   payment-result.js Maya returning success -> "Confirmed" + "Paid"
+      //
+      // An earlier draft of this rule allowed only "Cancelled", which
+      // would have broken payment-result.js and left every paid
+      // booking stuck on Pending.
+      allow update: if isAdmin()
+                    || (signedIn()
+                        && (ownsUid() || emailMatches())
+                        && request.resource.data.diff(resource.data)
+                             .affectedKeys()
+                             .hasOnly(['status', 'payment_status', 'updatedAt']));
+
+      allow delete: if isAdmin();
+    }
+
+    /* ==========================================================
+       ORDERS
+       Written by checkout.js before the Maya redirect, then
+       updated by payment-result.html when Maya sends the
+       customer back — so the owner needs update rights here,
+       not just the admin.
+       ========================================================== */
+
+    match /orders/{orderId} {
+      allow read: if isAdmin() || (signedIn() && ownsUid());
+      allow create: if signedIn();
+      allow update: if isAdmin() || (signedIn() && ownsUid());
+      allow delete: if isAdmin();
+    }
+
+    /* ==========================================================
+       SUPPORT MESSAGES
+       contact.js lets guests submit, so create is open. Reading
+       the inbox back is admin-only — these hold customer names,
+       emails and order details.
+       ========================================================== */
+
+    match /contact/{messageId} {
+      allow read: if isAdmin();
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    /* ==========================================================
+       USERS
+       ========================================================== */
+
+    match /users/{uid} {
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin();
+
+      allow create: if isOwner(uid);
+      allow update: if isAdmin() || (isOwner(uid) && !touchesPrivilegedFields());
+      allow delete: if isAdmin();
+
+      // Private to the customer, but an admin writes here too:
+      // confirming a booking drops a notification into their account.
+      match /notifications/{notificationId} {
+        allow read, write: if isOwner(uid) || isAdmin();
+      }
+
+      match /wishlist/{itemId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if isOwner(uid);
+      }
+    }
+
+    /* ==========================================================
+       SITE SETTINGS
+       World-readable so public pages can render the site name an
+       admin typed, without anyone signing in first.
+       ========================================================== */
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ==========================================================
+       ACTIVITY / AUDIT LOG  —  APPEND-ONLY
+       ----------------------------------------------------------
+       This is the tamper-prevention half of the audit trail. The
+       app half (logAudit in trailbound-data.js) records WHO did
+       WHAT; these rules are what stop the record being edited
+       afterwards.
+
+       update and delete are denied to EVERYONE — admins included,
+       and with no exception for the person who wrote the entry.
+       An audit trail an admin can quietly rewrite is not an audit
+       trail, and "the admin who deleted the mountain also deleted
+       the line saying so" is exactly the failure this page exists
+       to prevent.
+
+       Entries can't be forged either: actorUid must be the signed-in
+       user's own uid, so nobody can write a line blaming someone
+       else. The rest of the fields are trusted, because a user who
+       can already make the change can also describe it.
+
+       Clearing old entries is a console/Admin-SDK job on purpose —
+       it should take deliberate, logged-in-elsewhere effort, not a
+       button in the panel.
+       ========================================================== */
+
+    match /activity/{entryId} {
+      allow read: if isAdmin();
+
+      allow create: if signedIn()
+                    && request.resource.data.actorUid == request.auth.uid;
+
+      allow update, delete: if false;
+    }
+
+    /* ==========================================================
+       ANYTHING ELSE
+       Denied. If you add a collection, add a block for it above —
+       this line is what would otherwise silently break it.
+       ========================================================== */
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

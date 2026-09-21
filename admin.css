@@ -1122,3 +1122,1109 @@ h1, h3, h4, .admin-login-brand-name, .admin-sidebar-brand-name {
     }
     .order-special-request { background: #fff !important; border: 1px solid #000 !important; }
 }
+
+/* ==========================================================
+   ADDED — styles the markup referenced but never had
+   ----------------------------------------------------------
+   These class names were already used by the admin pages (and by
+   the shared logout modal in trailbound-data.js) but had no rules
+   anywhere, so they rendered unstyled. Everything below is new;
+   nothing above this line was changed.
+   ========================================================== */
+
+/* ---- Settings feedback banner ---- */
+
+.admin-settings-feedback {
+    margin: 0 0 1rem;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid rgba(74, 222, 128, 0.35);
+    border-radius: 8px;
+    background: rgba(74, 222, 128, 0.1);
+    color: #b6f0cb;
+    font-size: 0.8rem;
+}
+
+.admin-settings-feedback--error {
+    border-color: rgba(255, 90, 69, 0.35);
+    background: rgba(255, 90, 69, 0.1);
+    color: #ffb4a8;
+}
+
+/* ---- Role badges (users table) ---- */
+
+.admin-role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--admin-text-dim);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.admin-role-badge--admin {
+    border-color: rgba(255, 90, 69, 0.45);
+    background: rgba(255, 90, 69, 0.14);
+    color: var(--admin-accent);
+}
+
+.admin-role-badge--editor {
+    border-color: rgba(250, 204, 21, 0.4);
+    background: rgba(250, 204, 21, 0.12);
+    color: var(--admin-yellow);
+}
+
+/* ---- Row action buttons ---- */
+
+.admin-actions-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.admin-actions-cell .admin-icon-btn,
+.admin-icon-btn {
+    display: inline-grid;
+    place-items: center;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 0.5rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--admin-text-dim);
+    font-size: 0.72rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.admin-icon-btn:hover {
+    border-color: var(--admin-accent);
+    color: var(--admin-accent);
+}
+
+/* ---- Customer cell with avatar ---- */
+
+.admin-table-avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.admin-table-avatar-row .admin-table-avatar {
+    flex-shrink: 0;
+}
+
+/* ---- Table panels + pagination ---- */
+
+.admin-users-panel,
+.admin-bookings-panel {
+    overflow: hidden;
+}
+
+.admin-table-wrap {
+    overflow-x: auto;
+}
+
+.admin-users-table,
+.admin-bookings-table {
+    min-width: 720px;
+}
+
+.admin-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    margin-top: 1rem;
+}
+
+.admin-pagination:empty {
+    display: none;
+}
+
+/* ---- Shared logout confirmation modal ---- */
+
+.admin-logout-modal {
+    width: min(360px, calc(100vw - 2rem));
+    text-align: center;
+}
+
+.admin-logout-icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    background: rgba(255, 90, 69, 0.14);
+    color: var(--admin-accent);
+}
+
+.admin-logout-icon svg {
+    width: 26px;
+    height: 26px;
+}
+
+.admin-logout-modal h2 {
+    margin-bottom: 0.45rem;
+}
+
+.admin-logout-modal p {
+    color: var(--admin-text-dim);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin-bottom: 1.35rem;
+}
+
+.admin-logout-confirm-btn,
+.admin-logout-cancel-btn {
+    width: 100%;
+    border-radius: 9px;
+    padding: 0.72rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.admin-logout-confirm-btn {
+    border: none;
+    background: linear-gradient(135deg, var(--admin-accent), var(--admin-accent-dark));
+    color: #1a0401;
+    margin-bottom: 0.55rem;
+}
+
+.admin-logout-confirm-btn:hover {
+    filter: brightness(1.08);
+}
+
+.admin-logout-cancel-btn {
+    border: 1px solid var(--admin-border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--admin-text);
+}
+
+.admin-logout-cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.admin-logout-footer {
+    margin-top: 1.1rem;
+    color: var(--admin-text-dim);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* ==========================================================
+   ADDED — catalog, orders and support pages
+   ========================================================== */
+
+.admin-catalog-note {
+    margin: 0 0 1.25rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--admin-border);
+    border-left: 3px solid var(--admin-accent);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--admin-text-dim);
+    font-size: 0.78rem;
+    line-height: 1.55;
+}
+
+.admin-catalog-note strong {
+    color: var(--admin-text);
+}
+
+/* ---- Tab strip ---- */
+
+.admin-tabs {
+    display: flex;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-tab {
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 9px 9px 0 0;
+    padding: 0.6rem 1.1rem;
+    background: transparent;
+    color: var(--admin-text-dim);
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    position: relative;
+    bottom: -1px;
+}
+
+.admin-tab:hover {
+    color: var(--admin-text);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-tab.is-active {
+    border-color: var(--admin-border);
+    border-bottom: 1px solid var(--admin-card);
+    background: var(--admin-card);
+    color: var(--admin-accent);
+}
+
+/* ---- Checkbox lists (guide assignment) ---- */
+
+.admin-checkbox-list {
+    display: grid;
+    gap: 0.4rem;
+    max-height: 190px;
+    overflow-y: auto;
+    padding: 0.65rem 0.7rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    background: rgba(15, 5, 3, 0.35);
+}
+
+.admin-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--admin-text);
+    font-size: 0.8rem;
+    letter-spacing: 0;
+    text-transform: none;
+    cursor: pointer;
+}
+
+.admin-checkbox-row input {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--admin-accent);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.admin-checkbox-row--single {
+    padding: 0.55rem 0.1rem;
+}
+
+/* ---- Order + support detail modals ---- */
+
+.admin-product-modal .order-info-grid {
+    margin: 1.1rem 0 0.5rem;
+}
+
+.admin-order-detail .admin-form-subheading {
+    margin-top: 1.1rem;
+}
+
+.admin-order-line {
+    color: var(--admin-text);
+    font-size: 0.78rem;
+    line-height: 1.55;
+    margin-bottom: 0.35rem;
+}
+
+.admin-product-modal .order-special-request {
+    margin-top: 1rem;
+}
+
+.admin-product-modal .order-special-request small {
+    color: var(--admin-text-dim);
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.admin-product-modal .order-special-request p {
+    color: var(--admin-text);
+    font-size: 0.8rem;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1.55;
+    margin-top: 0.4rem;
+    white-space: pre-wrap;
+}
+
+#support-reply-note {
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    margin: -0.3rem 0 0;
+}
+
+/* ==========================================================
+   ADDED — readability + themed dropdowns
+   ----------------------------------------------------------
+   Three fixes:
+   1. --admin-text-dim was 55% opacity, which put most secondary
+      labels under the 4.5:1 contrast floor on this dark ground.
+      Raised once here so every label lifts at the same time,
+      instead of patching them one by one.
+   2. The smallest labels in the order/support modals were 0.55rem
+      (~8.8px). Bumped to a readable size.
+   3. Native <select> popups were rendering in the OS light theme
+      (grey list, blue highlight). color-scheme: dark plus styled
+      options puts them in the Trailbound palette.
+   ========================================================== */
+
+:root {
+    /* was rgba(245, 239, 233, 0.55) */
+    --admin-text-dim: rgba(245, 239, 233, 0.74);
+    /* for genuinely tertiary text that should stay quiet */
+    --admin-text-faint: rgba(245, 239, 233, 0.52);
+}
+
+/* ---- Order / support detail modals ---- */
+
+.admin-product-modal .order-info-grid small,
+.admin-product-modal .order-special-request small {
+    font-size: 0.66rem;
+    letter-spacing: 0.07em;
+    color: var(--admin-text-dim);
+}
+
+.admin-product-modal .order-info-grid p,
+.admin-product-modal .order-info-grid strong {
+    font-size: 0.86rem;
+    color: var(--admin-text);
+}
+
+.admin-product-modal .admin-payment-line,
+.admin-product-modal .admin-payment-total {
+    font-size: 0.82rem;
+}
+
+.admin-product-modal .admin-payment-line span,
+.admin-product-modal .admin-payment-total span {
+    color: var(--admin-text-dim);
+}
+
+.admin-product-modal .admin-payment-line strong {
+    color: var(--admin-text);
+}
+
+.admin-product-modal .admin-form-subheading {
+    font-size: 0.68rem;
+    color: var(--admin-text-dim);
+}
+
+.admin-product-modal .payment-state {
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+}
+
+/* The "customer is notified" hint under the status select. */
+.admin-product-modal .admin-table-subtext,
+#order-status-note,
+#support-reply-note {
+    color: var(--admin-text-dim);
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+
+.admin-table-subtext {
+    color: var(--admin-text-dim);
+}
+
+/* ---- Native dropdowns, themed ----
+   Chrome and Edge paint the popup list from the element's
+   color-scheme and the <option> rules below. Without
+   color-scheme: dark they fall back to the OS light list — the
+   grey panel with a blue selected row. */
+
+select,
+.admin-text-input,
+.admin-panel-select,
+.status-card-value {
+    color-scheme: dark;
+}
+
+select.admin-text-input,
+select.admin-panel-select,
+select.status-card-value,
+#order-status-select,
+#f-status,
+#edit-user-role {
+    background-color: #25100d;
+    border: 1px solid #4b2a23;
+    color: #f7ded1;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+select.admin-text-input:focus,
+#order-status-select:focus,
+#edit-user-role:focus {
+    border-color: var(--admin-accent);
+    box-shadow: 0 0 0 3px rgba(255, 90, 69, 0.14);
+    outline: none;
+}
+
+/* The popup list itself. */
+select option,
+.admin-text-input option,
+.admin-panel-select option,
+.status-card-value option {
+    background-color: #25100d;
+    color: #f7ded1;
+    font-weight: 600;
+    padding: 0.4rem 0.6rem;
+}
+
+select option:checked,
+select option:hover,
+select option:focus {
+    background: var(--admin-accent) linear-gradient(0deg, var(--admin-accent), var(--admin-accent));
+    color: #1a0401;
+}
+
+select:disabled option {
+    color: var(--admin-text-faint);
+}
+
+/* ==========================================================
+   ADDED — catalog modal layout
+   ----------------------------------------------------------
+   The form grew past the viewport and got a page scrollbar, with a
+   second scrollbar inside the guides box. Now: one scroll region
+   (the fields), with the header and the Cancel/Save row pinned.
+
+   The checkbox rows were also broken — they are <label> elements,
+   so `.admin-product-form label { display: grid }` stacked the box
+   above its text and UPPERCASED every guide's name. Overridden
+   below rather than renaming the class, so the markup stays honest.
+   ========================================================== */
+
+/* Two classes on purpose. admin-products.css is linked AFTER this
+   file, so a bare `.admin-product-modal` here would lose every tie to
+   it. All four popups carry `class="admin-modal admin-product-modal"`,
+   so this selector wins no matter the link order.
+
+   `:not([hidden])` is not decoration. `.admin-modal[hidden]` is what
+   keeps a closed popup off the screen, and it is also two units of
+   specificity — so a bare `.admin-modal.admin-product-modal` with
+   `display: flex` would tie it, win on source order, and leave all
+   four modals permanently open on top of their pages. Excluding the
+   hidden state here lets that rule do its job. */
+.admin-modal.admin-product-modal:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    width: min(640px, calc(100vw - 2rem));
+    max-height: min(86vh, 780px);
+    padding: 0;
+    /* Nothing scrolls at this level — the body inside does. This is
+       what keeps the header and the button row pinned, and what stops
+       the modal growing a scrollbar of its own on top of theirs. */
+    overflow: hidden;
+}
+
+.admin-product-modal .admin-modal-header {
+    flex-shrink: 0;
+    padding: 1.4rem 1.5rem 1.1rem;
+    border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-product-modal .admin-product-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    gap: 0;
+}
+
+/* The one scroll region. */
+#catalog-form-fields,
+.admin-product-modal > #order-modal-body,
+.admin-product-modal > #support-modal-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1.25rem 1.5rem 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 90, 69, 0.45) transparent;
+}
+
+#catalog-form-fields::-webkit-scrollbar { width: 8px; }
+#catalog-form-fields::-webkit-scrollbar-track { background: transparent; }
+#catalog-form-fields::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 90, 69, 0.4);
+    border-radius: 999px;
+}
+
+.admin-product-modal .admin-modal-actions {
+    flex-shrink: 0;
+    padding: 1rem 1.5rem 1.35rem;
+    border-top: 1px solid var(--admin-border);
+    background: var(--admin-card);
+}
+
+/* ---- Grouped sections inside the form ---- */
+
+.admin-form-section + .admin-form-section {
+    margin-top: 1.5rem;
+    padding-top: 1.35rem;
+    border-top: 1px dashed var(--admin-border);
+}
+
+.admin-form-section-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+    color: var(--admin-accent);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+
+.admin-form-count {
+    color: var(--admin-text-dim);
+    font-family: inherit;
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: none;
+}
+
+.admin-form-count.is-empty { color: var(--admin-accent); }
+
+.admin-form-section-body {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.admin-form-hint {
+    margin: -0.25rem 0 0;
+    color: var(--admin-text-dim);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+/* ---- Checkbox rows: undo the inherited grid + uppercase ---- */
+
+.admin-product-form label.admin-checkbox-row,
+.admin-product-form .admin-checkbox-list label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0;
+    color: var(--admin-text);
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    cursor: pointer;
+}
+
+.admin-product-form .admin-checkbox-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin: 0;
+    accent-color: var(--admin-accent);
+    cursor: pointer;
+}
+
+.admin-checkbox-row--boxed {
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-checkbox-row--boxed:hover { border-color: var(--admin-accent); }
+
+/* ---- Guides picker: two columns, one tidy scroll ---- */
+
+.admin-checkbox-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.15rem 0.9rem;
+    max-height: 210px;
+    overflow-y: auto;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 9px;
+    background: rgba(15, 5, 3, 0.4);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 90, 69, 0.4) transparent;
+}
+
+@media (max-width: 560px) {
+    .admin-checkbox-list { grid-template-columns: 1fr; }
+}
+
+.admin-checkbox-list::-webkit-scrollbar { width: 7px; }
+.admin-checkbox-list::-webkit-scrollbar-track { background: transparent; }
+.admin-checkbox-list::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 90, 69, 0.35);
+    border-radius: 999px;
+}
+
+.admin-product-form .admin-checkbox-list label {
+    padding: 0.42rem 0.45rem;
+    border-radius: 6px;
+    min-width: 0;
+}
+
+.admin-product-form .admin-checkbox-list label span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-product-form .admin-checkbox-list label:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-product-form .admin-checkbox-list label.is-muted span {
+    color: var(--admin-text-faint);
+}
+
+/* A ticked guide should be obvious at a glance. */
+.admin-product-form .admin-checkbox-list label:has(input:checked) {
+    background: rgba(255, 90, 69, 0.13);
+}
+
+.admin-product-form .admin-checkbox-list label:has(input:checked) span {
+    color: var(--admin-text);
+    font-weight: 600;
+}
+
+/* ---- Field polish ---- */
+
+.admin-product-form label {
+    font-size: 0.66rem;
+    letter-spacing: 0.09em;
+}
+
+.admin-product-form input,
+.admin-product-form textarea,
+.admin-product-form select {
+    font-size: 0.84rem;
+    padding: 0.72rem 0.8rem;
+}
+
+.admin-product-form textarea { min-height: 76px; line-height: 1.55; }
+
+.admin-product-form input::placeholder,
+.admin-product-form textarea::placeholder {
+    color: var(--admin-text-faint);
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+@media (max-width: 560px) {
+    .admin-product-form-row { grid-template-columns: 1fr; }
+    .admin-product-modal { max-height: calc(100vh - 1.5rem); }
+}
+
+/* ==========================================================
+   ADDED — activity log + archive views
+   ----------------------------------------------------------
+   Two related features, one block.
+
+   1. The Activity Log page (admin-activity.html). Entries are
+      grouped by day and colour-coded by how destructive the action
+      was, because the whole point of the page is scanning for the
+      thing that went wrong. Deletions are the loudest row on the
+      page on purpose.
+
+   2. The Archived toggle that now sits on Catalog and Products.
+      Archiving hides an item from customers without destroying it;
+      only the archived view offers a permanent delete, and that
+      button is the one `.is-danger` style in the panel.
+   ========================================================== */
+
+/* ---------- archive toggle bar ---------- */
+
+.admin-archive-bar {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .7rem;
+    margin: 0 0 1rem;
+}
+
+.admin-archive-toggle {
+    background: rgba(0, 0, 0, .22);
+    border: 1px solid var(--admin-border);
+    border-radius: 999px;
+    color: var(--admin-text-dim);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    padding: .42rem .95rem;
+    transition: background .15s, border-color .15s, color .15s;
+}
+
+.admin-archive-toggle:hover {
+    border-color: rgba(255, 90, 69, .45);
+    color: var(--admin-text);
+}
+
+/* Viewing the archive is a different mode, not a filter — it should
+   be obvious at a glance that this is not the live catalogue. */
+.admin-archive-toggle.is-on {
+    background: rgba(255, 90, 69, .16);
+    border-color: rgba(255, 90, 69, .5);
+    color: #ffb9ae;
+}
+
+.admin-archive-hint {
+    color: var(--admin-text-faint, rgba(245, 239, 233, .52));
+    font-size: .7rem;
+    line-height: 1.5;
+    max-width: 52ch;
+}
+
+/* Archived rows read as inactive without becoming unreadable. */
+tr.is-archived td { opacity: .78; }
+tr.is-archived strong { color: var(--admin-text-dim); }
+
+/* The only permanently destructive button in the panel. */
+.admin-product-actions .is-danger,
+.admin-actions-cell .is-danger {
+    background: rgba(225, 44, 26, .16);
+    border-color: rgba(225, 44, 26, .5);
+    color: #ff9a8c;
+}
+
+.admin-product-actions .is-danger:hover,
+.admin-actions-cell .is-danger:hover {
+    background: rgba(225, 44, 26, .3);
+    color: #fff;
+}
+
+/* ---------- activity log: filters ---------- */
+
+.admin-log-filters {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+    margin-bottom: 1.1rem;
+}
+
+.admin-log-filters input[type="search"] {
+    flex: 1 1 220px;
+    min-width: 180px;
+}
+
+/* ---------- activity log: day grouping ---------- */
+
+.admin-log-list { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.admin-log-day { display: flex; flex-direction: column; gap: .55rem; }
+
+.admin-log-day-label {
+    align-items: center;
+    color: var(--admin-text-dim);
+    display: flex;
+    font-size: .68rem;
+    font-weight: 700;
+    gap: .5rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.admin-log-day-label::after {
+    background: var(--admin-border);
+    content: "";
+    flex: 1;
+    height: 1px;
+}
+
+.admin-log-day-label span {
+    background: rgba(255, 255, 255, .07);
+    border-radius: 999px;
+    font-size: .62rem;
+    letter-spacing: .04em;
+    order: 3;
+    padding: .1rem .45rem;
+}
+
+/* ---------- activity log: one entry ---------- */
+
+.admin-log-entry {
+    background: var(--admin-card);
+    border: 1px solid var(--admin-border);
+    /* The tone stripe. It is the fastest way to find the deletions
+       in a wall of edits. */
+    border-left: 3px solid var(--admin-border);
+    border-radius: 12px;
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: auto 1fr auto;
+    padding: .85rem 1rem;
+}
+
+.admin-log-entry--ok   { border-left-color: var(--admin-green); }
+.admin-log-entry--info { border-left-color: #60a5fa; }
+.admin-log-entry--warn { border-left-color: var(--admin-yellow); }
+.admin-log-entry--bad  { border-left-color: var(--admin-accent); background: rgba(225, 44, 26, .07); }
+
+.admin-log-who { padding-top: .1rem; }
+
+.admin-log-avatar {
+    border-radius: 50%;
+    height: 34px;
+    object-fit: cover;
+    width: 34px;
+}
+
+.admin-log-avatar--fallback {
+    align-items: center;
+    background: linear-gradient(135deg, var(--admin-accent), var(--admin-accent-dark));
+    color: #1a0401;
+    display: flex;
+    font-size: .8rem;
+    font-weight: 700;
+    justify-content: center;
+}
+
+.admin-log-body { min-width: 0; }
+
+.admin-log-summary {
+    color: var(--admin-text);
+    font-size: .85rem;
+    line-height: 1.45;
+}
+
+.admin-log-meta {
+    align-items: center;
+    color: var(--admin-text-dim);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: .72rem;
+    gap: .45rem;
+    margin-top: .2rem;
+}
+
+.admin-log-meta strong { color: var(--admin-text); font-weight: 600; }
+
+.admin-log-email { color: var(--admin-text-faint, rgba(245, 239, 233, .52)); }
+
+/* ---------- activity log: field-level diff ---------- */
+
+.admin-log-changes {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+    margin-top: .6rem;
+}
+
+.admin-log-change {
+    align-items: baseline;
+    background: rgba(0, 0, 0, .25);
+    border-radius: 7px;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: .73rem;
+    gap: .45rem;
+    padding: .35rem .6rem;
+}
+
+.admin-log-change-field {
+    color: var(--admin-text-dim);
+    font-weight: 600;
+    min-width: 6.5rem;
+}
+
+/* Struck-through old value, highlighted new one — the diff should
+   be readable without reading the labels. */
+.admin-log-change-from {
+    color: var(--admin-text-faint, rgba(245, 239, 233, .52));
+    text-decoration: line-through;
+    word-break: break-word;
+}
+
+.admin-log-change-arrow { color: var(--admin-text-dim); }
+
+.admin-log-change-to {
+    color: var(--admin-green);
+    font-weight: 600;
+    word-break: break-word;
+}
+
+/* ---------- activity log: right-hand column ---------- */
+
+.admin-log-side {
+    align-items: flex-end;
+    display: flex;
+    flex-direction: column;
+    gap: .28rem;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.admin-log-tag {
+    border-radius: 999px;
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    padding: .16rem .5rem;
+    text-transform: uppercase;
+}
+
+.admin-log-tag--ok   { background: rgba(74, 222, 128, .16); color: var(--admin-green); }
+.admin-log-tag--info { background: rgba(96, 165, 250, .16); color: #93c5fd; }
+.admin-log-tag--warn { background: rgba(250, 204, 21, .16); color: var(--admin-yellow); }
+.admin-log-tag--bad  { background: rgba(225, 44, 26, .22); color: #ff9a8c; }
+
+.admin-log-entity {
+    color: var(--admin-text-dim);
+    font-size: .68rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.admin-log-amount { color: var(--admin-text); font-size: .74rem; font-weight: 600; }
+
+.admin-log-time {
+    color: var(--admin-text-faint, rgba(245, 239, 233, .52));
+    cursor: help;
+    font-size: .68rem;
+}
+
+/* ---------- narrow screens ---------- */
+
+@media (max-width: 640px) {
+    .admin-log-entry {
+        grid-template-columns: auto 1fr;
+    }
+
+    /* The tag/time column drops under the text and turns horizontal
+       rather than being squeezed into a 40px stack. */
+    .admin-log-side {
+        align-items: center;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: .5rem;
+        grid-column: 2;
+        text-align: left;
+    }
+
+    .admin-log-change-field { min-width: 0; }
+}
+
+/* ==========================================================
+   FIX — support message modal
+   ----------------------------------------------------------
+   The support modal has a different shape to the catalog one:
+
+       .admin-modal-header      pinned
+       #support-modal-body      scrolls  (from / email / message)
+       form.admin-product-form  pinned   (reply box + buttons)
+
+   Two things were wrong.
+
+   1. The form carried no horizontal padding, while the header and
+      the body above it both had 1.5rem. That is why "Reply", the
+      textarea and the note all started hard against the modal's
+      left border while everything above them was indented — the
+      ragged left edge.
+
+   2. The form was `flex: 1` alongside the body, so both fought for
+      the leftover height. The reply box should not stretch; the
+      message above it is the part that scrolls.
+
+   A note on the selectors below: admin-products.css is linked AFTER
+   this file, so anything it defines at equal specificity wins the
+   tie. `.admin-product-form label { display: grid }` lives there,
+   and a plain `.admin-modal-reply label` would lose to it. Every
+   rule here is therefore two classes deep on purpose — it has to
+   beat that file without me having to edit it.
+
+   Colours are deliberately NOT set on the textarea: that is
+   admin-products.css's job, and overriding it here would make the
+   reply box the one field in the panel that looks different.
+   ========================================================== */
+
+.admin-product-modal #support-reply-form {
+    /* Pinned, not stretchy. #support-modal-body keeps the flex: 1. */
+    flex: 0 0 auto;
+}
+
+.admin-product-modal .admin-modal-reply {
+    border-top: 1px solid var(--admin-border);
+    /* Matches the header and body gutters — this is the alignment fix. */
+    padding: 1rem 1.5rem 0.25rem;
+}
+
+.admin-product-modal .admin-reply-label-row {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+/* Styled to match the FROM / EMAIL / MESSAGE labels above it rather
+   than inheriting whatever the form stylesheet does to labels. */
+.admin-product-modal .admin-reply-label-row label {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    color: var(--admin-text-dim);
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.admin-product-modal .admin-reply-hint {
+    color: var(--admin-text-dim);
+    font-size: 0.64rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: none;
+}
+
+/* A guest sender gets nothing automatically. Worth one glance, not
+   the three-line paragraph that used to sit under the textarea. */
+.admin-product-modal .admin-reply-hint--warn { color: #ffb9ae; }
+
+.admin-product-modal .admin-reply-hint--warn::before {
+    content: "! ";
+    font-weight: 700;
+}
+
+.admin-product-modal .admin-modal-reply textarea {
+    /* Keeps the drag grip off the rounded corner, and stops the box
+       growing tall enough to push the buttons out of the modal. */
+    display: block;
+    width: 100%;
+    min-height: 88px;
+    max-height: 34vh;
+    resize: vertical;
+}
+
+@media (max-width: 560px) {
+    .admin-product-modal .admin-modal-reply { padding: 0.9rem 1.15rem 0.25rem; }
+
+    .admin-product-modal .admin-modal-header,
+    .admin-product-modal > #support-modal-body,
+    .admin-product-modal > #order-modal-body,
+    .admin-product-modal .admin-modal-actions {
+        padding-left: 1.15rem;
+        padding-right: 1.15rem;
+    }
+}

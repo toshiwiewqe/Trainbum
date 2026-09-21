@@ -14,12 +14,23 @@
    ========================================================== */
 
 import { db } from "./firebase-config.js";
+// CHANGED: was `from "firebase/firestore"` (the bundled npm SDK).
+// firebase-config.js built its Firestore on a SECOND Firebase app, while
+// auth lived on the app in firebase-init.js — so Firestore never saw the
+// signed-in user and every authenticated write failed with
+// "Missing or insufficient permissions". One app, one SDK now.
 import {
   collection,
   getDocs,
   addDoc,
-} from "firebase/firestore";
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { addBookingToCart } from "./cart-store.js";
+// ADDED: writes the booking through the shared data layer, which
+// stamps `uid` on it. That uid is what links the booking to the
+// customer — it's what makes it appear under My Bookings on their
+// account page, and what lets the Firestore rules scope it to them.
+// Same document shape and same "Pending"/"Unpaid" casing as before.
+import { createBooking } from "./trailbound-data.js";
 import { fetchHourlyForecast, buildHikerTip, buildAlertMessage } from "./Weather-api.js";
 import { auth } from "./firebase-init.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -659,12 +670,32 @@ form.addEventListener("submit", async (e) => {
   };
 
   try {
-    const docRef = await addDoc(collection(db, "bookings"), booking);
+    // CHANGED: was addDoc(collection(db, "bookings"), booking).
+    // createBooking() writes the same fields plus uid, drops a
+    // "Booking received" notification into the customer's account,
+    // and logs the booking to the admin dashboard activity feed.
+    const newBookingId = await createBooking({
+      trailId:   booking.trail_id,
+      trailName: booking.trail_name,
+      packageId: booking.package_id,
+      packageName: booking.package_name,
+      activity:  booking.activity,
+      guideId:   booking.guide_id,
+      guideName: booking.guide_name,
+      date:      booking.date,
+      groupSize: booking.group_size,
+      customerName:    booking.full_name,
+      email:           booking.email,
+      phone:           booking.contact_number,
+      emergencyName:   booking.emergency_name,
+      emergencyNumber: booking.emergency_number,
+      amount:          booking.total_price
+    });
 
     // Stage this reservation in the cart so it can be paid for at
     // checkout, alongside anything the person adds from the shop.
     addBookingToCart({
-      bookingId: docRef.id,
+      bookingId: newBookingId,
       trailName: trail.name,
       packageName: pkg.name,
       date: booking.date,

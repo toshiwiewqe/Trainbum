@@ -92,10 +92,19 @@
     font-size: 0.8rem;
 }
 
-.admin-product-modal {
-    max-height: calc(100vh - 2rem);
-    overflow-y: auto;
-}
+/* REMOVED — these two declarations used to live here:
+       max-height: calc(100vh - 2rem);
+       overflow-y: auto;
+
+   They made the whole modal a scroll container. Once the modal became
+   a flex column with a pinned header and a pinned Cancel/Save row,
+   that produced the second scrollbar you saw inside the catalog popup:
+   one on the modal, one on the fields inside it.
+
+   This file is linked AFTER admin.css, so these won at equal
+   specificity and quietly undid the layout there. admin.css now owns
+   modal sizing and scrolling for all four popups; deleting them here
+   is the fix. Everything else in this file is untouched. */
 
 .admin-product-form {
     display: grid;

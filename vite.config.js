@@ -2,19 +2,49 @@ import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { resolve } from "path";
 
+// ==========================================================
+// CHANGED: the ten admin pages were missing from `input`.
+//
+// Vite only builds the HTML entry points listed here. Everything
+// else in the project root is simply not copied into dist/ — and
+// dist/ is what firebase.json serves. So the admin panel built
+// fine locally with `npm run dev` (which serves any file on
+// request) and then silently never existed in production:
+// trailbound-app.web.app/admin-login.html would 404.
+//
+// Nothing else in this file changed.
+// ==========================================================
+
+const page = (name) => resolve(import.meta.dirname, `${name}.html`);
+
 export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: resolve(import.meta.dirname, "index.html"),
-        trail: resolve(import.meta.dirname, "trail.html"),
-        products: resolve(import.meta.dirname, "products.html"),
-        booking: resolve(import.meta.dirname, "booking.html"),
-        contact: resolve(import.meta.dirname, "contact.html"),
-        login: resolve(import.meta.dirname, "login.html"),
-        account: resolve(import.meta.dirname, "account.html"),
-        cart: resolve(import.meta.dirname, "cart.html"),
-        checkout: resolve(import.meta.dirname, "checkout.html"),
+        // ---- customer-facing ----
+        main: page("index"),
+        trail: page("trail"),
+        products: page("products"),
+        booking: page("booking"),
+        contact: page("contact"),
+        login: page("login"),
+        account: page("account"),
+        cart: page("cart"),
+        checkout: page("checkout"),
+        paymentResult: page("payment-result"),
+
+        // ---- admin panel ----
+        adminLogin: page("admin-login"),
+        adminDashboard: page("admin-dashboard"),
+        adminCatalog: page("admin-catalog"),
+        adminProducts: page("admin-products"),
+        adminBookings: page("admin-bookings"),
+        adminBookingDetails: page("admin-booking-details"),
+        adminOrders: page("admin-orders"),
+        adminUsers: page("admin-users"),
+        adminActivity: page("admin-activity"),
+        adminSupport: page("admin-support"),
+        adminSettings: page("admin-settings"),
       },
     },
   },
@@ -40,6 +70,11 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,png,svg,jpg,jpeg}"],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: null,
+        // ADDED: keep the admin panel out of the service worker's
+        // precache. Admin pages are behind a login and change often;
+        // precaching them ships the whole panel to every visitor's
+        // device and can serve a stale build to you after a deploy.
+        globIgnores: ["**/admin-*"],
       },
     }),
   ],
