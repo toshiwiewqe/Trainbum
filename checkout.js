@@ -73,8 +73,14 @@ const CONTACT_IDS = ["ship-name", "ship-email", "ship-phone"];
 const EMERGENCY_IDS = ["emg-name", "emg-number", "emg-relation"];
 const SHIPPING_IDS = ["ship-address", "ship-city", "ship-zip", "ship-notes"];
 
+// Where "Cancel payment" sends them when they back out. Change this
+// if your cart page has a different file name.
+const CANCEL_RETURN_PAGE = "cart.html";
+
 const els = {};
 let needsAddress = false;  // true when the cart has gear to ship
+let paying = false;        // true while we're talking to Maya
+let cancelRequested = false; // they hit Cancel mid-request
 let contact = null;        // saved contact details (null = not yet)
 let emergency = null;      // saved emergency contact (null = not yet)
 let shipping = null;       // saved shipping address (null = not yet)
@@ -87,7 +93,7 @@ function init() {
     "cart-count", "co-layout", "checkout-empty",
     "review-contact", "review-emergency", "review-ship-to",
     "row-emergency", "row-ship", "review-map", "remember-me",
-    "checkout-error", "pay-btn", "pay-hint", "crumb-info", "crumb-pay",
+    "checkout-error", "pay-btn", "cancel-btn", "pay-hint", "crumb-info", "crumb-pay",
     "summary-list", "summary-count", "summary-subtotal",
     "summary-shipping", "summary-shipping-row", "summary-total",
     "contact-dialog", "contact-form",
@@ -120,6 +126,7 @@ function init() {
     else safeStorage("remove");
   });
   els.payBtn.addEventListener("click", handlePay);
+  els.cancelBtn.addEventListener("click", handleCancel);
 
   render();
   openNextMissing(); // first visit: start them on whatever is still blank
@@ -573,8 +580,11 @@ async function handlePay() {
   if (!contact || !emergency || (needsAddress && !shipping)) return openNextMissing();
 
   els.checkoutError.hidden = true;
+  paying = true;
+  cancelRequested = false;
   els.payBtn.disabled = true;
   els.payBtn.textContent = "Connecting to Maya…";
+  els.cancelBtn.textContent = "Cancel";
 
   const items = getCart();
   const bookingItems = items.filter((i) => i.type === "booking");
@@ -626,14 +636,22 @@ async function handlePay() {
     // TODO: add `user_id: currentUser.uid` here once Auth is wired up
   };
 
+  let orderRef = null;
+
   try {
-    const orderRef = await addDoc(collection(db, "orders"), order);
+    orderRef = await addDoc(collection(db, "orders"), order);
+
+    // They may have hit Cancel while the order was saving
+    if (cancelRequested) return abortPayment(orderRef);
 
     const { checkoutId, redirectUrl } = await createMayaCheckout(
       orderRef.id,
       total,
       buildMayaItems(items, shippingFee)
     );
+
+    // ...or while Maya was building the payment page
+    if (cancelRequested) return abortPayment(orderRef);
 
     try {
       await updateDoc(doc(db, "orders", orderRef.id), { "payment.checkout_id": checkoutId });
@@ -644,11 +662,57 @@ async function handlePay() {
     window.location.href = redirectUrl;
   } catch (err) {
     console.error("Failed to start Maya payment:", err);
+    if (orderRef) markOrderCancelled(orderRef, "Payment Failed", "Failed");
     els.checkoutError.textContent =
       "We couldn't connect to Maya. Please try again. (Details are in the browser console.)";
     els.checkoutError.hidden = false;
-    renderReview(); // puts the button back
+    resetPayButtons();
   }
+}
+
+/* ================= Cancel ================= */
+
+function handleCancel() {
+  // Mid-payment: stop before they ever reach Maya's page
+  if (paying) {
+    cancelRequested = true;
+    els.payBtn.textContent = "Cancelling…";
+    els.cancelBtn.disabled = true;
+    return;
+  }
+
+  // Not started yet: just leave, keeping the cart as it is
+  const ok = window.confirm(
+    "Cancel this payment?\n\nYour cart will be saved, so you can come back and pay later."
+  );
+  if (ok) window.location.href = CANCEL_RETURN_PAGE;
+}
+
+/** Marks the half-made order as Cancelled and puts the page back. */
+async function abortPayment(orderRef) {
+  await markOrderCancelled(orderRef, "Cancelled", "Cancelled");
+  els.checkoutError.textContent = "Payment cancelled. Your cart is still saved — you can pay whenever you're ready.";
+  els.checkoutError.hidden = false;
+  resetPayButtons();
+}
+
+async function markOrderCancelled(orderRef, status, paymentStatus) {
+  try {
+    await updateDoc(doc(db, "orders", orderRef.id), {
+      status,
+      "payment.status": paymentStatus,
+    });
+  } catch (err) {
+    console.warn("Could not update the cancelled order:", err);
+  }
+}
+
+function resetPayButtons() {
+  paying = false;
+  cancelRequested = false;
+  els.cancelBtn.disabled = false;
+  els.cancelBtn.textContent = "Cancel payment";
+  renderReview(); // puts the Pay button's label and state back
 }
 
 /* ================= Helpers ================= */

@@ -745,6 +745,10 @@ body {
   --co-warn: #8a5a00;
   --co-error: #b3261e;
   --co-radius: 12px;
+  /* Height of your fixed site header. The scrolling panels subtract
+     this so nothing hides underneath the logo. Raise it if the header
+     still overlaps the top of the checkout card. */
+  --co-header-h: 90px;
 }
 
 .co-page {
@@ -766,6 +770,42 @@ body {
 .co-main {
   padding: 40px 48px 48px;
   color: var(--co-ink);
+}
+
+/* The checkout details get their own scrollbar instead of stretching
+   the page — the same way the old step panels worked. This applies on
+   phones too, just with a shorter height (see the media query at the
+   bottom of this file).
+
+   --co-header-h is how tall your fixed site header is. If the panel
+   sits too high or too low, change that one number in :root above. */
+.co-main,
+.co-summary {
+  max-height: calc(100vh - var(--co-header-h) - 60px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 89, 47, 0.55) rgba(26, 4, 1, 0.07);
+}
+.co-main::-webkit-scrollbar,
+.co-summary::-webkit-scrollbar { width: 10px; }
+.co-main::-webkit-scrollbar-track,
+.co-summary::-webkit-scrollbar-track {
+  background: rgba(26, 4, 1, 0.07);
+  border-radius: 999px;
+}
+.co-main::-webkit-scrollbar-thumb,
+.co-summary::-webkit-scrollbar-thumb {
+  background-color: rgba(168, 89, 47, 0.55);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.co-main::-webkit-scrollbar-thumb:hover,
+.co-summary::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(168, 89, 47, 0.85);
 }
 
 .co-title {
@@ -933,6 +973,28 @@ body {
 }
 .co-pay-btn:hover:not(:disabled) { background: #8f4a26; transform: translateY(-1px); }
 .co-pay-btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; transform: none; }
+/* Cancel payment — quiet, so it never competes with Pay */
+.co-cancel-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 13px;
+  border: 1px solid var(--co-line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--co-muted);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.co-cancel-btn:hover:not(:disabled) {
+  color: var(--co-error);
+  border-color: var(--co-error);
+  background: rgba(179, 38, 30, 0.06);
+}
+.co-cancel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .co-hint { font-size: 0.78rem; color: var(--co-muted); text-align: center; margin: 8px 0 0; }
 .co-error { color: var(--co-error); font-size: 0.85rem; margin: 16px 0 0; }
 
@@ -942,7 +1004,30 @@ body {
   padding: 40px 40px 48px;
   color: var(--co-ink);
 }
-.co-summary-list { border-top: 1px solid var(--co-line); }
+
+/* The item list scrolls on its own once the cart gets long, so the
+   totals underneath stay visible instead of being pushed off-screen.
+   Scrollbar is themed to match the rest of the site rather than
+   looking like a stock OS bar dropped onto the design. */
+.co-summary-list {
+  border-top: 1px solid var(--co-line);
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 10px;
+  margin-right: -10px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 89, 47, 0.45) transparent;
+}
+.co-summary-list::-webkit-scrollbar { width: 7px; }
+.co-summary-list::-webkit-scrollbar-track { background: transparent; }
+.co-summary-list::-webkit-scrollbar-thumb {
+  background-color: rgba(168, 89, 47, 0.45);
+  border-radius: 999px;
+}
+.co-summary-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(168, 89, 47, 0.75);
+}
 
 .co-item {
   display: grid;
@@ -1069,7 +1154,24 @@ body {
   cursor: pointer;
 }
 
-.co-dialog-body { padding: 4px 24px 12px; overflow-y: auto; }
+/* Popup content scrolls inside the popup, so the Cancel/Save row at
+   the bottom never gets pushed off the screen on a short window. */
+.co-dialog-body {
+  padding: 4px 24px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 89, 47, 0.45) transparent;
+}
+.co-dialog-body::-webkit-scrollbar { width: 7px; }
+.co-dialog-body::-webkit-scrollbar-track { background: transparent; }
+.co-dialog-body::-webkit-scrollbar-thumb {
+  background-color: rgba(168, 89, 47, 0.45);
+  border-radius: 999px;
+}
+.co-dialog-body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(168, 89, 47, 0.75);
+}
 .co-dialog-body .is-invalid { border-color: var(--co-error) !important; }
 
 .co-field-error { color: var(--co-error); font-size: 0.78rem; margin: 4px 0 0; }
@@ -1108,9 +1210,34 @@ body {
 
 /* ---------- Phones ---------- */
 @media (max-width: 860px) {
+  /* The mobile header is taller, so push the card further down —
+     otherwise the logo sits on top of "Review information". */
+  :root { --co-header-h: 120px; }
+
+  .co-page { margin-top: 16px; }
   .co-layout { grid-template-columns: 1fr; }
-  .co-main { padding: 28px 20px 32px; }
-  .co-summary { padding: 24px 20px 32px; }
+  .co-main { padding: 28px 16px 32px; }
+  .co-summary { padding: 24px 16px 32px; }
+
+  /* The details panel keeps its own scrollbar on phones. */
+  .co-main {
+    max-height: calc(100vh - var(--co-header-h) - 40px);
+  }
+
+  /* The summary sits underneath and just runs its full length —
+     stacking two scroll panes on a small screen is awkward. */
+  .co-summary {
+    max-height: none;
+    overflow-y: visible;
+    scrollbar-gutter: auto;
+    border-top: 1px solid var(--co-line);
+  }
+  .co-summary-list {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+    margin-right: 0;
+  }
   .co-row { grid-template-columns: 1fr auto; }
   .co-row-label { grid-column: 1 / -1; font-size: 0.78rem; }
   .co-badges { display: none; }
