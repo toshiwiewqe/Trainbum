@@ -31,7 +31,9 @@ video {
   object-fit: cover;
   object-position: center;
 }
-
+.site-header {
+  background: rgba(4, 28, 15, 0.6); /* matches your login-box tone */
+}
 h1,
 h3 {
   text-transform: uppercase;

@@ -350,7 +350,7 @@ function handleTrailChange() {
   // rest of this function — including updatePrice() → updateSummaryPanel().
   // That's why the summary panel never appeared. Guard it so one
   // incomplete document can't take down the whole page.
-  const availableGuides = (Array.isArray(trail.guide_ids) ? trail.guide_ids : [])
+  const availableGuides = (Array.isArray(trail.guide_id) ? trail.guide_id : [])
     .map(getGuideById)
     .filter(Boolean)
     .filter((g) => g.status === "Active");

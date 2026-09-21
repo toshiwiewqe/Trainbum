@@ -723,3 +723,396 @@ body {
   justify-content: center;
   margin-top: 2.1rem;
 }
+/* ==========================================================
+   CHECKOUT PAGE LAYOUT (added for the Maya + map checkout)
+   Two columns: details + payment on the left, order summary on
+   the right. Stacks on phones. The popup for shipping details
+   lives down at the bottom of this section.
+
+   Colors below reuse the Trailbound palette from :root above,
+   so changing a --tb- value up there updates this too.
+   ========================================================== */
+
+:root {
+  --co-bg: var(--tb-paper);
+  --co-panel-alt: var(--tb-paper-dim);
+  --co-ink: var(--tb-ink);
+  --co-muted: var(--tb-ink-soft);
+  --co-line: #ddd0b8;
+  --co-accent: var(--tb-clay);
+  --co-accent-ink: #fff;
+  --co-ok: var(--tb-forest);
+  --co-warn: #8a5a00;
+  --co-error: #b3261e;
+  --co-radius: 12px;
+}
+
+.co-page {
+  max-width: 1120px;
+  margin: 24px auto 64px;
+  padding: 0 16px;
+}
+
+.co-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  background: var(--co-bg);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: var(--tb-shadow);
+}
+
+/* ---------- Left column ---------- */
+.co-main {
+  padding: 40px 48px 48px;
+  color: var(--co-ink);
+}
+
+.co-title {
+  font-size: 2rem;
+  margin: 0 0 6px;
+  color: var(--tb-maroon);
+}
+
+.co-crumbs {
+  display: flex;
+  gap: 8px;
+  font-size: 0.8rem;
+  margin-bottom: 28px;
+}
+.co-crumbs-sep { color: var(--co-muted); }
+.is-muted { color: var(--co-muted); }
+
+.co-heading {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 28px 0 6px;
+}
+.co-sub {
+  font-size: 0.8rem;
+  color: var(--co-muted);
+  margin: 0 0 10px;
+}
+
+.co-card {
+  border: 1px solid var(--co-line);
+  border-radius: var(--co-radius);
+  background: #fff;
+  overflow: hidden;
+}
+
+/* Review rows */
+.co-row {
+  display: grid;
+  grid-template-columns: 130px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  font-size: 0.88rem;
+}
+.co-row + .co-row { border-top: 1px solid var(--co-line); }
+.co-row-label { color: var(--co-muted); }
+.co-row-value { overflow-wrap: anywhere; }
+
+.co-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--co-ink);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.co-link:hover { color: var(--co-accent); }
+
+/* Maps */
+.co-map {
+  width: 100%;
+  height: 240px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 12px;
+  background: var(--co-panel-alt);
+}
+.co-map--small {
+  height: 170px;
+  margin: 0;
+  border-radius: 0;
+  border-top: 1px solid var(--co-line);
+}
+
+/* Map on the "Order confirmed" page (payment-result.html) */
+.checkout-map-section {
+  text-align: left;
+  max-width: 420px;
+  margin: 1.85rem auto 0;
+}
+.checkout-map-section h6 {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--co-muted);
+}
+.checkout-map-address {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+}
+.checkout-map {
+  width: 100%;
+  height: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--co-panel-alt);
+}
+.checkout-map iframe { width: 100%; height: 100%; border: 0; }
+
+/* Payment option */
+.co-pay-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  cursor: pointer;
+}
+.co-pay-option input { position: absolute; opacity: 0; pointer-events: none; }
+.co-radio {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--co-muted);
+}
+.co-pay-option.is-selected .co-radio {
+  border-color: var(--co-accent);
+  box-shadow: inset 0 0 0 4px #fff;
+  background: var(--co-accent);
+}
+.co-pay-body { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.co-pay-title { font-weight: 600; font-size: 0.92rem; }
+.co-pay-sub { font-size: 0.78rem; color: var(--co-muted); }
+.co-badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.co-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 3px 6px;
+  border: 1px solid var(--co-line);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--co-ink);
+}
+
+/* Remember me */
+.co-check {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 16px;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+.co-check input { width: 16px; height: 16px; accent-color: var(--co-accent); }
+
+/* Pay button */
+.co-pay-btn {
+  width: 100%;
+  margin-top: 28px;
+  padding: 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--co-accent);
+  color: var(--co-accent-ink);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(168, 89, 47, 0.3);
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+.co-pay-btn:hover:not(:disabled) { background: #8f4a26; transform: translateY(-1px); }
+.co-pay-btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; transform: none; }
+.co-hint { font-size: 0.78rem; color: var(--co-muted); text-align: center; margin: 8px 0 0; }
+.co-error { color: var(--co-error); font-size: 0.85rem; margin: 16px 0 0; }
+
+/* ---------- Right column: summary ---------- */
+.co-summary {
+  background: var(--co-panel-alt);
+  padding: 40px 40px 48px;
+  color: var(--co-ink);
+}
+.co-summary-list { border-top: 1px solid var(--co-line); }
+
+.co-item {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--co-line);
+  align-items: start;
+}
+.co-item-thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+}
+.co-item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.co-item-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.co-item-name { font-size: 0.88rem; font-weight: 600; }
+.co-item-meta, .co-item-price { font-size: 0.78rem; color: var(--co-muted); }
+.co-item-total { font-size: 0.88rem; font-weight: 600; }
+
+.co-summary-rows { margin-top: 24px; }
+.co-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  padding: 6px 0;
+}
+.co-summary-row--total {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--tb-maroon);
+  border-top: 1px solid var(--co-line);
+  margin-top: 8px;
+  padding-top: 14px;
+}
+.co-currency { font-size: 0.72rem; font-weight: 400; }
+
+/* ---------- Popups (contact details / shipping address) ----------
+   position + inset + margin:auto forces the popup to sit dead
+   centre on the screen. Without these three, a site-wide margin
+   rule elsewhere can push it off to one side. */
+.co-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(560px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - 32px));
+  height: fit-content;
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: var(--co-bg);
+  color: var(--co-ink);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.co-dialog::backdrop { background: rgba(26, 4, 1, 0.55); }
+.co-dialog-inner {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 48px);
+}
+
+/* The emergency-contact popup is a bit narrower */
+.co-dialog--narrow {
+  width: min(430px, calc(100vw - 32px));
+  max-width: min(430px, calc(100vw - 32px));
+}
+
+/* Red * next to a required label */
+.co-req { color: var(--co-error); }
+
+/* Country code + number, side by side */
+.co-phone {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+}
+.co-phone select {
+  padding: 0.7rem 0.5rem;
+  border: 1px solid var(--co-line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--co-ink);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.co-phone select:focus-visible {
+  outline: none;
+  border-color: var(--co-accent);
+  box-shadow: 0 0 0 3px rgba(168, 89, 47, 0.15);
+}
+.co-phone input { width: 100%; }
+
+.co-dialog-note {
+  font-size: 0.78rem;
+  color: var(--co-muted);
+  background: var(--co-panel-alt);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 0 0 14px;
+}
+
+.co-dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 12px;
+}
+.co-dialog-head h3 { margin: 0; font-size: 1.2rem; color: var(--tb-maroon); }
+.co-dialog-close {
+  background: none;
+  border: 0;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--co-muted);
+  cursor: pointer;
+}
+
+.co-dialog-body { padding: 4px 24px 12px; overflow-y: auto; }
+.co-dialog-body .is-invalid { border-color: var(--co-error) !important; }
+
+.co-field-error { color: var(--co-error); font-size: 0.78rem; margin: 4px 0 0; }
+
+.co-address-msg {
+  font-size: 0.82rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin: 8px 0 0;
+}
+.co-address-msg--ok { background: #e4f0e3; color: var(--co-ok); }
+.co-address-msg--warn { background: #fbefd6; color: var(--co-warn); }
+.co-address-msg--error { background: #fbe3e1; color: var(--co-error); }
+
+.co-dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 24px 20px;
+  border-top: 1px solid var(--co-line);
+}
+.co-btn-ghost,
+.co-btn-primary {
+  padding: 11px 20px;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.co-btn-ghost { background: transparent; border: 1px solid var(--co-line); color: var(--co-ink); }
+.co-btn-ghost:hover { border-color: var(--tb-maroon); background: var(--co-panel-alt); }
+.co-btn-primary { background: var(--co-accent); border: 0; color: var(--co-accent-ink); }
+.co-btn-primary:hover:not(:disabled) { background: #8f4a26; }
+.co-btn-primary:disabled { opacity: 0.6; cursor: wait; }
+
+/* ---------- Phones ---------- */
+@media (max-width: 860px) {
+  .co-layout { grid-template-columns: 1fr; }
+  .co-main { padding: 28px 20px 32px; }
+  .co-summary { padding: 24px 20px 32px; }
+  .co-row { grid-template-columns: 1fr auto; }
+  .co-row-label { grid-column: 1 / -1; font-size: 0.78rem; }
+  .co-badges { display: none; }
+  .co-dialog-head, .co-dialog-body, .co-dialog-foot { padding-left: 18px; padding-right: 18px; }
+}
