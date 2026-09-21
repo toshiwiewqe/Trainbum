@@ -111,9 +111,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const user = await loginOrSignupWithEmail(emailInput.value.trim(), passwordInput.value);
       console.log('Firebase login success:', user);
 
-      submitBtn.textContent = 'Success!';
+           submitBtn.textContent = 'Success!';
       const adminSnapshot = await getDoc(doc(db, 'admins', user.uid));
-      window.location.href = adminSnapshot.exists() ? 'admin-dashboard.html' : 'index.html';
+
+      if (adminSnapshot.exists()) {
+        window.location.href = 'admin-dashboard.html';
+      } else {
+        // If the person got sent here from a page that required login
+        // (e.g. booking.html?trail=T003), send them right back to it
+        // instead of always landing on index.html.
+        const params = new URLSearchParams(window.location.search);
+        const redirectTo = params.get('redirect');
+        window.location.href = redirectTo ? decodeURIComponent(redirectTo) : 'index.html';
+      }
     } catch (err) {
       const message = err.code === 'auth/wrong-provider'
         ? err.message

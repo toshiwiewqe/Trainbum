@@ -21,7 +21,18 @@ import {
 } from "firebase/firestore";
 import { addBookingToCart } from "./cart-store.js";
 import { fetchHourlyForecast, buildHikerTip, buildAlertMessage } from "./Weather-api.js";
+import { auth } from "./firebase-init.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+// Require login before anyone can use the booking page. Firebase
+// resolves the current auth state asynchronously (even for an
+// already-logged-in session), so this fires once, right away.
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `login.html?redirect=${returnTo}`;
+  }
+});
 /* ---------- TEMPORARY DIAGNOSTICS ----------
    These two blocks exist to show which Firestore fields are
    missing or wrong. Delete both once the trail documents are

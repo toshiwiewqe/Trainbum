@@ -43,6 +43,15 @@ import {
   updateCartBadge,
   lineTotal,
 } from "./cart-store.js";
+import { auth } from "./firebase-init.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `login.html?redirect=${returnTo}`;
+  }
+});
 
 const SHIPPING_RATES = {
   ncr: 100,       // Metro Manila
