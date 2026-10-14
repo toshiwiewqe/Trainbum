@@ -2228,3 +2228,210 @@ tr.is-archived strong { color: var(--admin-text-dim); }
         padding-right: 1.15rem;
     }
 }
+
+/* ==========================================================
+   ADDED — notification bell
+   ----------------------------------------------------------
+   The bell was a static icon (and a literal "●" on two pages).
+   It now carries a live count of customer messages nobody has
+   answered yet, and opens a dropdown listing them.
+
+   The badge sits on the button; the panel anchors to `.admin-bell`,
+   a wrapper the script adds around the button so the topbar itself
+   needs no positioning.
+   ========================================================== */
+
+.admin-bell {
+    position: relative;
+    display: inline-flex;
+}
+
+.admin-bell-btn {
+    position: relative;
+    transition: border-color .15s, color .15s;
+}
+
+.admin-bell-btn:hover,
+.admin-bell-btn[aria-expanded="true"] {
+    border-color: rgba(255, 90, 69, .5);
+    color: var(--admin-text);
+}
+
+/* Unanswered messages tint the bell itself, so the state reads even
+   at a glance across the room. */
+.admin-bell-btn.has-unread {
+    color: var(--admin-accent);
+    border-color: rgba(255, 90, 69, .45);
+}
+
+.admin-bell-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--admin-accent);
+    color: #1a0401;
+    font-size: .6rem;
+    font-weight: 700;
+    line-height: 17px;
+    text-align: center;
+    box-shadow: 0 0 0 2px var(--admin-bg);
+}
+
+.admin-bell-badge[hidden] { display: none; }
+
+/* ---------- dropdown ---------- */
+
+.admin-bell-panel {
+    position: absolute;
+    top: calc(100% + .55rem);
+    right: 0;
+    z-index: 60;
+    width: min(360px, calc(100vw - 2rem));
+    overflow: hidden;
+    background: var(--admin-card);
+    border: 1px solid rgba(255, 90, 69, .3);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .55);
+}
+
+.admin-bell-panel[hidden] { display: none; }
+
+.admin-bell-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .8rem 1rem;
+    border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-bell-head p {
+    color: var(--admin-text);
+    font-size: .8rem;
+    font-weight: 700;
+}
+
+.admin-bell-head span {
+    color: var(--admin-text-dim);
+    font-size: .66rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.admin-bell-list {
+    max-height: 340px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 90, 69, .45) transparent;
+}
+
+.admin-bell-item {
+    display: flex;
+    gap: .6rem;
+    width: 100%;
+    padding: .7rem 1rem;
+    border: 0;
+    border-bottom: 1px solid var(--admin-border);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+}
+
+.admin-bell-item:last-child { border-bottom: 0; }
+.admin-bell-item:hover { background: rgba(255, 90, 69, .08); }
+
+/* The dot only appears on messages still waiting for a reply. */
+.admin-bell-dot {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    margin-top: .38rem;
+    border-radius: 50%;
+    background: transparent;
+}
+
+.admin-bell-item.is-unread .admin-bell-dot { background: var(--admin-accent); }
+
+.admin-bell-item-body {
+    display: grid;
+    gap: .15rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.admin-bell-item-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .5rem;
+}
+
+.admin-bell-item-top strong {
+    color: var(--admin-text-dim);
+    font-size: .76rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-bell-item.is-unread .admin-bell-item-top strong { color: var(--admin-text); }
+
+.admin-bell-item-top time {
+    flex-shrink: 0;
+    color: var(--admin-text-faint, rgba(245, 239, 233, .52));
+    font-size: .64rem;
+}
+
+.admin-bell-item-text {
+    color: var(--admin-text-dim);
+    font-size: .72rem;
+    line-height: 1.45;
+    overflow: hidden;
+    /* Two lines is enough to recognise a message without the panel
+       turning into the Support page. */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+.admin-bell-item-meta {
+    color: var(--admin-text-faint, rgba(245, 239, 233, .52));
+    font-size: .62rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.admin-bell-empty {
+    padding: 1.1rem 1rem;
+    color: var(--admin-text-dim);
+    font-size: .74rem;
+    line-height: 1.55;
+}
+
+.admin-bell-all {
+    display: block;
+    padding: .7rem 1rem;
+    border-top: 1px solid var(--admin-border);
+    background: rgba(0, 0, 0, .2);
+    color: var(--admin-accent);
+    font-size: .72rem;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+}
+
+.admin-bell-all:hover { background: rgba(255, 90, 69, .12); }
+
+@media (max-width: 560px) {
+    /* Anchored to the topbar instead of the button, so it cannot run
+       off the right edge of a phone screen. */
+    .admin-bell-panel { position: fixed; top: 60px; right: .75rem; left: .75rem; width: auto; }
+}

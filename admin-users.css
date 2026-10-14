@@ -1,0 +1,325 @@
+/* ==========================================================
+   admin-users.css
+   ----------------------------------------------------------
+   New file, linked AFTER admin.css, and deliberately small.
+
+   WHY IT EXISTS. The edit-user modal used to hold a fixed
+   ten-row toggle grid that happened to fit the card, so
+   `.admin-edit-user-modal` in admin.css only ever set a width —
+   it registers no scroll region, unlike the catalog, order and
+   support modals (`#catalog-form-fields`, `#order-modal-body`,
+   `#support-modal-body`).
+
+   That modal now shows the account's real record, which is
+   taller than the card on a short screen. `.admin-modal` is a
+   flex column with overflow hidden, so without a scroller the
+   overflow is CLIPPED rather than scrolled and the Save button
+   becomes unreachable — exactly what happened on the product
+   modal before #product-form-fields was added.
+
+   This lives in its own file rather than in admin.css because
+   admin.css is shared by ten pages and this is needed by one.
+   ========================================================== */
+
+.admin-edit-user-modal {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 2rem);
+    overflow: hidden;
+}
+
+/* [hidden] must still win. `.admin-modal[hidden] { display: none }`
+   in admin.css scores (0,2,0); the rule above is (0,1,0) and so
+   loses to it correctly — but only because it is weaker. Keeping
+   the open-state rule at (0,1,0) is the whole reason the modal
+   does not get stuck open, which is a mistake I have made on this
+   codebase before. Do not add a second class to that selector. */
+
+.admin-edit-user-modal .admin-modal-header,
+.admin-edit-user-modal .admin-modal-actions {
+    flex-shrink: 0;
+}
+
+/* The form is the flex ITEM that has to stretch, and it has to become
+   a flex column itself, or #edit-user-fields below has nothing
+   constraining its height and never scrolls.
+
+   Leaving this out is not a cosmetic miss: the fields region grew to
+   its content height, pushed the actions row past the bottom of the
+   modal, and `overflow: hidden` clipped it — the Save button was
+   simply not on screen and could not be reached by scrolling. That is
+   the same failure the product modal had before #product-form-fields,
+   and I reproduced it here before adding this rule. */
+.admin-edit-user-modal #edit-user-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    gap: 0;
+}
+
+.admin-edit-user-modal #edit-user-fields {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 1.5rem 0.75rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 90, 69, 0.45) transparent;
+}
+
+.admin-edit-user-modal #edit-user-fields::-webkit-scrollbar { width: 8px; }
+.admin-edit-user-modal #edit-user-fields::-webkit-scrollbar-track { background: transparent; }
+.admin-edit-user-modal #edit-user-fields::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 90, 69, 0.4);
+    border-radius: 999px;
+}
+
+/* ---------- avatars ---------- */
+
+/* `.admin-table-avatar` is referenced by this page's table and modal
+   but is never actually DEFINED — admin.css only sets its size inside
+   the identity row, and nothing anywhere gives it a background or a
+   radius. The initials fallback carries an inline `color: #1a0401`,
+   which assumes a light chip behind it; with no background that is
+   near-black text on a near-black row, so the letter has been
+   invisible in the table as well as in the modal.
+
+   Defined here because this is the page that needs it. If the other
+   admin pages use the same class, they will want this moved into
+   admin.css — worth doing, but not something to change in a shared
+   file from this batch. */
+.admin-table-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f0b7a8, #f5efe9);
+    color: #1a0401;
+    font-weight: 700;
+    object-fit: cover;
+    overflow: hidden;
+}
+
+/* display:flex above would otherwise defeat the `hidden` attribute,
+   showing the photo and the initials at the same time. */
+.admin-table-avatar[hidden] {
+    display: none;
+}
+
+.admin-edit-user-identity .admin-table-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 1.15rem;
+}
+
+/* ==========================================================
+   ACCOUNT ACCESS SWITCH
+   ----------------------------------------------------------
+   Written from scratch here rather than reusing
+   `.admin-switch-row` from admin-products.css, because in the
+   live panel that rule was not reaching this control at all —
+   the checkbox inherited `display: grid` and
+   `text-transform: uppercase` from `.admin-product-form label`
+   and rendered as a lone box above a shouted paragraph.
+
+   Rather than diagnose which copy of that stylesheet is loaded,
+   this control owns its own appearance end to end. Every rule
+   below is scoped with `.admin-edit-user-modal`, giving at least
+   (0,2,0) — enough to beat `.admin-product-form label` at
+   (0,1,1) regardless of which file wins on source order.
+   ========================================================== */
+
+.admin-edit-user-modal .admin-access-card {
+    padding: 0.85rem 0.95rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+/* The whole card answers the question "is this account on?" at a
+   glance, not just the knob. */
+.admin-edit-user-modal .admin-access-card.is-blocked {
+    border-color: rgba(255, 90, 69, 0.5);
+    background: rgba(255, 90, 69, 0.08);
+}
+
+/* `label` is in the selector so this outranks `.admin-product-form
+   label { display: grid }` on specificity as well as source order. */
+.admin-edit-user-modal label.admin-access-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.admin-edit-user-modal .admin-access-copy {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.admin-edit-user-modal .admin-access-heading {
+    color: var(--admin-text);
+    font-size: 0.84rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.admin-edit-user-modal .admin-access-state {
+    color: var(--admin-green, #6ede9a);
+    font-size: 0.74rem;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.admin-edit-user-modal .admin-access-card.is-blocked .admin-access-state {
+    color: #ff8a7a;
+}
+
+/* The real checkbox stays in the DOM and keeps keyboard and
+   screen-reader behaviour; it is only visually replaced. Not
+   display:none, which would take it out of the tab order. */
+.admin-edit-user-modal .admin-access-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.admin-edit-user-modal .admin-access-track {
+    position: relative;
+    flex-shrink: 0;
+    width: 46px;
+    height: 26px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(255, 90, 69, 0.28);
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.admin-edit-user-modal .admin-access-knob {
+    position: absolute;
+    top: 50%;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #f5efe9;
+    transform: translateY(-50%);
+    transition: transform 0.18s ease;
+}
+
+/* Checked = access ALLOWED. */
+.admin-edit-user-modal .admin-access-input:checked + .admin-access-track {
+    border-color: rgba(110, 222, 154, 0.55);
+    background: rgba(110, 222, 154, 0.38);
+}
+
+.admin-edit-user-modal .admin-access-input:checked + .admin-access-track .admin-access-knob {
+    transform: translate(20px, -50%);
+}
+
+/* Focus has to be visible on the track, since the input itself is
+   invisible — without this the control is unusable by keyboard. */
+.admin-edit-user-modal .admin-access-input:focus-visible + .admin-access-track {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+
+.admin-edit-user-modal .admin-access-help {
+    margin: 0.6rem 0 0;
+    color: var(--admin-text-dim);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-edit-user-modal .admin-access-card,
+    .admin-edit-user-modal .admin-access-track,
+    .admin-edit-user-modal .admin-access-knob {
+        transition: none;
+    }
+}
+
+/* ---------- a value the database does not have ---------- */
+
+/* Used wherever the page shows a guess or an absence instead of a
+   stored value — an email-derived name, a role no document holds,
+   an account that has never recorded a sign-in. The point is that
+   you can tell those apart from real data at a glance, which is
+   what the old "Unnamed" / "Customer" defaults made impossible. */
+.admin-missing {
+    color: var(--admin-text-faint, rgba(245, 239, 233, 0.5));
+    font-style: italic;
+}
+
+.admin-inferred {
+    border-bottom: 1px dotted var(--admin-border);
+    cursor: help;
+}
+
+/* ---------- notifications list ---------- */
+
+.admin-notif-list {
+    display: grid;
+    gap: 0.5rem;
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 0.2rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 90, 69, 0.4) transparent;
+}
+
+.admin-notif {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--admin-border);
+    border-left-width: 3px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Unread is the state that matters: it is what the customer still
+   has waiting in their account. */
+.admin-notif--unread {
+    border-left-color: var(--admin-accent);
+    background: rgba(255, 90, 69, 0.07);
+}
+
+.admin-notif-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.admin-notif-title { color: var(--admin-text); font-size: 0.8rem; font-weight: 600; }
+.admin-notif-when { color: var(--admin-text-dim); font-size: 0.66rem; }
+.admin-notif-body { margin-top: 0.25rem; color: var(--admin-text-dim); font-size: 0.75rem; line-height: 1.5; }
+
+/* ---------- table ---------- */
+
+/* Three more columns than before (phone, joined, last seen). */
+.admin-users-table { min-width: 1020px; }
+
+@media (max-width: 560px) {
+    .admin-edit-user-modal #edit-user-fields {
+        padding-left: 1.15rem;
+        padding-right: 1.15rem;
+    }
+}

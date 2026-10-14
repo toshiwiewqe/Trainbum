@@ -216,7 +216,26 @@ service cloud.firestore {
       allow get: if isOwner(uid) || isAdmin();
       allow list: if isAdmin();
 
-      allow create: if isOwner(uid);
+      // HARDENED alongside the new signup page.
+      //
+      // This was `allow create: if isOwner(uid)` with no check on the
+      // contents. The UPDATE rule below already blocks a customer from
+      // changing their own role — but nothing stopped them setting it
+      // on the very first write. A signed-in user could POST their own
+      // users/{uid} document with role "admin" and disabled false, and
+      // the rules would accept it, because creating is not updating.
+      //
+      // Admin rights actually come from the `admins/` collection, not
+      // from this field, so that document alone opened no doors. But
+      // the admin Users table renders this field as a "Super Admin"
+      // badge, and any future code that trusts it would inherit a
+      // privilege-escalation bug from a hole that was already here.
+      // Self-registration is pinned to "customer" at both ends now:
+      // signup.js never sends anything else, and this refuses it.
+      allow create: if isOwner(uid)
+                    && request.resource.data.role == 'customer'
+                    && request.resource.data.get('disabled', false) == false;
+
       allow update: if isAdmin() || (isOwner(uid) && !touchesPrivilegedFields());
       allow delete: if isAdmin();
 

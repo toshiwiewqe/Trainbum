@@ -3,8 +3,7 @@
 // ==========================================================
 import { auth, db } from "./firebase-init.js";
 import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword
+  signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 // ADDED: creates users/{uid} on first sign-in, so a new account shows
@@ -113,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.textContent = 'Logging in...';
 
     try {
-      const user = await loginOrSignupWithEmail(emailInput.value.trim(), passwordInput.value);
+      const user = await loginWithEmail(emailInput.value.trim(), passwordInput.value);
       console.log('Firebase login success:', user);
 
       // ADDED: make sure this account exists in Firestore before we
@@ -136,51 +135,55 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = redirectTo ? decodeURIComponent(redirectTo) : 'index.html';
       }
     } catch (err) {
-      const message = err.code === 'auth/wrong-provider'
-        ? err.message
-        : (getFriendlyError(err.code) || err.message || 'Login failed. Try again.');
-      showError(passwordInput, message);
+      // Which field the message lands under matters: "no account" is an
+      // email problem, everything else is a password problem.
+      const noAccount = err.code === 'auth/user-not-found'
+                     || err.code === 'auth/invalid-credential';
+      const message = getFriendlyError(err.code) || err.message || 'Login failed. Try again.';
+      showError(noAccount ? emailInput : passwordInput, message);
       submitBtn.textContent = originalText;
       submitBtn.disabled = false;
     }
   });
 
-  // Tries to sign in; if no account exists with this email yet,
-  // creates one automatically (since this page has no separate signup form).
-  async function loginOrSignupWithEmail(email, password) {
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      return result.user;
-    } catch (err) {
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-        try {
-          return (await createUserWithEmailAndPassword(auth, email, password)).user;
-        } catch (createErr) {
-          if (createErr.code === 'auth/email-already-in-use') {
-            // Firebase no longer lets us detect WHICH provider an email
-            // belongs to (email enumeration protection, on by default
-            // since 2023) — so give one clear, actionable message instead
-            // of guessing.
-            const providerError = new Error(
-              "This email already has an account, but that password didn't match. " +
-              "If you originally signed up with Google or Facebook, use that button below instead."
-            );
-            providerError.code = 'auth/wrong-provider';
-            throw providerError;
-          }
-          throw createErr;
-        }
-      }
-      throw err;
-    }
+  // CHANGED: this used to CREATE an account whenever sign-in failed
+  // with user-not-found or invalid-credential.
+  //
+  // That was a quiet hazard. Firebase's email-enumeration protection
+  // (on by default since 2023) returns `auth/invalid-credential` for
+  // BOTH "no such account" and "wrong password", so the two cases are
+  // indistinguishable here — and one typo in the email field silently
+  // registered a second account instead of reporting a mistake. People
+  // ended up with duplicate profiles and no idea which one held their
+  // bookings, and the admin Users table filled with blank-named rows.
+  //
+  // Registration now happens deliberately on signup.html. This only
+  // signs in.
+  async function loginWithEmail(email, password) {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    return result.user;
   }
 
   function getFriendlyError(code) {
     switch (code) {
       case 'auth/wrong-password':
         return 'Incorrect password.';
+      // Firebase collapses "no such account" and "wrong password" into
+      // this one code on purpose, so an attacker can't use the login
+      // form to discover which emails are registered. That means we
+      // cannot say which it was either — so name both, and point at
+      // sign-up and at the social buttons.
+      case 'auth/invalid-credential':
+      case 'auth/user-not-found':
+        return "We couldn't sign you in with that email and password. "
+             + "If you're new, create an account first \u2014 and if you originally "
+             + "signed up with Google or Facebook, use that button instead.";
       case 'auth/email-already-in-use':
         return 'That email is already registered with a different password.';
+      case 'auth/too-many-requests':
+        return 'Too many attempts from this device. Wait a minute and try again.';
+      case 'auth/network-request-failed':
+        return 'No connection. Check your internet and try again.';
       case 'auth/invalid-email':
         return 'That email address looks invalid.';
       case 'auth/weak-password':

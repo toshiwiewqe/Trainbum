@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trailbound Admin - Users</title>
     <link rel="stylesheet" href="admin.css">
+    <!-- ADDED. admin-users.js creates its error banner with the class
+         `admin-product-feedback`, which is defined in admin-products.css
+         — a file this page never linked. Every "couldn't read the users
+         collection" message has therefore been rendering as unstyled
+         body text. -->
+    <link rel="stylesheet" href="admin-products.css">
+    <link rel="stylesheet" href="admin-users.css">
   </head>
   <body class="admin-body">
     <div class="admin-layout">
@@ -24,7 +31,9 @@
           <a href="admin-bookings.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm12 8H5v10h14V10z"/></svg>Bookings</a>
           <a href="admin-orders.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM1 2h3l3.6 11.6L6.3 16A2 2 0 0 0 8 19h11v-2H8.4l1-2h7.4a2 2 0 0 0 1.8-1.2l3.2-7.3L20 5H6.2l-.9-3H1v2z"/></svg>Orders</a>
           <a href="admin-users.html" class="admin-nav-link active"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Users</a>
+          <a href="admin-reviews.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="m12 17.3 6.2 3.7-1.6-7 5.4-4.7-7.1-.6L12 2 9.1 8.7 2 9.3l5.4 4.7-1.6 7z"/></svg>Reviews</a>
           <p class="admin-nav-label admin-nav-label--system">System</p>
+          <a href="admin-activity.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3a9 9 0 0 0-9 9H1l4 4 4-4H6a7 7 0 1 1 2 4.9l-1.4 1.5A9 9 0 1 0 13 3zm-1 5v5l4 2 .8-1.3-3.3-1.9V8z"/></svg>Activity Log</a>
           <a href="admin-support.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>Support</a>
           <a href="admin-settings.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Settings</a>
         </nav>
@@ -80,10 +89,18 @@
               <p class="admin-stat-value" id="user-new">—</p>
               <p class="admin-stat-delta">Past 24h</p>
             </div>
+            <!-- This card used to read "Average Session / Daily Avg".
+                 Nothing in the database records session length, so
+                 admin-users.js reached into the DOM at runtime and
+                 rewrote the label and the delta to say "Disabled
+                 Accounts" instead — using previousElementSibling and
+                 nextElementSibling, which silently break the moment
+                 anyone adds an element to this card. The card now says
+                 what it shows, and that DOM surgery is gone. -->
             <div class="admin-stat-card">
-              <p class="admin-stat-label">Average Session</p>
-              <p class="admin-stat-value" id="user-session">—</p>
-              <p class="admin-stat-delta">Daily Avg</p>
+              <p class="admin-stat-label">Disabled Accounts</p>
+              <p class="admin-stat-value" id="user-disabled">—</p>
+              <p class="admin-stat-delta" id="user-disabled-delta">Blocked from signing in</p>
             </div>
           </div>
 
@@ -103,10 +120,10 @@
             <div class="admin-table-wrap">
               <table class="admin-activity-table admin-users-table">
                 <thead>
-                  <tr><th>Avatar</th><th>Name & Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+                  <tr><th>Avatar</th><th>Name &amp; Email</th><th>Phone</th><th>Role</th><th>Joined</th><th>Last seen</th><th>Status</th><th>Actions</th></tr>
                 </thead>
                 <tbody id="user-list">
-                  <tr><td colspan="5" class="admin-empty">Loading users...</td></tr>
+                  <tr><td colspan="8" class="admin-empty">Loading users...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -123,27 +140,135 @@
         <div><p class="admin-modal-kicker">User Management</p><h2 id="edit-user-title">Edit User</h2></div>
         <button class="admin-modal-close" id="edit-user-close" type="button" aria-label="Close">&times;</button>
       </div>
-      <div class="admin-edit-user-identity">
-        <div class="admin-table-avatar" id="edit-user-avatar"></div>
-        <div><p class="admin-edit-user-name" id="edit-user-name">User</p><p class="admin-edit-user-email" id="edit-user-email"></p></div>
-      </div>
-      <label class="admin-form-field"><span class="admin-form-subheading">Role</span>
-        <select class="admin-text-input" id="edit-user-role"><option value="customer">Customer</option><option value="editor">Editor</option><option value="admin">Super Admin</option></select>
-      </label>
-      <p class="admin-form-subheading">Access Control</p>
-      <div class="admin-permission-grid">
-        <label class="admin-permission-row"><span>View Financial Revenue</span><input type="checkbox" checked><span class="admin-toggle-switch"></span></label>
-        <label class="admin-permission-row"><span>Add/Delete Products</span><input type="checkbox" checked><span class="admin-toggle-switch"></span></label>
-        <label class="admin-permission-row"><span>Export Performance Reports</span><input type="checkbox" checked><span class="admin-toggle-switch"></span></label>
-        <label class="admin-permission-row"><span>Manage Price Lists</span><input type="checkbox" checked><span class="admin-toggle-switch"></span></label>
-        <label class="admin-permission-row"><span>Override Reservation Policy</span><input type="checkbox" checked><span class="admin-toggle-switch"></span></label>
-        <label class="admin-permission-row"><span>Edit Staff Permissions</span><input type="checkbox"><span class="admin-toggle-switch"></span></label>
-        <label class="admin-permission-row"><span>Process Refunds</span><input type="checkbox" checked><span class="admin-toggle-switch"></span></label>
-        <label class="admin-permission-row"><span>Audit System Logs</span><input type="checkbox"><span class="admin-toggle-switch"></span></label>
-        <label class="admin-permission-row"><span>Modify API Keys</span><input type="checkbox"><span class="admin-toggle-switch"></span></label>
-        <label class="admin-permission-row"><span>Update Site Configuration</span><input type="checkbox"><span class="admin-toggle-switch"></span></label>
-      </div>
-      <div class="admin-modal-actions"><button class="admin-modal-cancel" id="edit-user-cancel" type="button">Discard Changes</button><button class="admin-modal-submit" id="edit-user-save" type="button">Save Permissions</button></div>
+      <!-- REMOVED — the "Access Control" grid.
+           It was ten toggles, hardcoded `checked` in this file, read by
+           nothing and written to nothing. There is no permissions field
+           in the users collection and no code anywhere that consults
+           one, so ticking "Process Refunds" or "Modify API Keys" and
+           pressing Save changed exactly nothing — but the button said
+           "Save Permissions", so it looked like it had. A control that
+           appears to grant refund rights and silently does not is worse
+           than no control, which is why it is gone rather than disabled.
+
+           Real access control on this project comes from the `admins`
+           collection, which firestore.rules checks and which cannot be
+           written from a browser by design. That is stated below. -->
+
+      <form id="edit-user-form" class="admin-product-form">
+        <div id="edit-user-fields">
+
+          <div class="admin-edit-user-identity">
+            <img id="edit-user-photo" class="admin-table-avatar" src="" alt="" hidden referrerpolicy="no-referrer">
+            <div class="admin-table-avatar" id="edit-user-avatar"></div>
+            <div>
+              <p class="admin-edit-user-name" id="edit-user-name">User</p>
+              <p class="admin-edit-user-email" id="edit-user-email"></p>
+            </div>
+          </div>
+
+          <!-- Display name and phone are READ-ONLY here, at your
+               instruction. They belong to the customer and are theirs
+               to change from their own account page; an admin panel
+               that can silently rewrite someone's name is a panel you
+               cannot trust when a record is disputed. They are shown
+               in the Record section below instead. -->
+
+          <section class="admin-form-section">
+            <p class="admin-form-section-title">Access</p>
+            <div class="admin-form-section-body">
+
+              <!-- Rebuilt. This was a bare checkbox that inherited the
+                   form's `display: grid` and `text-transform: uppercase`,
+                   so the box sat on its own line above a shouted
+                   paragraph and nothing indicated which state was
+                   current. It is now a switch that reads as a sentence,
+                   states the account's condition in words, and turns red
+                   when access is off.
+
+                   The switch means ACCESS ALLOWED, not "disabled" — on
+                   is the permissive state, which is the way round people
+                   expect a toggle to read. The stored field is still
+                   `disabled`; the inversion happens in one place in the
+                   JS and nowhere else. -->
+              <div class="admin-access-card" id="edit-user-access-card">
+                <label class="admin-access-row" for="edit-user-access">
+                  <span class="admin-access-copy">
+                    <span class="admin-access-heading">Account access</span>
+                    <span class="admin-access-state" id="edit-user-access-state">Active &mdash; can sign in</span>
+                  </span>
+                  <input type="checkbox" id="edit-user-access" class="admin-access-input">
+                  <span class="admin-access-track" aria-hidden="true"><span class="admin-access-knob"></span></span>
+                </label>
+                <p class="admin-access-help">Turning this off blocks the customer from signing in and
+                  notifies them. A browser cannot delete a Firebase Auth account &mdash; that needs the
+                  Admin SDK on a server &mdash; so this is the real control.</p>
+              </div>
+
+              <label>Role<select class="admin-text-input" id="edit-user-role">
+                <option value="customer">Customer</option>
+                <option value="editor">Editor</option>
+                <option value="admin">Super Admin</option>
+              </select></label>
+              <p class="admin-form-hint" id="edit-user-admin-note"></p>
+            </div>
+          </section>
+
+          <section class="admin-form-section">
+            <p class="admin-form-section-title">Record</p>
+            <div class="admin-form-section-body">
+              <div class="order-info-grid" id="edit-user-record"></div>
+              <p class="admin-form-hint">Read-only. The customer's name and phone number are theirs to
+                change from their own account page &mdash; this panel shows them, it does not edit them.</p>
+            </div>
+          </section>
+
+          <section class="admin-form-section" id="edit-user-address-section" hidden>
+            <p class="admin-form-section-title">Saved addresses</p>
+            <div class="admin-form-section-body">
+              <div class="order-info-grid" id="edit-user-addresses"></div>
+            </div>
+          </section>
+
+          <section class="admin-form-section" id="edit-user-extras-section" hidden>
+            <p class="admin-form-section-title">Other fields on this record</p>
+            <div class="admin-form-section-body">
+              <div class="order-info-grid" id="edit-user-extras"></div>
+            </div>
+          </section>
+
+          <!-- ADDED. users/{uid}/wishlist is real data in your database —
+               account.js and storefront.js write to it, and your Firestore
+               rules explicitly let an admin read it — but nothing in the
+               panel showed it. -->
+          <section class="admin-form-section">
+            <p class="admin-form-section-title">
+              Wishlist <span class="admin-form-count" id="edit-user-wishlist-count"></span>
+            </p>
+            <div class="admin-form-section-body">
+              <p class="admin-form-hint">Gear this customer saved for later. Read-only &mdash; it is
+                theirs to change from their account page.</p>
+              <div class="admin-notif-list" id="edit-user-wishlist"></div>
+            </div>
+          </section>
+
+          <section class="admin-form-section">
+            <p class="admin-form-section-title">
+              Notifications <span class="admin-form-count" id="edit-user-notif-count"></span>
+            </p>
+            <div class="admin-form-section-body">
+              <p class="admin-form-hint">The <code>notifications</code> subcollection on this account —
+                what the customer has actually been told. Written by booking and order status changes
+                and by support replies, and never visible from the admin panel until now.</p>
+              <div class="admin-notif-list" id="edit-user-notifs"></div>
+            </div>
+          </section>
+
+        </div>
+        <div class="admin-modal-actions">
+          <button class="admin-modal-cancel" id="edit-user-cancel" type="button">Discard Changes</button>
+          <button class="admin-modal-submit" id="edit-user-save" type="submit">Save changes <span aria-hidden="true">›</span></button>
+        </div>
+      </form>
     </section>
 
     <script type="module" src="admin-users.js"></script>

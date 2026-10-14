@@ -147,3 +147,459 @@
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
 }
+/* ==========================================================
+   ADDED — full-field product editor
+   ----------------------------------------------------------
+   The modal grew from six inputs to the whole Firestore document,
+   so it needs two things it never had.
+
+   1. A SCROLL REGION. admin.css makes .admin-product-modal a flex
+      column with overflow:hidden, and registers a scroll region for
+      the catalog, order and support modals — but not this one. The
+      short old form happened to fit. This one does not, and without
+      a scroller the overflow is simply clipped: the Save button
+      becomes unreachable. #product-form-fields is that region.
+      It is defined here rather than in admin.css because this file
+      is linked second and therefore wins any tie.
+
+   2. Row editors for the three non-scalar fields (images, attributes,
+      specs).
+   ========================================================== */
+
+.admin-product-modal #product-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    gap: 0;
+}
+
+.admin-product-modal #product-form-fields {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1.25rem 1.5rem 0.75rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 90, 69, 0.45) transparent;
+}
+
+.admin-product-modal #product-form-fields::-webkit-scrollbar { width: 8px; }
+.admin-product-modal #product-form-fields::-webkit-scrollbar-track { background: transparent; }
+.admin-product-modal #product-form-fields::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 90, 69, 0.4);
+    border-radius: 999px;
+}
+
+/* ---------- in-stock switch ---------- */
+
+/* `.admin-product-form label { display: grid; text-transform: uppercase }`
+   would stack the box above its text and shout the sentence, so the
+   checkbox rows override it rather than inventing a new class name. */
+.admin-product-form label.admin-switch-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.7rem 0.75rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.admin-product-form label.admin-switch-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+    accent-color: var(--admin-accent);
+    cursor: pointer;
+}
+
+.admin-switch-text { display: grid; gap: 0.15rem; }
+.admin-switch-text strong { color: var(--admin-text); font-size: 0.8rem; font-weight: 600; }
+.admin-switch-text small { color: var(--admin-text-dim); font-size: 0.72rem; line-height: 1.45; }
+
+/* ---------- repeatable rows ---------- */
+
+.admin-repeat {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.admin-repeat-row {
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Attributes and specs have a key column instead of a thumbnail. */
+.admin-repeat--pair .admin-repeat-row {
+    grid-template-columns: minmax(90px, 0.45fr) 1fr auto;
+}
+
+.admin-product-form .admin-repeat-key,
+.admin-product-form .admin-repeat-input {
+    width: 100%;
+    margin: 0;
+}
+
+.admin-product-form .admin-repeat-key {
+    font-weight: 600;
+}
+
+.admin-repeat-thumb {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* A URL that will not load is worth seeing HERE rather than finding
+   out from the shop. ibb.co/XXXX links are page URLs, not images, and
+   they fail exactly like this. */
+.admin-repeat-thumb.is-broken,
+.admin-product-thumb.is-broken {
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(255, 90, 69, 0.18) 0 6px,
+        transparent 6px 12px
+    );
+    border: 1px solid rgba(255, 90, 69, 0.45);
+}
+
+.admin-repeat-remove {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--admin-border);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--admin-text-dim);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.admin-repeat-remove:hover {
+    border-color: var(--admin-accent);
+    color: var(--admin-text);
+}
+
+.admin-repeat-add {
+    justify-self: start;
+    margin-top: 0.15rem;
+    padding: 0.4rem 0.7rem;
+    border: 1px dashed var(--admin-border);
+    border-radius: 7px;
+    background: transparent;
+    color: var(--admin-text-dim);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.72rem;
+}
+
+.admin-repeat-add:hover {
+    border-color: var(--admin-accent);
+    border-style: solid;
+    color: var(--admin-text);
+}
+
+/* ---------- read-only record panel ---------- */
+
+.admin-meta-list {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.admin-meta-list > div {
+    display: grid;
+    grid-template-columns: minmax(100px, 0.4fr) 1fr;
+    gap: 0.6rem;
+    align-items: baseline;
+}
+
+.admin-meta-list dt {
+    color: var(--admin-text-dim);
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.admin-meta-list dd {
+    color: var(--admin-text);
+    font-size: 0.76rem;
+    overflow-wrap: anywhere;
+}
+
+/* ---------- table additions ---------- */
+
+/* One more column than before. */
+.admin-product-table { min-width: 940px; }
+
+.admin-product-table td small.admin-product-meta {
+    color: var(--admin-text-faint, rgba(245, 239, 233, 0.52));
+    font-size: 0.66rem;
+    letter-spacing: 0.02em;
+}
+
+.admin-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.admin-chip {
+    padding: 0.14rem 0.42rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--admin-text-dim);
+    font-size: 0.62rem;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+.admin-chip.is-empty {
+    background: transparent;
+    border: 1px dashed var(--admin-border);
+}
+
+@media (max-width: 560px) {
+    .admin-product-modal #product-form-fields { padding-left: 1.15rem; padding-right: 1.15rem; }
+    .admin-repeat--pair .admin-repeat-row { grid-template-columns: 1fr auto; }
+    .admin-repeat--pair .admin-repeat-key { grid-column: 1 / -1; }
+}
+
+/* ==========================================================
+   ADDED — stock switch + image upload
+   ========================================================== */
+
+/* ---------- stock switch ---------- */
+
+/* Replaces the bare checkbox. Same control as the account switch on
+   the users page: the card states the condition in words and changes
+   colour, so you are not inferring a product's status from a tick.
+
+   Every selector is scoped with .admin-product-modal, giving at least
+   (0,2,0) — enough to beat `.admin-product-form label` at (0,1,1),
+   which would otherwise impose `display: grid` and uppercase on it. */
+
+.admin-product-modal .admin-stock-card {
+    padding: 0.85rem 0.95rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.admin-product-modal .admin-stock-card.is-out {
+    border-color: rgba(255, 90, 69, 0.5);
+    background: rgba(255, 90, 69, 0.08);
+}
+
+.admin-product-modal label.admin-stock-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.admin-product-modal .admin-stock-copy { display: grid; gap: 0.2rem; min-width: 0; }
+
+.admin-product-modal .admin-stock-heading {
+    color: var(--admin-text);
+    font-size: 0.84rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.admin-product-modal .admin-stock-state {
+    color: var(--admin-green, #6ede9a);
+    font-size: 0.74rem;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.admin-product-modal .admin-stock-card.is-out .admin-stock-state { color: #ff8a7a; }
+
+/* Visually replaced, not removed — it keeps its place in the tab order
+   and its label association. */
+.admin-product-modal .admin-stock-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.admin-product-modal .admin-stock-track {
+    position: relative;
+    flex-shrink: 0;
+    width: 46px;
+    height: 26px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(255, 90, 69, 0.28);
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.admin-product-modal .admin-stock-knob {
+    position: absolute;
+    top: 50%;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #f5efe9;
+    transform: translateY(-50%);
+    transition: transform 0.18s ease;
+}
+
+.admin-product-modal .admin-stock-input:checked + .admin-stock-track {
+    border-color: rgba(110, 222, 154, 0.55);
+    background: rgba(110, 222, 154, 0.38);
+}
+
+.admin-product-modal .admin-stock-input:checked + .admin-stock-track .admin-stock-knob {
+    transform: translate(20px, -50%);
+}
+
+.admin-product-modal .admin-stock-input:focus-visible + .admin-stock-track {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+
+.admin-product-modal .admin-stock-help {
+    margin: 0.6rem 0 0;
+    color: var(--admin-text-dim);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+/* ---------- dropzone ---------- */
+
+.admin-product-modal label.admin-dropzone {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0 0.75rem;
+    padding: 0.9rem 1rem;
+    border: 1px dashed var(--admin-border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    letter-spacing: 0;
+    text-transform: none;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.admin-product-modal label.admin-dropzone:hover,
+.admin-product-modal label.admin-dropzone.is-dragging {
+    border-color: var(--admin-accent);
+    border-style: solid;
+    background: rgba(255, 90, 69, 0.08);
+}
+
+.admin-dropzone-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 90, 69, 0.16);
+    color: var(--admin-accent);
+    font-size: 1rem;
+}
+
+.admin-dropzone-text { display: grid; gap: 0.15rem; }
+.admin-dropzone-text strong { color: var(--admin-text); font-size: 0.8rem; font-weight: 600; }
+.admin-dropzone-text small { color: var(--admin-text-dim); font-size: 0.7rem; }
+
+.admin-upload-error {
+    margin: 0 0 0.75rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid rgba(255, 90, 69, 0.4);
+    border-radius: 8px;
+    background: rgba(255, 90, 69, 0.1);
+    color: #ffb4a8;
+    font-size: 0.74rem;
+    line-height: 1.5;
+}
+
+.admin-upload-error[hidden] { display: none; }
+
+/* ---------- image rows ---------- */
+
+/* Four children now (thumb, url, Upload, ×), not three. Without this
+   the fourth lands in an implicit column and the row loses its
+   alignment with the others. */
+#product-images .admin-repeat-row {
+    grid-template-columns: 42px 1fr auto auto;
+}
+
+.admin-row-upload {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--admin-text-dim);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.66rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.admin-row-upload:hover:not(:disabled) {
+    border-color: var(--admin-accent);
+    color: var(--admin-text);
+}
+
+.admin-row-upload:disabled { cursor: progress; opacity: 0.75; }
+
+/* Progress is drawn under the URL field itself rather than as a
+   separate bar, so the row does not change height mid-upload and
+   shift everything below it. */
+.admin-repeat-row.is-uploading .admin-repeat-input {
+    background-image: linear-gradient(
+        to right,
+        rgba(255, 90, 69, 0.35) var(--upload-progress, 0%),
+        transparent var(--upload-progress, 0%)
+    );
+    background-repeat: no-repeat;
+    transition: background-image 0.15s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-product-modal .admin-stock-card,
+    .admin-product-modal .admin-stock-track,
+    .admin-product-modal .admin-stock-knob,
+    .admin-product-modal label.admin-dropzone { transition: none; }
+}
+
+@media (max-width: 560px) {
+    #product-images .admin-repeat-row { grid-template-columns: 42px 1fr auto; }
+    #product-images .admin-row-upload { grid-column: 2 / -1; justify-self: start; }
+}
+
+/* Second line of the dropzone hint — a caveat, so quieter than the
+   format/size line above it. */
+.admin-dropzone-note {
+    color: var(--admin-text-faint, rgba(245, 239, 233, 0.5));
+    line-height: 1.45;
+}

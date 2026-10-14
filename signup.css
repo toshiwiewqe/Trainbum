@@ -1,0 +1,274 @@
+/* ==========================================================
+   signup.css
+   ----------------------------------------------------------
+   Loaded AFTER login.css, and only for the few things the login
+   page has no equivalent of: the password strength meter, the
+   terms row, and the "check your email" panel.
+
+   Everything else on signup.html reuses the login classes
+   (.login-box, .input-box, .input-field, .submit-btn, .divider,
+   .social-login) so the two pages cannot drift apart visually.
+
+   SPECIFICITY, and why nearly every selector here starts with
+   .login-box: the first version of this file set colours with single
+   class selectors like `.signup-done-text`. login.css styles the card
+   with DESCENDANT selectors — `.login-box p`, `.login-box span` — and
+   those score higher, so my colours lost and the body text rendered in
+   the card's own dark green ON dark green. Invisible. Matching the
+   depth of those rules is what fixes it, and it is why the colour is
+   restated on the children rather than left to inherit from a parent:
+   an inherited colour loses to ANY rule that targets the child
+   directly, however weak.
+   ========================================================== */
+
+/* ---------- password strength meter ---------- */
+
+.login-box .signup-strength {
+    /* Enough gap that the bar reads as feedback about the field
+       above it, not as part of the input's own border. */
+    margin-top: 0.55rem;
+}
+
+.login-box .signup-strength[hidden] {
+    display: none;
+}
+
+.login-box .signup-strength-track {
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+.login-box .signup-strength-track span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: 999px;
+    background: #9aa0a6;
+    transition: width 0.2s ease, background-color 0.2s ease;
+}
+
+.login-box .signup-strength-track span.is-weak   { background: #ff8a7a; }
+.login-box .signup-strength-track span.is-fair   { background: #f2c14e; }
+.login-box .signup-strength-track span.is-good   { background: #6ede9a; }
+.login-box .signup-strength-track span.is-strong { background: #8ff2b4; }
+
+.login-box .signup-strength-label {
+    margin-top: 0.3rem;
+    color: #eaf5ec;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+/* ---------- terms checkbox ---------- */
+
+.login-box .signup-terms {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin: 1rem 0 0.25rem;
+    position: relative;
+    cursor: pointer;
+}
+
+.login-box .signup-terms input[type="checkbox"] {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 0.1rem;
+    accent-color: #4fca80;
+    cursor: pointer;
+}
+
+/* The text is its own element and carries its own colour, because a
+   colour inherited from the label would lose to `.login-box span`. */
+.login-box .signup-terms-text {
+    flex: 1;
+    min-width: 0;
+    color: #eaf5ec;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.login-box .signup-terms .input-error {
+    flex-basis: 100%;
+}
+
+/* ---------- verification step ---------- */
+
+.login-box.signup-done {
+    text-align: center;
+}
+
+.login-box.signup-done[hidden] {
+    display: none;
+}
+
+.login-box .signup-done-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 0.6rem;
+    border-radius: 50%;
+    background: rgba(79, 202, 128, 0.16);
+    border: 1px solid rgba(79, 202, 128, 0.55);
+    color: #8ff2b4;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 46px;
+}
+
+.login-box.signup-done .login-page-header {
+    text-align: center;
+    margin-bottom: 0.9rem;
+}
+
+/* The eyebrow is a <span>, so it is exposed to the same descendant
+   rules that swallowed the body text. login.css colours it correctly
+   today; this only makes the panel independent of that staying true. */
+.login-box.signup-done .login-eyebrow {
+    color: rgba(234, 245, 236, 0.75);
+}
+
+.login-box.signup-done .login-page-header h3 {
+    color: #ffffff;
+}
+
+.login-box .signup-done-text {
+    margin: 0 0 1.1rem;
+    /* Near-white, not a tint of the card. This is the line that was
+       unreadable. */
+    color: #eaf5ec;
+    font-size: 0.86rem;
+    line-height: 1.6;
+}
+
+.login-box .signup-done-text strong {
+    color: #ffffff;
+    font-weight: 700;
+    /* A long address wraps instead of widening the card. */
+    overflow-wrap: anywhere;
+}
+
+/* ---------- code entry ---------- */
+
+.login-box .signup-code {
+    margin-bottom: 0.4rem;
+    text-align: left;
+}
+
+.login-box .signup-code[hidden] {
+    display: none;
+}
+
+.login-box .signup-code .input-label {
+    display: block;
+    margin-bottom: 0.4rem;
+    color: #eaf5ec;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* Reuses login.css's .otp-input where it exists; these declarations
+   only pin down the things a 6-digit field specifically needs. */
+.login-box .signup-code-input {
+    width: 100%;
+    padding: 0.85rem 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 9px;
+    background: #ffffff;
+    color: #12281a;
+    font-family: inherit;
+    font-size: 1.35rem;
+    font-weight: 700;
+    /* Spaced digits so a 6-figure code is easy to check against the
+       email at a glance. */
+    letter-spacing: 0.42em;
+    text-align: center;
+    text-indent: 0.42em;
+    outline: none;
+}
+
+.login-box .signup-code-input::placeholder {
+    color: #9bb3a2;
+    font-weight: 600;
+}
+
+.login-box .signup-code-input:focus {
+    border-color: #4fca80;
+    box-shadow: 0 0 0 3px rgba(79, 202, 128, 0.22);
+}
+
+.login-box .signup-code-input.input-error-state {
+    border-color: #ff8a7a;
+    box-shadow: 0 0 0 3px rgba(255, 138, 122, 0.2);
+}
+
+.login-box .signup-code-error {
+    margin-top: 0.45rem;
+    color: #ffb4a8;
+    font-size: 0.76rem;
+    line-height: 1.45;
+}
+
+.login-box .signup-code-error[hidden] {
+    display: none;
+}
+
+.login-box .signup-done-note {
+    margin-top: 0.8rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 9px;
+    background: rgba(0, 0, 0, 0.28);
+    color: #eaf5ec;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    text-align: left;
+}
+
+.login-box .signup-done-note[hidden] {
+    display: none;
+}
+
+/* ---------- footer links ---------- */
+
+.login-box .signup-done-links p {
+    color: #eaf5ec;
+    font-size: 0.8rem;
+    line-height: 1.7;
+}
+
+.login-box .signup-done-links a {
+    color: #8ff2b4;
+    font-weight: 600;
+}
+
+.login-box .signup-done-links[hidden] {
+    display: none;
+}
+
+.login-box .signup-dot {
+    margin: 0 0.35rem;
+    color: rgba(234, 245, 236, 0.5);
+}
+
+/* The verify control is a real <button>, so it inherits .submit-btn
+   fully — this only guards against a stray underline if the button
+   styles ever move onto an anchor again. */
+.login-box.signup-done .submit-btn {
+    width: 100%;
+    text-decoration: none;
+}
+
+@media (max-width: 420px) {
+    .login-box .signup-code-input {
+        font-size: 1.15rem;
+        letter-spacing: 0.3em;
+        text-indent: 0.3em;
+    }
+}

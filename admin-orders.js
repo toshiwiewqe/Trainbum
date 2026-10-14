@@ -28,7 +28,32 @@ import {
 
 const track = collectUnsubscribers();
 
-const STATUSES = ["Pending Payment", "Paid", "Shipped", "Completed", "Cancelled"];
+/* FIXED. This list was missing "Payment Failed" — which is the status
+   on real orders in your database. When the current status is not in
+   the list, NO <option> gets `selected`, so the browser falls back to
+   the first one and the dropdown reads "Pending Payment" on an order
+   whose payment actually FAILED. An admin reading that would think the
+   charge was merely outstanding, and touching the control at all would
+   write the wrong status back.
+
+   Both halves are fixed: the known statuses are listed here, and
+   statusOptions() below also folds in whatever the order actually says,
+   so an unrecognised value can never be silently displayed as another
+   one. */
+const STATUSES = [
+  "Pending Payment",
+  "Paid",
+  "Shipped",
+  "Completed",
+  "Payment Failed",
+  "Refunded",
+  "Cancelled"
+];
+
+function statusOptions(current) {
+  const known = STATUSES.some((s) => lower(s) === lower(current));
+  return known ? STATUSES : [current, ...STATUSES];
+}
 
 const el = {
   search: document.getElementById("order-search"),
@@ -79,12 +104,28 @@ requireAdmin((user) => {
 
 const lower = (v) => String(v || "").toLowerCase();
 
+/* FIXED. Your payment_status is not the bare word "Paid" — Maya writes
+   "Paid (Maya Sandbox)". The old check was `lower(x) === "paid"`, so a
+   paid order failed it and rendered in the RED out-of-stock colour, as
+   you saw in the modal. startsWith is what matches the real values.
+
+   Deliberately NOT `includes("paid")`: "Unpaid" contains "paid" and
+   would then light up green — the exact opposite mistake. */
+const isPaid = (status) => lower(status).startsWith("paid");
+
 function renderStats() {
   const paid = orders.filter((o) => ["paid", "shipped", "completed"].includes(lower(o.status)));
   setText("order-total", orders.length.toLocaleString());
+  // Counting only "pending payment" hid every FAILED payment — on your
+  // data that is the status orders actually land on when Maya declines.
+  const needsAttention = orders.filter((o) =>
+    ["pending payment", "payment failed"].includes(lower(o.status))
+  );
+  const failed = needsAttention.filter((o) => lower(o.status) === "payment failed").length;
+  setText("order-pending", needsAttention.length.toLocaleString());
   setText(
-    "order-pending",
-    orders.filter((o) => lower(o.status) === "pending payment").length.toLocaleString()
+    "order-pending-note",
+    failed ? `${failed} failed payment(s)` : needsAttention.length ? "Awaiting payment" : "All clear"
   );
   setText("order-paid", paid.length.toLocaleString());
   setText("order-revenue", peso(paid.reduce((sum, o) => sum + o.total, 0)));
@@ -115,7 +156,7 @@ function visible() {
     const matchesStatus = filter === "all" || lower(o.status) === filter;
     const matchesTerm =
       !term ||
-      [o.orderId, o.customerName, o.email, o.shipping?.city].some((v) =>
+      [o.orderId, o.customerName, o.email, o.phone, o.shipping?.city, o.checkoutId].some((v) =>
         String(v || "").toLowerCase().includes(term)
       );
     return matchesStatus && matchesTerm;
@@ -127,8 +168,8 @@ function render() {
 
   if (!rows.length) {
     el.body.innerHTML = orders.length
-      ? '<tr><td colspan="7" class="admin-empty">No orders match this filter.</td></tr>'
-      : '<tr><td colspan="7" class="admin-empty">No orders yet. They appear here the moment a customer reaches Maya checkout.</td></tr>';
+      ? '<tr><td colspan="8" class="admin-empty">No orders match this filter.</td></tr>'
+      : '<tr><td colspan="8" class="admin-empty">No orders yet. They appear here the moment a customer reaches Maya checkout.</td></tr>';
     return;
   }
 
@@ -153,6 +194,13 @@ function render() {
           : '<span class="admin-table-subtext">Booking only</span>'
       }</td>
       <td>${peso(o.total)}</td>
+      <td><span class="admin-product-status admin-product-status--${
+        isPaid(o.paymentStatus) ? "active" : "inactive"
+      }">${escapeHtml(o.paymentStatus)}</span>${
+        o.isSandbox
+          ? '<div class="admin-table-subtext" style="color:#facc15">sandbox</div>'
+          : ""
+      }</td>
       <td><span class="admin-product-status admin-product-status--${statusClass(
         o.status
       )}">${escapeHtml(o.status)}</span></td>
@@ -277,16 +325,37 @@ function openOrder(order) {
       )}</strong></div>
 
       <div class="payment-state ${
-        lower(order.paymentStatus) === "paid" ? "payment-state--paid" : ""
-      }">Maya: ${escapeHtml(order.paymentStatus)}${
-    order.payment?.checkout_id
-      ? ` · ${escapeHtml(String(order.payment.checkout_id).slice(0, 12))}…`
-      : ""
-  }</div>
+        isPaid(order.paymentStatus) ? "payment-state--paid" : ""
+      }">Payment: ${escapeHtml(order.paymentStatus)}</div>
+
+      <!-- The payment block, in full. The method was never shown, and
+           "maya_checkout_sandbox" vs a live method is the difference
+           between a real payment and a test one. The checkout id was
+           truncated to 12 characters, which is useless for reconciling
+           a charge in the Maya dashboard — it is selectable in full. -->
+      <div class="order-info-grid" style="margin-top:.8rem">
+        <p><small>Method</small><strong>${escapeHtml(order.paymentMethod || "—")}</strong></p>
+        <p><small>Account</small><strong>${
+          order.uid ? "Signed-in customer" : "Guest \u2014 no account"
+        }</strong></p>
+      </div>
+      ${
+        order.isSandbox
+          ? '<p class="admin-table-subtext" style="margin-top:.5rem;color:#facc15">This went through a SANDBOX checkout \u2014 no money moved. Do not treat it as revenue.</p>'
+          : ""
+      }
+      ${
+        order.checkoutId
+          ? `<p class="admin-form-subheading" style="margin-top:.9rem">Maya checkout ID</p>
+             <p class="admin-order-line" style="user-select:all;word-break:break-all;font-family:ui-monospace,monospace;font-size:.74rem">${escapeHtml(
+               order.checkoutId
+             )}</p>`
+          : ""
+      }
 
       <p class="admin-form-subheading" style="margin-top:1.1rem">Order status</p>
       <select class="admin-text-input" id="order-status-select">
-        ${STATUSES.map(
+        ${statusOptions(order.status).map(
           (s) =>
             `<option value="${s}"${
               lower(s) === lower(order.status) ? " selected" : ""
@@ -342,6 +411,24 @@ function openOrder(order) {
     });
 }
 
+/* ==========================================================
+   NO ORDER EDITING — by design
+   ----------------------------------------------------------
+   An editor for the contact and delivery fields used to live here.
+   It is gone at your instruction, and it is the right call: an order
+   is the record of a transaction that already happened. A panel that
+   can quietly rewrite what a customer gave at checkout is a panel you
+   cannot lean on when that customer disputes a charge.
+
+   The order status dropdown is the one thing still writable, because
+   that is workflow (dispatch, refund) rather than the record itself,
+   and every change to it goes through the audit log.
+
+   If a mistyped address ever blocks a dispatch, correct it in the
+   Firebase console so the change is yours and traceable, not the
+   panel's.
+   ========================================================== */
+
 function closeModal() {
   el.modal.hidden = true;
   el.backdrop.hidden = true;
@@ -367,11 +454,12 @@ const csvCell = (v) => `"${String(v ?? "").replaceAll('"', '""')}"`;
 
 el.exportBtn?.addEventListener("click", () => {
   const rows = [
-    ["Order ID", "Customer", "Email", "Gear items", "Bookings", "Subtotal", "Shipping", "Total", "Status", "Payment", "Placed"],
+    ["Order ID", "Customer", "Email", "Phone", "Gear items", "Bookings", "Subtotal", "Shipping", "Total", "Status", "Payment", "Method", "Checkout ID", "Ship to", "Placed"],
     ...visible().map((o) => [
       o.orderId,
       o.customerName,
       o.email,
+      o.phone,
       o.items.reduce((sum, i) => sum + (Number(i.qty) || 1), 0),
       o.bookingIds.length,
       o.subtotal,
@@ -379,6 +467,10 @@ el.exportBtn?.addEventListener("click", () => {
       o.total,
       o.status,
       o.paymentStatus,
+      o.paymentMethod,
+      o.checkoutId,
+      [o.shipping?.address, o.shipping?.city, o.shipping?.zip, o.shipping?.region]
+        .filter(Boolean).join(", "),
       toDate(o.createdAt)?.toISOString() || ""
     ])
   ];

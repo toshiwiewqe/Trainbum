@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create your Trailbound account</title>
+    <link rel="stylesheet" href="login.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <!-- Only the handful of things login.css has no rules for:
+         the confirm field, the strength meter, the terms row and the
+         "check your email" panel. Everything else deliberately reuses
+         the login classes so the two pages stay identical. -->
+    <link rel="stylesheet" href="signup.css" />
+  </head>
+  <body>
+    <div id="site-header-root"></div>
+    <script type="module" src="header.js"></script>
+    <script type="module" src="bootstrap-init.js"></script>
+    <script type="module" src="page-init.js"></script>
+
+    <main class="login-page">
+      <video autoplay muted loop playsinline class="background-video">
+        <source src="202608301622.mp4" type="video/mp4">
+      </video>
+
+      <div class="login-box" id="signup-box">
+        <div class="login-page-header">
+          <span class="login-eyebrow">Join</span>
+          <h3>Trailbound</h3>
+        </div>
+
+        <div class="input-box">
+          <label for="fullname" class="input-label">Full name</label>
+          <input type="text" id="fullname" class="input-field" placeholder="Juan Dela Cruz"
+                 autocomplete="name" required>
+        </div>
+
+        <div class="input-box">
+          <label for="email" class="input-label">Email</label>
+          <input type="email" id="email" class="input-field" placeholder="you@example.com"
+                 autocomplete="email" required>
+        </div>
+
+        <div class="input-box">
+          <label for="password" class="input-label">Password</label>
+          <input type="password" id="password" class="input-field" placeholder="••••••••"
+                 autocomplete="new-password" required>
+          <!-- Fed by signup.js. aria-live so a screen reader hears the
+               rating change instead of only sighted users seeing it. -->
+          <div class="signup-strength" id="strength" hidden>
+            <div class="signup-strength-track"><span id="strength-bar"></span></div>
+            <p class="signup-strength-label" id="strength-label" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div class="input-box">
+          <label for="confirm" class="input-label">Confirm password</label>
+          <input type="password" id="confirm" class="input-field" placeholder="••••••••"
+                 autocomplete="new-password" required>
+        </div>
+
+        <label class="signup-terms">
+          <input type="checkbox" id="terms">
+          <span class="signup-terms-text">I agree to the Terms of Service and Privacy Policy.</span>
+        </label>
+
+        <div class="input submit">
+          <button class="submit-btn" id="submit" type="button">Create account</button>
+        </div>
+
+        <div class="divider"><span>or continue with</span></div>
+
+        <div class="social-login">
+          <button type="button" class="social-btn google-btn">
+            <img src="https://www.google.com/favicon.ico" alt="" class="social-icon">Google
+          </button>
+          <button type="button" class="social-btn facebook-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="social-icon" fill="#1877F2">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>Facebook
+          </button>
+        </div>
+
+        <div class="sign-up-link">
+          <p>Already have an account? <a href="login.html">Log in</a></p>
+        </div>
+      </div>
+
+      <!-- Swapped in once the account exists. Same 6-digit email code
+           the login page uses for Google, now for email sign-ups too. -->
+      <div class="login-box signup-done" id="signup-done" hidden>
+        <div class="signup-done-icon" aria-hidden="true">✉</div>
+        <div class="login-page-header">
+          <span class="login-eyebrow">One last step</span>
+          <h3 id="done-title">Enter your code</h3>
+        </div>
+
+        <p class="signup-done-text" id="done-text">
+          We sent a 6-digit code to <strong id="done-email"></strong>.
+          Enter it below to confirm this address is yours.
+        </p>
+
+        <div class="signup-code" id="code-wrap">
+          <label for="code-input" class="input-label">Verification code</label>
+          <input type="text" id="code-input" class="otp-input signup-code-input"
+                 maxlength="6" inputmode="numeric" pattern="[0-9]*"
+                 placeholder="000000" autocomplete="one-time-code">
+          <p class="otp-error signup-code-error" id="code-error" role="alert" hidden></p>
+        </div>
+
+        <p class="signup-done-note" id="done-note" hidden></p>
+
+        <div class="input submit">
+          <!-- A <button>, not an <a>. As a link it picked up the site's
+               underline and link colour and would not stretch to the
+               card, so it read as a stray hyperlink rather than the
+               primary action. -->
+          <button class="submit-btn" id="code-verify" type="button">Verify and continue</button>
+        </div>
+
+        <div class="sign-up-link signup-done-links">
+          <p>
+            Didn't get it? <a href="#" id="done-resend">Resend the code</a>
+            <span class="signup-dot" aria-hidden="true">·</span>
+            <a href="#" id="done-back">Use a different email</a>
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <!-- Same EmailJS SDK the login page loads. It must come BEFORE
+         signup.js, which reads the global `emailjs` on start-up. -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="module" src="signup.js"></script>
+  </body>
+</html>

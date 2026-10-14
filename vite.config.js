@@ -5,6 +5,10 @@ import { resolve } from "path";
 // ==========================================================
 // CHANGED: the ten admin pages were missing from `input`.
 //
+// LATER: adminLogin was removed from this list when admin-login.html
+// was deleted. Vite fails the whole build if an entry point in `input`
+// does not exist on disk, so the line had to go with the file.
+//
 // Vite only builds the HTML entry points listed here. Everything
 // else in the project root is simply not copied into dist/ — and
 // dist/ is what firebase.json serves. So the admin panel built
@@ -28,13 +32,13 @@ export default defineConfig({
         booking: page("booking"),
         contact: page("contact"),
         login: page("login"),
+        signup: page("signup"),
         account: page("account"),
         cart: page("cart"),
         checkout: page("checkout"),
         paymentResult: page("payment-result"),
 
         // ---- admin panel ----
-        adminLogin: page("admin-login"),
         adminDashboard: page("admin-dashboard"),
         adminCatalog: page("admin-catalog"),
         adminProducts: page("admin-products"),
@@ -42,6 +46,7 @@ export default defineConfig({
         adminBookingDetails: page("admin-booking-details"),
         adminOrders: page("admin-orders"),
         adminUsers: page("admin-users"),
+        adminReviews: page("admin-reviews"),
         adminActivity: page("admin-activity"),
         adminSupport: page("admin-support"),
         adminSettings: page("admin-settings"),
