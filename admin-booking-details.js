@@ -21,6 +21,7 @@ import {
   requireAdmin,
   timeAgo,
   toDate,
+  saveBooking,
   updateBookingStatus,
   watchBooking
 } from "./trailbound-data.js";
@@ -40,6 +41,9 @@ let adminUser = null;
 let booking = null;
 /** Guards against the live stream wiping the form mid-edit. */
 let saving = false;
+/** True while the detail cards are swapped for the edit form. The live
+    stream must not re-render over half-typed input either. */
+let editing = false;
 
 const value = (v, fallback = "Not provided") =>
   v === undefined || v === null || v === "" ? fallback : v;
@@ -82,7 +86,7 @@ requireAdmin((user) => {
 
   track(
     watchBooking(bookingId, (item) => {
-      if (saving) return;
+      if (saving || editing) return;
       if (!item) {
         host.innerHTML =
           '<p class="admin-empty">This booking could not be loaded. <a href="admin-bookings.html">Return to bookings</a></p>';
@@ -147,6 +151,7 @@ function render(b) {
   )}">${escapeHtml(b.status)}</span></h1></div>
     <div class="order-detail-header-actions">
       <button class="admin-export-btn order-print-btn" id="print-booking" type="button">Print Invoice</button>
+      <button class="admin-export-btn" id="edit-booking" type="button">Edit details</button>
       <button class="admin-modal-submit order-export-btn" id="export-order" type="button">+ Export Order</button>
     </div>
   </section>
@@ -186,11 +191,40 @@ function render(b) {
           )}</strong></p>
         </div>
         ${
+          b.activity
+            ? `<div class="order-special-request"><small>Chosen activity</small><p>${escapeHtml(
+                b.activity
+              )}</p></div>`
+            : ""
+        }
+        ${
           b.specialRequests
             ? `<div class="order-special-request"><small>Special request</small><p>${escapeHtml(
                 b.specialRequests
               )}</p></div>`
             : ""
+        }
+      </section>
+
+      <!-- ADDED. An emergency contact is the one field on a hiking
+           booking you need in a hurry, and it was the one field the
+           admin never showed. It is stored on every booking. -->
+      <section class="order-info-card">
+        <h3>Emergency Contact</h3>
+        <div class="order-info-grid">
+          <p><small>Name</small><strong>${escapeHtml(
+            value(b.emergencyName, "Not provided")
+          )}</strong></p>
+          <p><small>Number</small><strong>${
+            b.emergencyNumber
+              ? `<a href="tel:${escapeHtml(b.emergencyNumber)}" style="color:var(--admin-text);text-decoration:none">${escapeHtml(b.emergencyNumber)}</a>`
+              : "Not provided"
+          }</strong></p>
+        </div>
+        ${
+          b.emergencyName && b.emergencyNumber
+            ? ""
+            : '<p class="admin-form-hint" style="margin-top:.7rem;color:#ffb4a8">This booking has no usable emergency contact. Add one before the trip departs.</p>'
         }
       </section>
     </div>
@@ -222,6 +256,29 @@ function render(b) {
   ).join("")}</select>
         <p class="status-card-label" id="status-note" style="margin-top:.6rem"></p>
       </section>
+
+      <!-- The ids booking.js matches on, plus whether this booking is
+           attached to a real account. Read-only: editing an id without
+           editing the matching name leaves the booking pointing at a
+           trail it is not for. -->
+      <section class="order-info-card">
+        <h3>References</h3>
+        <div class="order-info-grid" style="grid-template-columns:1fr">
+          <p><small>Trail ID</small><strong>${escapeHtml(value(b.trailId, "—"))}</strong></p>
+          <p><small>Package ID</small><strong>${escapeHtml(value(b.packageId, "—"))}</strong></p>
+          <p><small>Guide ID</small><strong>${escapeHtml(value(b.guideId, "—"))}</strong></p>
+          <p><small>Account</small><strong>${
+            b.uid
+              ? "Linked to a signed-in customer"
+              : "Guest booking \u2014 no account attached"
+          }</strong></p>
+        </div>
+        ${
+          b.uid
+            ? ""
+            : '<p class="admin-form-hint" style="margin-top:.7rem">Without a uid this customer cannot see the booking in their account, and status changes reach them by email only.</p>'
+        }
+      </section>
     </aside>
   </div>
   <section class="order-history-card">
@@ -232,9 +289,119 @@ function render(b) {
   wireActions(b);
 }
 
+/* ==========================================================
+   EDIT MODE
+   ----------------------------------------------------------
+   The page could change a booking's status and nothing else. Every
+   other correction — a mistyped number, the wrong departure date, a
+   missing emergency contact — meant opening the Firebase console.
+
+   Status stays out of this form on purpose: changing it also notifies
+   the customer, and that should never happen as a side effect of
+   fixing a typo. It keeps its own control in the sidebar.
+   ========================================================== */
+
+const EDIT_FIELDS = [
+  ["customerName",    "Customer name",   "text"],
+  ["email",           "Email",           "email"],
+  ["phone",           "Phone",           "text"],
+  ["trailName",       "Trail",           "text"],
+  ["packageName",     "Package",         "text"],
+  ["guideName",       "Guide",           "text"],
+  ["date",            "Departure date",  "date"],
+  ["departureTime",   "Departure time",  "text"],
+  ["groupSize",       "Group size",      "number"],
+  ["amount",          "Total price",     "number"],
+  ["emergencyName",   "Emergency contact name",   "text"],
+  ["emergencyNumber", "Emergency contact number", "text"],
+  ["activity",        "Chosen activity", "text"],
+  ["specialRequests", "Special requests","textarea"]
+];
+
+function editFormHtml(b) {
+  const input = ([key, label, type]) => {
+    const v = b[key] ?? "";
+    if (type === "textarea") {
+      return `<label style="grid-column:1/-1">${label}
+        <textarea id="e-${key}" rows="3">${escapeHtml(v)}</textarea></label>`;
+    }
+    const extra = type === "number" ? ' min="0" step="1"' : "";
+    return `<label>${label}<input id="e-${key}" type="${type}"${extra} value="${escapeHtml(v)}"></label>`;
+  };
+
+  return `<section class="order-info-card">
+    <h3>Edit booking #${escapeHtml(b.orderId)}</h3>
+    <form id="booking-edit-form" class="admin-product-form" style="margin-top:1rem">
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem">
+        ${EDIT_FIELDS.map(input).join("")}
+        <label>Payment status
+          <select id="e-paymentStatus">
+            ${["Unpaid", "Paid", "Refunded", "Failed"]
+              .map((o) => `<option value="${o}"${
+                o.toLowerCase() === String(b.paymentStatus).toLowerCase() ? " selected" : ""
+              }>${o}</option>`)
+              .join("")}
+          </select>
+        </label>
+      </div>
+      <p class="admin-form-hint" id="edit-note" style="margin-top:.9rem">
+        Trail, package and guide IDs are not editable here \u2014 changing one without changing the
+        matching name would leave this booking pointing at something it is not for.
+        Status has its own control, because changing it also notifies the customer.
+      </p>
+      <div class="admin-modal-actions" style="margin-top:1rem;justify-content:flex-end;gap:.6rem">
+        <button class="admin-modal-cancel" id="edit-cancel" type="button">Cancel</button>
+        <button class="admin-modal-submit" type="submit">Save changes</button>
+      </div>
+    </form>
+  </section>`;
+}
+
+function openEditor(b) {
+  editing = true;
+  host.innerHTML = editFormHtml(b);
+
+  document.getElementById("edit-cancel").addEventListener("click", () => {
+    editing = false;
+    render(booking);
+  });
+
+  document.getElementById("booking-edit-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submit = event.target.querySelector('button[type="submit"]');
+    const note = document.getElementById("edit-note");
+    submit.disabled = true;
+    submit.textContent = "Saving...";
+
+    const read = (key) => document.getElementById(`e-${key}`)?.value ?? "";
+    const data = Object.fromEntries(EDIT_FIELDS.map(([key]) => [key, read(key)]));
+    data.paymentStatus = read("paymentStatus");
+
+    try {
+      // saving guards the stream; editing is cleared only on success so
+      // a failed write leaves the admin's typing on screen to retry.
+      saving = true;
+      const changed = await saveBooking(b, data, adminUser);
+      saving = false;
+      editing = false;
+      note.textContent = changed ? "Saved." : "Nothing had changed.";
+      render(booking ? { ...booking, ...data } : b);
+    } catch (err) {
+      saving = false;
+      console.error("Booking save failed:", err);
+      note.textContent = "Could not save. Check your Firestore rules — the booking rules allow an admin to update, so a denial here usually means the rules are not deployed.";
+      note.style.color = "#ffb4a8";
+      submit.disabled = false;
+      submit.textContent = "Save changes";
+    }
+  });
+}
+
 /* ---------- actions ---------- */
 
 function wireActions(b) {
+  document.getElementById("edit-booking")?.addEventListener("click", () => openEditor(b));
+
   const toggle = document.getElementById("toggle-history");
   toggle?.addEventListener("click", () => {
     const extras = document.querySelectorAll(".history-extra");
@@ -247,16 +414,23 @@ function wireActions(b) {
   document.getElementById("print-booking")?.addEventListener("click", () => window.print());
 
   document.getElementById("export-order")?.addEventListener("click", () => {
-    const csv = `Order ID,Customer,Email,Trail,Date,Pax,Amount,Status,Payment\n${[
+    const csv = `Order ID,Customer,Email,Phone,Trail,Package,Guide,Date,Pax,Amount,Status,Payment,Activity,Special requests,Emergency name,Emergency number\n${[
       b.orderId,
       b.customerName,
       b.email,
+      b.phone,
       b.trailName,
+      b.packageName,
+      b.guideName,
       b.date,
       b.groupSize,
       b.amount,
       b.status,
-      b.paymentStatus
+      b.paymentStatusLabel,
+      b.activity,
+      b.specialRequests,
+      b.emergencyName,
+      b.emergencyNumber
     ]
       .map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`)
       .join(",")}`;

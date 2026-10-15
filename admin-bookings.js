@@ -69,8 +69,14 @@ function renderStats() {
     .reduce((sum, b) => sum + b.amount, 0);
   setText("booking-total-delta", `${peso(revenue)} booked`);
 
-  const pending = countByStatus("pending");
-  setText("booking-pending-note", pending ? "Requires action" : "All clear");
+  // "Pending payments" was counting bookings whose STATUS is pending,
+  // which is a different thing from one that has not been paid for.
+  // A confirmed-but-unpaid booking was invisible on this card.
+  const unpaid = bookings.filter(
+    (b) => b.paymentStatus !== "paid" && b.status !== "cancelled"
+  ).length;
+  setText("booking-pending", unpaid.toLocaleString());
+  setText("booking-pending-note", unpaid ? `${unpaid} unpaid booking(s)` : "All paid");
 }
 
 function setText(id, value) {
@@ -88,7 +94,7 @@ function filtered() {
     const matchesStatus = filter === "all" || b.status === filter;
     const matchesTerm =
       !term ||
-      [b.customerName, b.orderId, b.id, b.trailName, b.email].some((v) =>
+      [b.customerName, b.orderId, b.id, b.trailName, b.email, b.phone, b.guideName].some((v) =>
         String(v || "").toLowerCase().includes(term)
       );
     return matchesStatus && matchesTerm;
@@ -104,8 +110,8 @@ function renderTable() {
 
   if (!rows.length) {
     el.list.innerHTML = bookings.length
-      ? '<tr><td colspan="7" class="admin-empty">No bookings match this filter.</td></tr>'
-      : '<tr><td colspan="7" class="admin-empty">No bookings yet. They appear here the moment a customer checks out.</td></tr>';
+      ? '<tr><td colspan="9" class="admin-empty">No bookings match this filter.</td></tr>'
+      : '<tr><td colspan="9" class="admin-empty">No bookings yet. They appear here the moment a customer checks out.</td></tr>';
     return;
   }
 
@@ -122,10 +128,14 @@ function renderTable() {
         b.packageName
       )}</div></td>
       <td>${escapeHtml(b.date || "-")}</td>
+      <td>${b.groupSize}</td>
       <td>${peso(b.amount)}</td>
+      <td><span class="admin-status-badge admin-status-badge--${
+        b.paymentStatus === "paid" ? "completed" : "pending"
+      }">${escapeHtml(b.paymentStatusLabel)}</span></td>
       <td><span class="admin-status-badge admin-status-badge--${statusClass(
         b.status
-      )}">${escapeHtml(b.status)}</span></td>
+      )}">${escapeHtml(b.statusLabel)}</span></td>
       <td><a class="admin-icon-btn" href="admin-booking-details.html?booking=${encodeURIComponent(
         b.id
       )}" aria-label="View or edit booking" title="View or edit booking">Edit</a></td>

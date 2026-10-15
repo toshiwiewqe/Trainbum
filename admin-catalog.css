@@ -1,0 +1,174 @@
+/* ==========================================================
+   admin-catalog.css
+   ----------------------------------------------------------
+   New file, linked AFTER admin.css and admin-products.css.
+
+   It carries its own copies of the dropzone / upload-button /
+   error styles rather than relying on the ones in
+   admin-products.css. Two separate symptoms this session —
+   unstyled rating chips and a broken account switch — both
+   traced to that file being an older version on your machine,
+   so a brand-new control should not depend on it.
+
+   Harmless if the newer admin-products.css is in place: the
+   declarations agree, and this file is linked last.
+   ========================================================== */
+
+.admin-image-field {
+    display: grid;
+    gap: 0.5rem;
+}
+
+/* The catalog form styles its labels through `label { ... }`, and this
+   field is a <div>, so the caption needs the same treatment by hand or
+   it renders as ordinary body text next to its neighbours. */
+.admin-image-field-label {
+    color: var(--admin-text-dim);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.admin-image-field-row {
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.admin-image-field-thumb {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* A URL that will not load is worth seeing HERE rather than finding
+   out from the trails page. */
+.admin-image-field-thumb.is-broken {
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(255, 90, 69, 0.18) 0 6px,
+        transparent 6px 12px
+    );
+    border: 1px solid rgba(255, 90, 69, 0.45);
+}
+
+.admin-product-modal .admin-image-field-input {
+    width: 100%;
+    margin: 0;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    padding: 0.7rem 0.75rem;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--admin-text);
+    font: inherit;
+    font-size: 0.82rem;
+    outline: none;
+}
+
+.admin-product-modal .admin-image-field-input:focus {
+    border-color: var(--admin-accent);
+}
+
+.admin-product-modal .admin-image-field-input:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+/* ---------- upload button ---------- */
+
+.admin-row-upload {
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--admin-text-dim);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.66rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.admin-row-upload:hover:not(:disabled) {
+    border-color: var(--admin-accent);
+    color: var(--admin-text);
+}
+
+.admin-row-upload:disabled { cursor: progress; opacity: 0.75; }
+
+/* ---------- dropzone ---------- */
+
+/* `label` is in the selector so it outranks the catalog form's own
+   `label { display: grid; text-transform: uppercase }`, which would
+   otherwise stack the icon above the text and shout the caption. */
+.admin-product-modal label.admin-dropzone {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0;
+    padding: 0.7rem 0.85rem;
+    border: 1px dashed var(--admin-border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    letter-spacing: 0;
+    text-transform: none;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.admin-product-modal label.admin-dropzone:hover,
+.admin-product-modal label.admin-dropzone.is-dragging {
+    border-color: var(--admin-accent);
+    border-style: solid;
+    background: rgba(255, 90, 69, 0.08);
+}
+
+.admin-dropzone-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255, 90, 69, 0.16);
+    color: var(--admin-accent);
+    font-size: 0.9rem;
+}
+
+.admin-dropzone-text { display: grid; gap: 0.1rem; }
+.admin-dropzone-text strong { color: var(--admin-text); font-size: 0.76rem; font-weight: 600; }
+.admin-dropzone-text small { color: var(--admin-text-dim); font-size: 0.68rem; }
+
+.admin-upload-error {
+    margin: 0;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid rgba(255, 90, 69, 0.4);
+    border-radius: 8px;
+    background: rgba(255, 90, 69, 0.1);
+    color: #ffb4a8;
+    font-size: 0.72rem;
+    line-height: 1.5;
+}
+
+.admin-upload-error[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-product-modal label.admin-dropzone { transition: none; }
+}
+
+@media (max-width: 560px) {
+    .admin-image-field-row { grid-template-columns: 42px 1fr; }
+    .admin-image-field-row .admin-row-upload { grid-column: 2 / -1; justify-self: start; }
+}
+
+/* The second line of the dropzone hint. Kept visually quieter than the
+   format/size line, because it is a caveat rather than a rule. */
+.admin-dropzone-note {
+    color: var(--admin-text-faint, rgba(245, 239, 233, 0.5));
+    line-height: 1.45;
+}

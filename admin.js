@@ -28,7 +28,9 @@ import {
   toDate,
   watchActivity,
   watchBookings,
+  watchOrders,
   watchProducts,
+  watchReviews,
   watchSettings,
   watchUsers
 } from "./trailbound-data.js";
@@ -144,7 +146,16 @@ if (onDashboardPage) {
   let bookings = [];
   let products = [];
   let users = [];
+  let orders = [];
+  let reviews = [];
   let chart = null;
+
+  /* The SAME test the orders page uses. Your payment values are not the
+     bare word "paid" — Maya writes "Paid (Maya Sandbox)" — so the old
+     `=== "paid"` matched none of them and the "collected" figure read
+     far lower than the money actually taken. Not `includes`, because
+     "Unpaid" contains "paid". */
+  const isPaid = (value) => String(value || "").toLowerCase().startsWith("paid");
 
   attachLogoutConfirm(el.logoutBtn);
 
@@ -178,6 +189,24 @@ if (onDashboardPage) {
       })
     );
 
+    /* ADDED. The dashboard never read the `orders` collection, so every
+       peso taken through the gear shop was missing from "Total Revenue"
+       — the figure only ever covered trail bookings. */
+    track(
+      watchOrders((items) => {
+        orders = items;
+        renderStats();
+      })
+    );
+
+    /* ADDED. Feeds the rating card from real customer reviews. */
+    track(
+      watchReviews((items) => {
+        reviews = items;
+        renderStats();
+      })
+    );
+
     track(watchActivity(renderActivity, { max: 10 }));
 
     track(
@@ -202,23 +231,66 @@ if (onDashboardPage) {
     setText("stat-active-bookings", activeBookings.length.toLocaleString());
     setText("stat-active-bookings-delta", `${bookings.length} all time`);
 
-    // Revenue counts everything that was not cancelled.
-    const revenue = bookings
-      .filter((b) => b.status !== "cancelled")
-      .reduce((sum, b) => sum + b.amount, 0);
-    setText("stat-total-revenue", peso(revenue));
+    /* REVENUE — now both halves of the business.
 
-    const paid = bookings
-      .filter((b) => b.paymentStatus === "paid")
-      .reduce((sum, b) => sum + b.amount, 0);
-    setText("stat-total-revenue-delta", `${peso(paid)} collected`);
+       Bookings that were not cancelled, PLUS gear orders that were not
+       cancelled or refunded. The orders half was simply absent before,
+       so a shop with sales showed none of them here. */
+    const liveBookings = bookings.filter((b) => b.status !== "cancelled");
+    const liveOrders = orders.filter(
+      (o) => !["cancelled", "refunded"].includes(String(o.status || "").toLowerCase())
+    );
 
-    // Average booking value stands in for a rating until a
-    // `reviews` collection exists — a real number beats a dash.
-    const label = document.querySelector("#stat-avg-rating")?.previousElementSibling;
-    if (label) label.textContent = "Avg Booking Value";
-    setText("stat-avg-rating", bookings.length ? peso(revenue / bookings.length) : peso(0));
-    setText("stat-avg-rating-stars", `across ${bookings.length} booking(s)`);
+    const booked = liveBookings.reduce((sum, b) => sum + b.amount, 0);
+    const ordered = liveOrders.reduce((sum, o) => sum + o.total, 0);
+    setText("stat-total-revenue", peso(booked + ordered));
+
+    const collected =
+      liveBookings.filter((b) => isPaid(b.paymentStatus)).reduce((sum, b) => sum + b.amount, 0) +
+      liveOrders.filter((o) => isPaid(o.paymentStatus)).reduce((sum, o) => sum + o.total, 0);
+
+    /* Says what the headline actually is. "Total Revenue" counts money
+       booked, not money received, and those are very different numbers
+       when orders sit unpaid. */
+    setText("stat-total-revenue-delta", `${peso(collected)} collected`);
+
+    /* The split lives in its own two-column list rather than being
+       crammed onto the delta line, which wrapped and read as noise. */
+    const split = document.getElementById("stat-revenue-split");
+    if (split) {
+      setText("stat-revenue-trails", peso(booked));
+      setText("stat-revenue-gear", peso(ordered));
+      split.hidden = !(booked || ordered);
+    }
+
+    /* AVERAGE RATING — a real one.
+
+       This card used to be relabelled "Avg Booking Value" at runtime
+       and filled with revenue / booking count, because the comment
+       said a reviews collection did not exist yet. It does:
+       product_reviews, the same data the shop's popularity sort uses.
+
+       The relabelling was done with previousElementSibling, which
+       silently targets the wrong element the moment anyone adds
+       anything to that card. The label is correct in the HTML now and
+       nothing rewrites it. */
+    const rated = reviews.filter((r) => Number.isFinite(r.rating));
+    if (rated.length) {
+      const avg = rated.reduce((sum, r) => sum + r.rating, 0) / rated.length;
+      const full = Math.round(avg);
+      setText("stat-avg-rating", avg.toFixed(2));
+      setText(
+        "stat-avg-rating-stars",
+        `${"\u2605".repeat(full)}${"\u2606".repeat(5 - full)} from ${rated.length} review${
+          rated.length === 1 ? "" : "s"
+        }`
+      );
+    } else {
+      // An empty state, not a zero. Nobody has rated anything; that is
+      // not the same as everything scoring nought.
+      setText("stat-avg-rating", "\u2014");
+      setText("stat-avg-rating-stars", reviews.length ? "no usable ratings yet" : "no reviews yet");
+    }
   }
 
   function setText(id, value) {
@@ -311,8 +383,14 @@ if (onDashboardPage) {
 
     // Nothing booked yet — show the newest published products instead.
     if (!top.length) {
+      /* FIXED — this filtered on p.status === "active", and your product
+         documents have no `status` field at all; availability on them is
+         `inStock`. normalizeProduct used to default the missing field to
+         "active", which made this work by accident; once it started
+         reporting the field as genuinely absent, this fallback matched
+         nothing and the panel went blank. inStock is the real field. */
       top = products
-        .filter((p) => p.status === "active")
+        .filter((p) => p.inStock && !p.archived)
         .slice(0, 3)
         .map((p) => ({ name: p.name, count: 0, revenue: p.price, image: p.image }));
     }

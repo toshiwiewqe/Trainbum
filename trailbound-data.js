@@ -66,7 +66,13 @@ export const COL = {
   users: "users",
   admins: "admins",
   activity: "activity",
-  settings: "settings"
+  settings: "settings",
+  // ADDED. products.js has been writing customer reviews here since the
+  // product drawer shipped, and reading the whole collection back to
+  // compute the storefront's "popularity" sort. No admin page ever read
+  // it, so the ratings driving that sort were invisible to you and an
+  // abusive review had no route to removal.
+  reviews: "product_reviews"
 };
 
 export const SETTINGS_DOC_ID = "site";
@@ -77,6 +83,7 @@ const packagesRef = () => collection(db, COL.packages);
 const ordersRef = () => collection(db, COL.orders);
 const contactRef = () => collection(db, COL.contact);
 const productsRef = () => collection(db, COL.products);
+const reviewsRef = () => collection(db, COL.reviews);
 const bookingsRef = () => collection(db, COL.bookings);
 const usersRef = () => collection(db, COL.users);
 const settingsRef = () => doc(db, COL.settings, SETTINGS_DOC_ID);
@@ -132,20 +139,123 @@ export function timeAgo(value) {
    with ONE shape.
    ========================================================== */
 
+const PRODUCT_KNOWN_KEYS = new Set([
+  "name", "title", "category", "subcategory", "description", "price", "amount",
+  "status", "image", "imageUrl", "photo", "images", "attributes", "specs",
+  "inStock", "in_stock", "popularity", "location", "difficulty", "bookingCount",
+  "dateAdded", "createdAt", "updatedAt", "archived", "archivedBy", "archivedAt"
+]);
+
+/**
+ * REBUILT. This returned thirteen scalar fields and none of the three
+ * that the shop actually renders a product from.
+ *
+ * admin-products.js reads product.images, product.attributes,
+ * product.specs, product.inStock, product.subcategory,
+ * product.popularity and product.hasStatusField. None of them existed
+ * here, so `Object.keys(product.specs)` ran against undefined and the
+ * Gear page threw on its first render. The write path had the matching
+ * hole: saveProduct() accepted those keys from the form and wrote none
+ * of them.
+ *
+ * The field names below are not guesses. products.js — the storefront —
+ * reads `p.images[0]`, `p.attributes.size`, `p.attributes.color`,
+ * `p.specs`, `p.subcategory` and `p.inStock` straight off the document,
+ * so those are the names the data already uses.
+ */
 export function normalizeProduct(id, raw = {}) {
+  const images = Array.isArray(raw.images)
+    ? raw.images.map((v) => String(v || "").trim()).filter(Boolean)
+    : [];
+  const legacyImage = String(raw.image || raw.imageUrl || raw.photo || "").trim();
+
+  /* attributes is a map of picker name -> list of choices
+     (attributes.size, attributes.color on the product page). A value
+     saved as a bare string instead of a list is read as a one-item
+     list rather than dropped. */
+  const attributes = {};
+  if (raw.attributes && typeof raw.attributes === "object" && !Array.isArray(raw.attributes)) {
+    for (const [key, value] of Object.entries(raw.attributes)) {
+      attributes[key] = Array.isArray(value)
+        ? value.map((v) => String(v ?? "").trim()).filter(Boolean)
+        : String(value ?? "").trim()
+        ? [String(value).trim()]
+        : [];
+    }
+  }
+
+  const specs = {};
+  if (raw.specs && typeof raw.specs === "object" && !Array.isArray(raw.specs)) {
+    for (const [key, value] of Object.entries(raw.specs)) specs[key] = String(value ?? "");
+  }
+
+  /* Does this document carry a `status` field AT ALL?
+     Yours do not — availability on your products is `inStock` — and
+     that distinction matters, because the stock toggle used to write
+     `status` unconditionally. Pressing it once would have bolted a
+     second, competing availability flag onto a record that had none,
+     and the shop reads both. hasStatusField is what lets the writers
+     leave such a document alone. */
+  const hasStatusField = typeof raw.status === "string" && raw.status.trim() !== "";
+  const storedInStock =
+    typeof raw.inStock === "boolean" ? raw.inStock
+    : typeof raw.in_stock === "boolean" ? raw.in_stock
+    : undefined;
+
+  const popularity =
+    raw.popularity === undefined || raw.popularity === null || raw.popularity === ""
+      ? null
+      : Number(raw.popularity);
+
   return {
     id,
     name: raw.name || raw.title || "Untitled",
     category: raw.category || "Uncategorized",
+    subcategory: raw.subcategory || "",
     description: raw.description || "",
     price: Number(raw.price ?? raw.amount ?? 0),
-    status: String(raw.status || "active").toLowerCase(),
-    image: raw.image || raw.imageUrl || raw.photo || "",
+    popularity: Number.isFinite(popularity) ? popularity : null,
+
+    status: hasStatusField ? String(raw.status).toLowerCase() : "",
+    hasStatusField,
+
+    /* The thumbnail the table shows. images[0] first, because that is
+       what the shop uses; the old single `image` field is the fallback
+       for records written before the gallery existed. */
+    image: images[0] || legacyImage,
+    images,
+    hasImagesField: Array.isArray(raw.images),
+    attributes,
+    specs,
+
+    /* Default true when neither field is present — the storefront does
+       exactly this (`if (p.inStock === undefined) p.inStock = true`),
+       and disagreeing with it would mean the panel showed a product as
+       out of stock while the shop sold it. */
+    inStock:
+      storedInStock !== undefined
+        ? storedInStock
+        : hasStatusField
+        ? String(raw.status).toLowerCase() === "active"
+        : true,
+    hasInStockField: storedInStock !== undefined,
+
     location: raw.location || "",
     difficulty: raw.difficulty || "",
     bookingCount: Number(raw.bookingCount || 0),
     dateAdded: raw.dateAdded ?? raw.createdAt ?? null,
     updatedAt: raw.updatedAt ?? null,
+
+    /* watchProducts() filters on `p.archived`, and nothing here ever
+       returned it — so the filter did nothing and the Archived view
+       could never work. Same bug the catalog had. */
+    archived: raw.archived === true,
+    archivedBy: raw.archivedBy || "",
+    archivedAt: raw.archivedAt ?? null,
+
+    extras: Object.keys(raw)
+      .filter((k) => !PRODUCT_KNOWN_KEYS.has(k))
+      .map((k) => [k, raw[k]]),
     _raw: raw
   };
 }
@@ -196,6 +306,18 @@ export function normalizeTrail(id, raw = {}) {
     isOpen: raw.isOpen !== undefined
       ? Boolean(raw.isOpen)
       : !/^closed$/i.test(String(raw.status ?? "open").trim()),
+    // ADDED. admin-catalog.js filters every list on `item.archived`,
+    // but no normaliser ever returned it — so it was always undefined.
+    // Consequences, all of them silent: the "Archived (n)" counter read
+    // 0 forever, the Archived view was permanently empty, and archiving
+    // a record left it sitting in the active list as though nothing had
+    // happened. The flag was being written to Firestore correctly the
+    // whole time; it just never made it back out.
+    archived: raw.archived === true,
+    archivedBy: raw.archivedBy || "",
+    archivedAt: raw.archivedAt ?? null,
+    createdAt: raw.createdAt ?? null,
+    updatedAt: raw.updatedAt ?? null,
     _raw: raw
   };
 }
@@ -210,6 +332,21 @@ export function normalizeGuide(id, raw = {}) {
     rating: Number(raw.rating || 0),
     status: raw.status || "Active",
     isActive: String(raw.status || "Active").toLowerCase() === "active",
+
+    // ADDED — three fields that are in every guide document but were
+    // dropped on the way in, so the admin could neither see nor edit
+    // them. `Photo` really is stored with a capital P (see G001); the
+    // lowercase spelling is accepted too so a document written either
+    // way still shows its picture.
+    photo: raw.Photo || raw.photo || "",
+    contact: raw.contact || "",
+    yearsExperience: Number(raw.years_experience ?? raw.yearsExperience ?? 0),
+
+    archived: raw.archived === true,
+    archivedBy: raw.archivedBy || "",
+    archivedAt: raw.archivedAt ?? null,
+    createdAt: raw.createdAt ?? null,
+    updatedAt: raw.updatedAt ?? null,
     _raw: raw
   };
 }
@@ -223,6 +360,14 @@ export function normalizePackage(id, raw = {}) {
     pricePerPax: Number(raw.price_per_pax ?? raw.price ?? 0),
     includes: Array.isArray(raw.includes) ? raw.includes : [],
     requiresActivityChoice: Boolean(raw.requires_activity_choice),
+    // ADDED — present on every package document, never read.
+    requiresAccommodation: Boolean(raw.requires_accommodation),
+
+    archived: raw.archived === true,
+    archivedBy: raw.archivedBy || "",
+    archivedAt: raw.archivedAt ?? null,
+    createdAt: raw.createdAt ?? null,
+    updatedAt: raw.updatedAt ?? null,
     _raw: raw
   };
 }
@@ -244,26 +389,76 @@ export function normalizeOrder(id, raw = {}) {
     payment: raw.payment || null,
     paymentMethod: raw.payment?.method || "",
     paymentStatus: raw.payment?.status || "Pending",
+    // The full id, not a truncation — this is what you paste into the
+    // Maya dashboard to reconcile a disputed charge.
+    checkoutId: raw.payment?.checkout_id || "",
+    // "maya_checkout_sandbox" vs a live method is the difference
+    // between a real payment and a test one. Worth surfacing.
+    isSandbox: /sandbox|test/i.test(String(raw.payment?.method || "")),
     subtotal: Number(raw.subtotal || 0),
     shippingFee: Number(raw.shipping_fee || 0),
     total: Number(raw.total || 0),
     status: raw.status || "Pending Payment",
     createdAt: raw.created_at ?? raw.createdAt ?? null,
+    updatedAt: raw.updatedAt ?? null,
     _raw: raw
   };
 }
 
+/* Every key this normalizer deliberately accounts for. Anything in a
+   contact document that is NOT in here is handed back as `extras` and
+   printed in the modal, so a field the contact form starts writing
+   tomorrow cannot sit in the database invisible. */
+const MESSAGE_KNOWN_KEYS = new Set([
+  "name", "email", "subject", "message", "user_id", "uid", "status",
+  "created_at", "createdAt", "phone", "contact_number", "order_id", "orderId",
+  "reply", "repliedAt", "replied_at", "repliedBy", "replies",
+  "updatedAt", "updated_at", "updatedBy"
+]);
+
 export function normalizeMessage(id, raw = {}) {
+  /* The reply history, oldest first.
+
+     Old documents hold a SINGLE `reply` string — that is what the
+     previous version of replyToMessage wrote. Those are read back here
+     as a one-entry thread so nothing already in your database is lost
+     or hidden by the change. New replies append to `replies`. */
+  const thread = Array.isArray(raw.replies)
+    ? raw.replies.map((r) => ({
+        text: String(r?.text || ""),
+        by: String(r?.by || ""),
+        at: r?.at ?? null
+      }))
+    : raw.reply
+    ? [{ text: String(raw.reply), by: String(raw.repliedBy || ""), at: raw.repliedAt ?? raw.replied_at ?? null }]
+    : [];
+
+  const extras = Object.keys(raw)
+    .filter((k) => !MESSAGE_KNOWN_KEYS.has(k))
+    .map((k) => [k, raw[k]]);
+
   return {
     id,
     ref: id.slice(0, 8).toUpperCase(),
     name: raw.name || "",
     email: raw.email || "",
+    // The contact form may collect a number; it was never read back.
+    phone: raw.phone || raw.contact_number || "",
     subject: raw.subject || "other",
     message: raw.message || "",
     uid: raw.user_id || raw.uid || null,
+    // A message sent from an order page may carry the order it is about.
+    orderId: raw.order_id || raw.orderId || "",
     status: raw.status || "New",
     createdAt: raw.created_at ?? raw.createdAt ?? null,
+    // Written by replyToMessage / updateMessageStatus since day one and
+    // never displayed: you could not tell when a thread was last touched.
+    repliedAt: raw.repliedAt ?? raw.replied_at ?? null,
+    updatedAt: raw.updatedAt ?? raw.updated_at ?? null,
+    updatedBy: raw.updatedBy || "",
+    thread,
+    replyCount: thread.length,
+    extras,
     _raw: raw
   };
 }
@@ -294,30 +489,81 @@ export function normalizeBooking(id, raw = {}) {
     amount: Number(raw.total_price ?? raw.amount ?? raw.price ?? 0),
     status,
     paymentStatus: String(raw.payment_status || raw.paymentStatus || "unpaid").toLowerCase(),
-    specialRequests: raw.special_requests || raw.activity || "",
+    paymentStatusLabel: raw.payment_status || raw.paymentStatus || "Unpaid",
+
+    // SPLIT. These were one field: `specialRequests` fell back to
+    // `activity`, so a booking whose activity was "Tree Planting"
+    // displayed it on the admin page under the heading "Special
+    // request". They are different things — the activity is what the
+    // customer CHOSE and the package may require, a special request is
+    // free text they typed — and merging them meant the admin could
+    // never tell which one they were looking at, nor edit either.
+    activity: raw.activity || "",
+    specialRequests: raw.special_requests || "",
+
     guideName: raw.guide_name || "",
     departureTime: raw.departure_time || "",
     customerAvatar: raw.customerAvatar || raw.photoURL || "",
     history: Array.isArray(raw.history) ? raw.history : [],
     createdAt: raw.created_at ?? raw.createdAt ?? null,
+    updatedAt: raw.updatedAt ?? null,
     _raw: raw
   };
 }
 
+const USER_KNOWN_KEYS = new Set([
+  "displayName", "name", "email", "phone", "photoURL", "role", "disabled",
+  "shippingAddress", "billingAddress", "createdAt", "lastActiveAt", "updatedAt"
+]);
+
 export function normalizeUser(id, raw = {}, adminUids = new Set()) {
+  /* Your database holds TWO generations of profile document.
+
+     The newer ones come from ensureUserDoc() and carry photoURL,
+     role and lastActiveAt. The older ones — anything created before
+     that function existed — have only createdAt, displayName, email
+     and phone. The document you screenshotted is one of those.
+
+     Everything below has to read correctly for both, and anything it
+     cannot find must be reported as MISSING rather than quietly
+     defaulted, because a default that looks like data is what made
+     the stat cards lie. */
+  const email = raw.email || "";
+
+  /* displayName is an empty string on the older documents, and
+     "Unnamed" told you nothing about who the row was. The local part
+     of the address is a far better guess and is clearly marked as a
+     guess by `hasName`. */
+  const storedName = raw.displayName || raw.name || "";
+
   return {
     id,
     uid: id,
-    displayName: raw.displayName || raw.name || "Unnamed",
-    email: raw.email || "",
+    displayName: storedName || (email ? email.split("@")[0] : "") || "Unnamed",
+    hasName: Boolean(storedName),
+    email,
     phone: raw.phone || "",
     photoURL: raw.photoURL || "",
     role: adminUids.has(id) ? "admin" : String(raw.role || "customer").toLowerCase(),
+    /* An older document has no `role` at all. The page used to render
+       that as "Customer", indistinguishable from a role someone chose.
+       isAdminDoc says the badge came from the admins collection. */
+    hasRole: Boolean(raw.role) || adminUids.has(id),
+    isAdminDoc: adminUids.has(id),
     disabled: raw.disabled === true,
     shippingAddress: raw.shippingAddress || null,
     billingAddress: raw.billingAddress || null,
     createdAt: raw.createdAt ?? null,
     lastActiveAt: raw.lastActiveAt ?? null,
+    updatedAt: raw.updatedAt ?? null,
+    /* The distinction the Active Users card needs: a profile with no
+       lastActiveAt has never recorded a sign-in since that stamp was
+       introduced. It is NOT the same as a dormant account, and
+       counting it as inactive is what made the card read zero. */
+    hasActivityStamp: Boolean(raw.lastActiveAt),
+    extras: Object.keys(raw)
+      .filter((k) => !USER_KNOWN_KEYS.has(k))
+      .map((k) => [k, raw[k]]),
     _raw: raw
   };
 }
@@ -360,7 +606,13 @@ export async function isAdmin(uid) {
  * Admin pages: run `onReady(user)` only for a verified admin.
  * Anyone else is signed out and bounced to the login page.
  */
-export function requireAdmin(onReady, loginPage = "admin-login.html") {
+/* CHANGED — the default is login.html, not admin-login.html.
+   admin-login.html is gone: there is now one sign-in page for
+   everyone, and login.js already routes an admin to the dashboard
+   after sign-in (it checks admins/{uid} exactly as the old page did).
+   Every admin page calls this with no second argument, so changing
+   the default here is what moves all ten of them at once. */
+export function requireAdmin(onReady, loginPage = "login.html") {
   return onAuthStateChanged(auth, async (user) => {
     if (!user) {
       window.location.href = loginPage;
@@ -371,6 +623,10 @@ export function requireAdmin(onReady, loginPage = "admin-login.html") {
       window.location.href = loginPage;
       return;
     }
+    // Mounted here, once, rather than in each of the ten admin pages:
+    // this is the single line every admin page already runs after auth
+    // succeeds, and the bell must never appear before it does.
+    mountNotificationBell();
     onReady(user);
   });
 }
@@ -510,29 +766,51 @@ function watchCollection(ref, normalize, callback, { sort = null, onError = null
 
 const byName = (a, b) => (a.name || "").localeCompare(b.name || "");
 
-export function watchTrails(callback, { openOnly = false, onError = null } = {}) {
+/* `includeArchived` was being PASSED by admin-catalog.js but none of
+   these three accepted it, so the option did nothing. It works now:
+   the customer-facing pages (booking.js, trail.js) get the live
+   catalogue, and only the admin asks for the archived records it needs
+   in order to offer Restore. */
+
+export function watchTrails(
+  callback,
+  { openOnly = false, includeArchived = false, onError = null } = {}
+) {
   return watchCollection(
     trailsRef(),
     normalizeTrail,
-    (items) => callback(openOnly ? items.filter((t) => t.isOpen) : items),
+    (items) => {
+      let list = includeArchived ? items : items.filter((t) => !t.archived);
+      if (openOnly) list = list.filter((t) => t.isOpen);
+      callback(list);
+    },
     { sort: byName, onError }
   );
 }
 
-export function watchGuides(callback, { activeOnly = false, onError = null } = {}) {
+export function watchGuides(
+  callback,
+  { activeOnly = false, includeArchived = false, onError = null } = {}
+) {
   return watchCollection(
     guidesRef(),
     normalizeGuide,
-    (items) => callback(activeOnly ? items.filter((g) => g.isActive) : items),
+    (items) => {
+      let list = includeArchived ? items : items.filter((g) => !g.archived);
+      if (activeOnly) list = list.filter((g) => g.isActive);
+      callback(list);
+    },
     { sort: (a, b) => a.fullName.localeCompare(b.fullName), onError }
   );
 }
 
-export function watchPackages(callback, { onError = null } = {}) {
-  return watchCollection(packagesRef(), normalizePackage, callback, {
-    sort: (a, b) => a.pricePerPax - b.pricePerPax,
-    onError
-  });
+export function watchPackages(callback, { includeArchived = false, onError = null } = {}) {
+  return watchCollection(
+    packagesRef(),
+    normalizePackage,
+    (items) => callback(includeArchived ? items : items.filter((p) => !p.archived)),
+    { sort: (a, b) => a.pricePerPax - b.pricePerPax, onError }
+  );
 }
 
 /* ---------- gear orders + support inbox (admin) ---------- */
@@ -543,6 +821,73 @@ const byNewest = (a, b) =>
 export function watchOrders(callback, { uid = null, onError = null } = {}) {
   const ref = uid ? query(ordersRef(), where("uid", "==", uid)) : ordersRef();
   return watchCollection(ref, normalizeOrder, callback, { sort: byNewest, onError });
+}
+
+/**
+ * ADDED — customer product reviews, live.
+ *
+ * products.js writes these with exactly five fields:
+ *   { productId, name, rating, comment, created_at }
+ * created_at is an ISO STRING, not a Firestore timestamp, which is
+ * why sorting leans on toDate() rather than orderBy().
+ */
+export function normalizeReview(id, raw = {}) {
+  /* `typeof === "number"`, NOT Number(raw.rating).
+     loadProductPopularity() in products.js skips a review with
+     `typeof r.rating !== "number"`, so a rating stored as the STRING
+     "5" counts for nothing on the shop. Coercing it here would make
+     this page report an average the storefront does not use — I tried
+     that first and the two disagreed by a whole star on a product with
+     one such review. Matching the storefront's test exactly is the
+     only way the number here and the shop's ordering stay in step. */
+  const usable = typeof raw.rating === "number" && Number.isFinite(raw.rating);
+  return {
+    id,
+    productId: raw.productId || raw.product_id || "",
+    name: raw.name || "Anonymous",
+    rating: usable ? raw.rating : null,
+    // Kept so the page can show what is actually stored on a review the
+    // shop is ignoring — "unusable" is more useful with the value next to it.
+    rawRating: raw.rating,
+    comment: raw.comment || "",
+    createdAt: raw.created_at ?? raw.createdAt ?? null,
+    extras: Object.keys(raw)
+      .filter((k) => !["productId", "product_id", "name", "rating", "comment",
+                       "created_at", "createdAt"].includes(k))
+      .map((k) => [k, raw[k]]),
+    _raw: raw
+  };
+}
+
+export function watchReviews(callback, { onError = null } = {}) {
+  return watchCollection(reviewsRef(), normalizeReview, callback, {
+    sort: byNewest,
+    onError
+  });
+}
+
+/**
+ * Removing a review. Permanent, and logged.
+ *
+ * There is no `hidden` flag here on purpose: products.js counts every
+ * document in this collection toward a product's average rating and
+ * review count, so a review merely marked hidden would vanish from
+ * this page while still moving the storefront's popularity sort. A
+ * control that looks like moderation but changes nothing a customer
+ * sees is the same mistake as the permission toggles on the users
+ * page. Deleting is honoured everywhere immediately.
+ */
+export async function deleteReview(review, adminUser = null) {
+  await deleteDoc(doc(db, COL.reviews, review.id));
+  await logAudit({
+    action: "delete",
+    entity: "review",
+    entityId: review.id,
+    entityLabel: `${review.rating ?? "?"}★ by ${review.name}`,
+    summary: `Deleted a ${review.rating ?? "?"}-star review by ${review.name}`,
+    changes: [{ field: "Comment", from: String(review.comment || "").slice(0, 140), to: "(deleted)" }],
+    status: "cancelled"
+  });
 }
 
 export function watchSupportMessages(callback, { onError = null } = {}) {
@@ -672,25 +1017,224 @@ export function watchUserProfile(uid, callback) {
    Saving an ACTIVE product is what publishes it to customers.
    ========================================================== */
 
+/* ==========================================================
+   IMAGE UPLOAD
+   ----------------------------------------------------------
+   Images could only ever be pasted URLs. This adds a real file
+   upload to Firebase Storage while leaving the URL field exactly
+   where it was — some of your images are picsum/ibb links and
+   there is no reason to re-host those.
+
+   THE SDK IS LOADED LAZILY, inside the function. Two reasons, and
+   both matter:
+
+     1. Storage may not be turned on for this project. It is not
+        enabled by default, and newer Firebase projects need the
+        Blaze plan for it. A static import plus a getStorage() call
+        at module load would throw while the module was being
+        evaluated, which takes down EVERY admin page — the same
+        failure mode as the missing export earlier today, and for
+        a feature most sessions never touch.
+
+     2. The storage bundle is ~70 KB that nobody who isn't
+        uploading should have to download.
+
+   If Storage is unavailable the error is caught and reported in
+   the modal; the URL field keeps working regardless.
+
+   Storage rules this needs (Firebase console -> Storage -> Rules):
+
+       rules_version = '2';
+       service firebase.storage {
+         match /b/{bucket}/o {
+           match /{folder}/{allPaths=**} {
+             allow read: if true;
+             allow write: if request.auth != null
+                          && request.resource.size < 5 * 1024 * 1024
+                          && request.resource.contentType.matches('image/.*');
+           }
+         }
+       }
+   ========================================================== */
+
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+/**
+ * @param {File} file
+ * @param {{ productId?: string, onProgress?: (percent:number)=>void }} options
+ * @returns {Promise<string>} the public download URL to store on the product
+ */
+export async function uploadImage(file, { folder = "products", id = "new", onProgress = null } = {}) {
+  if (!file) throw new Error("No file selected.");
+  if (!String(file.type || "").startsWith("image/")) {
+    throw new Error(`"${file.name}" is not an image.`);
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    throw new Error(
+      `"${file.name}" is ${(file.size / 1048576).toFixed(1)} MB. The limit is 5 MB — resize it first.`
+    );
+  }
+
+  let storage, storageRef, uploadBytesResumable, getDownloadURL;
+  try {
+    ({ getStorage: storage, ref: storageRef, uploadBytesResumable, getDownloadURL } = await import(
+      "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js"
+    ));
+  } catch {
+    throw new Error("Could not load the Firebase Storage library. Check your connection.");
+  }
+
+  let bucket;
+  try {
+    bucket = storage();
+  } catch {
+    throw new Error(
+      "Firebase Storage is not set up for this project. Enable it in the Firebase console " +
+        "(Build -> Storage -> Get started), or paste an image URL instead."
+    );
+  }
+
+  /* A predictable, collision-proof path. The timestamp keeps two
+     uploads of the same filename apart, and the sanitised name keeps
+     the file recognisable in the console. */
+  const safeName = String(file.name || "image")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(-60) || "image";
+  const safeFolder = String(folder || "products").replace(/[^a-z0-9_-]+/gi, "") || "products";
+  const safeId = String(id || "new").replace(/[^a-zA-Z0-9._-]+/g, "-") || "new";
+  const path = `${safeFolder}/${safeId}/${Date.now()}-${safeName}`;
+
+  const task = uploadBytesResumable(storageRef(bucket, path), file, {
+    contentType: file.type,
+    cacheControl: "public,max-age=31536000"
+  });
+
+  await new Promise((resolve, reject) => {
+    task.on(
+      "state_changed",
+      (snap) => {
+        if (onProgress && snap.totalBytes) {
+          onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
+        }
+      },
+      (err) => {
+        // storage/unauthorized is by far the likeliest, and the message
+        // Firebase gives for it says nothing about rules.
+        reject(
+          new Error(
+            err?.code === "storage/unauthorized"
+              ? "Storage rejected the upload. Your Storage rules need to allow signed-in writes under products/."
+              : err?.message || "The upload failed."
+          )
+        );
+      },
+      resolve
+    );
+  });
+
+  return getDownloadURL(task.snapshot.ref);
+}
+
+/** Kept so admin-products.js needs no change. */
+export const uploadProductImage = (file, { productId = "new", onProgress = null } = {}) =>
+  uploadImage(file, { folder: "products", id: productId, onProgress });
+
 export async function saveProduct(data, id = null, previous = null) {
+  /* Lists and maps, normalised before they are written.
+     Firestore replaces a map wholesale on updateDoc, so `attributes`
+     and `specs` have to be sent complete — which they are, because the
+     modal's row editors load every existing key and hand them all back.
+     That is also why an empty attribute is kept: deleting a picker the
+     product page expects should be a deliberate act, not a side effect
+     of leaving a row blank. */
+  const images = Array.isArray(data.images)
+    ? data.images.map((v) => String(v || "").trim()).filter(Boolean)
+    : [];
+
+  const attributes = {};
+  for (const [key, value] of Object.entries(data.attributes || {})) {
+    const name = String(key || "").trim();
+    if (!name) continue;
+    attributes[name] = Array.isArray(value)
+      ? value.map((v) => String(v ?? "").trim()).filter(Boolean)
+      : String(value ?? "")
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean);
+  }
+
+  const specs = {};
+  for (const [key, value] of Object.entries(data.specs || {})) {
+    const name = String(key || "").trim();
+    if (name) specs[name] = String(value ?? "").trim();
+  }
+
   const payload = {
     name: String(data.name || "").trim(),
     category: String(data.category || "").trim(),
+    subcategory: String(data.subcategory || "").trim(),
     description: String(data.description || "").trim(),
     price: Number(data.price) || 0,
-    status: String(data.status || "active").toLowerCase(),
-    image: String(data.image || "").trim(),
+    inStock: data.inStock !== false,
+    images,
+    /* Kept in step with images[0]. The shop falls back to this field
+       for records written before the gallery existed, and leaving a
+       stale value here would show one picture on the card and a
+       different one in the drawer. */
+    image: images[0] || String(data.image || "").trim(),
+    attributes,
+    specs,
     updatedAt: serverTimestamp()
+  };
+
+  const popularity = Number(data.popularity);
+  if (Number.isFinite(popularity)) payload.popularity = popularity;
+
+  /* `status` is written ONLY to a document that already has one.
+     Your product documents do not: availability on them is `inStock`.
+     Writing a status onto those would give every record a second
+     availability flag, and products.js reads both — so a product could
+     be inStock and status-inactive at the same time, visible in the
+     panel and missing from the shop. */
+  if (previous?.hasStatusField || (!id && data.status)) {
+    payload.status = String(data.status || "active").toLowerCase();
+  }
+
+  const LABELS = {
+    name: "Name", category: "Category", subcategory: "Subcategory",
+    price: "Price", status: "Status", image: "Image",
+    description: "Description", inStock: "In stock",
+    images: "Images", attributes: "Attributes", specs: "Specs",
+    popularity: "Popularity"
   };
 
   if (id) {
     await updateDoc(doc(db, COL.products, id), payload);
     await logAudit({
       action: "update", entity: "product", entityId: id, entityLabel: payload.name,
-      changes: diffFields(previous, payload, {
-        name: "Name", category: "Category", price: "Price",
-        status: "Status", image: "Image", description: "Description"
-      })
+      changes: diffFields(
+        /* Compare like with like: the lists and maps are flattened to
+           text on both sides, or the log reports "[object Object] ->
+           [object Object]" for every edit. */
+        previous
+          ? {
+              ...previous,
+              inStock: previous.inStock ? "yes" : "no",
+              images: (previous.images || []).join(", "),
+              attributes: summariseMap(previous.attributes),
+              specs: summariseMap(previous.specs)
+            }
+          : null,
+        {
+          ...payload,
+          inStock: payload.inStock ? "yes" : "no",
+          images: images.join(", "),
+          attributes: summariseMap(attributes),
+          specs: summariseMap(specs)
+        },
+        LABELS
+      )
     });
     return id;
   }
@@ -709,15 +1253,47 @@ export async function saveProduct(data, id = null, previous = null) {
   return created.id;
 }
 
-export async function setProductStatus(id, status, label = "") {
-  await updateDoc(doc(db, COL.products, id), {
-    status: String(status).toLowerCase(),
-    updatedAt: serverTimestamp()
-  });
+/** "size: S, M, L · color: Red" — a map rendered for the audit log. */
+function summariseMap(map) {
+  if (!map || typeof map !== "object") return "";
+  return Object.entries(map)
+    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
+    .join(" · ");
+}
+
+/**
+ * The stock toggle on the Gear table.
+ *
+ * CHANGED — it takes a fourth argument, which admin-products.js has
+ * been passing all along to a function that did not accept it.
+ *
+ * The old version always wrote `status`. Your product documents have
+ * no status field; availability on them is `inStock`, and the shop
+ * reads both. So one press of "Mark out" would have added a competing
+ * flag to a record that had none, and pressing it across the table
+ * would have done that to all of them. With `hasStatusField: false`
+ * this writes `inStock` and leaves the document's shape alone.
+ */
+export async function setProductStatus(id, status, label = "", { hasStatusField = true } = {}) {
+  const wanted = String(status).toLowerCase();
+  const patch = hasStatusField
+    ? { status: wanted, updatedAt: serverTimestamp() }
+    : { inStock: wanted === "active", updatedAt: serverTimestamp() };
+
+  await updateDoc(doc(db, COL.products, id), patch);
+
   await logAudit({
     action: "status", entity: "product", entityId: id, entityLabel: label,
-    summary: `Set product "${label}" to ${String(status).toLowerCase()}`,
-    status: String(status).toLowerCase() === "active" ? "completed" : "pending"
+    summary: hasStatusField
+      ? `Set product "${label}" to ${wanted}`
+      : `Marked product "${label}" ${wanted === "active" ? "in stock" : "out of stock"}`,
+    changes: [
+      hasStatusField
+        ? { field: "Status", from: wanted === "active" ? "inactive" : "active", to: wanted }
+        : { field: "In stock", from: wanted === "active" ? "no" : "yes",
+            to: wanted === "active" ? "yes" : "no" }
+    ],
+    status: wanted === "active" ? "completed" : "pending"
   });
 }
 
@@ -799,6 +1375,13 @@ export async function saveGuide(data, docId = null, previous = null) {
     specialty: String(data.specialty || "").trim(),
     rating: Number(data.rating) || 0,
     status: data.status || "Active",
+    // Capital P on purpose — that is the key your guide documents
+    // already use. Writing `photo` instead would leave the old field
+    // in place and create a second one beside it, so every guide would
+    // quietly end up with two competing photo fields.
+    Photo: String(data.photo || "").trim(),
+    contact: String(data.contact || "").trim(),
+    years_experience: Number(data.yearsExperience) || 0,
     updatedAt: serverTimestamp()
   };
 
@@ -808,8 +1391,13 @@ export async function saveGuide(data, docId = null, previous = null) {
       action: "update", entity: "guide", entityId: docId, entityLabel: payload.full_name,
       changes: diffFields(previous, {
         fullName: payload.full_name, specialty: payload.specialty,
-        rating: payload.rating, status: payload.status
-      }, { fullName: "Name", specialty: "Specialty", rating: "Rating", status: "Status" })
+        rating: payload.rating, status: payload.status,
+        photo: payload.Photo, contact: payload.contact,
+        yearsExperience: payload.years_experience
+      }, {
+        fullName: "Name", specialty: "Specialty", rating: "Rating", status: "Status",
+        photo: "Photo", contact: "Contact", yearsExperience: "Years experience"
+      })
     });
     return docId;
   }
@@ -830,6 +1418,7 @@ export async function savePackage(data, docId = null, previous = null) {
           .map((part) => part.trim())
           .filter(Boolean),
     requires_activity_choice: Boolean(data.requiresActivityChoice),
+    requires_accommodation: Boolean(data.requiresAccommodation),
     updatedAt: serverTimestamp()
   };
 
@@ -839,9 +1428,12 @@ export async function savePackage(data, docId = null, previous = null) {
       action: "update", entity: "package", entityId: docId, entityLabel: payload.name,
       changes: diffFields(previous, {
         name: payload.name, pricePerPax: payload.price_per_pax,
-        includes: payload.includes, requiresActivityChoice: payload.requires_activity_choice
+        includes: payload.includes,
+        requiresActivityChoice: payload.requires_activity_choice,
+        requiresAccommodation: payload.requires_accommodation
       }, { name: "Name", pricePerPax: "Price per pax", includes: "Includes",
-           requiresActivityChoice: "Activity choice" })
+           requiresActivityChoice: "Activity choice",
+           requiresAccommodation: "Accommodation" })
     });
     return docId;
   }
@@ -936,8 +1528,13 @@ export async function updateOrderStatus(order, status, adminUser = null) {
 }
 
 export async function updateMessageStatus(messageId, status, label = "") {
+  const actor = auth.currentUser;
   await updateDoc(doc(db, COL.contact, messageId), {
     status,
+    // ADDED. The document recorded that it changed but not who changed
+    // it, so the message alone could never answer "who closed this?" —
+    // you had to go hunting in the activity log.
+    updatedBy: actor?.displayName || actor?.email || "an administrator",
     updatedAt: serverTimestamp()
   });
   await logAudit({
@@ -947,12 +1544,38 @@ export async function updateMessageStatus(messageId, status, label = "") {
   });
 }
 
-/** Replying marks the thread handled and, for a signed-in sender,
-    drops the reply into their notifications. */
+/**
+ * Replying marks the thread handled and, for a signed-in sender,
+ * drops the reply into their notifications.
+ *
+ * FIXED — this used to write `reply: replyText`, a single string.
+ * Replying a second time overwrote the first reply, which was then
+ * gone from Firestore altogether: not hidden, deleted. On a support
+ * thread that is the worst possible field to lose, because it is the
+ * record of what you told a customer.
+ *
+ * Replies now APPEND to a `replies` array, each one stamped with who
+ * sent it and when. Documents holding the old single `reply` string
+ * still read back correctly — normalizeMessage turns one into a
+ * one-entry thread — so nothing already in your database is lost, and
+ * the old field is left exactly where it is rather than migrated.
+ *
+ * serverTimestamp() cannot be used inside an array element (Firestore
+ * rejects it), so these carry an ISO string, the same way booking
+ * history entries already do.
+ */
 export async function replyToMessage(message, replyText) {
+  const actor = auth.currentUser;
+  const entry = {
+    text: String(replyText || ""),
+    by: actor?.displayName || actor?.email || "an administrator",
+    at: new Date().toISOString()
+  };
+
   await updateDoc(doc(db, COL.contact, message.id), {
     status: "Replied",
-    reply: replyText,
+    replies: [...(message.thread || []), entry],
+    repliedBy: entry.by,
     repliedAt: serverTimestamp()
   });
 
@@ -1075,6 +1698,96 @@ export async function updateBookingFields(id, fields) {
   await updateDoc(doc(db, COL.bookings, id), { ...fields, updatedAt: serverTimestamp() });
 }
 
+/**
+ * ADDED — the write half of the booking detail page.
+ *
+ * Until now the only thing an admin could change on a booking was its
+ * status. Everything else — a mistyped phone number, a wrong departure
+ * date, a missing emergency contact — had to be fixed in the Firebase
+ * console. This saves the whole record.
+ *
+ * What it deliberately does NOT write: trail_id, guide_id and
+ * package_id. Those are the keys booking.js matches its dropdowns
+ * against, and editing one by hand without changing the matching name
+ * (or vice versa) leaves a booking pointing at a trail it isn't for.
+ * They are shown read-only on the page instead.
+ *
+ * `status` is left alone here too — it has its own control, because
+ * changing it also notifies the customer, and that should never be a
+ * side effect of fixing a typo.
+ */
+export async function saveBooking(booking, data, adminUser = null) {
+  const payload = {
+    full_name: String(data.customerName || "").trim(),
+    email: String(data.email || "").trim(),
+    contact_number: String(data.phone || "").trim(),
+    trail_name: String(data.trailName || "").trim(),
+    package_name: String(data.packageName || "").trim(),
+    guide_name: String(data.guideName || "").trim(),
+    date: String(data.date || "").trim(),
+    departure_time: String(data.departureTime || "").trim(),
+    group_size: Number(data.groupSize) || 1,
+    total_price: Number(data.amount) || 0,
+    payment_status: String(data.paymentStatus || "Unpaid").trim(),
+    activity: String(data.activity || "").trim(),
+    special_requests: String(data.specialRequests || "").trim(),
+    emergency_name: String(data.emergencyName || "").trim(),
+    emergency_number: String(data.emergencyNumber || "").trim(),
+    updatedAt: serverTimestamp()
+  };
+
+  const changes = diffFields(
+    booking,
+    {
+      customerName: payload.full_name, email: payload.email, phone: payload.contact_number,
+      trailName: payload.trail_name, packageName: payload.package_name,
+      guideName: payload.guide_name, date: payload.date,
+      departureTime: payload.departure_time, groupSize: payload.group_size,
+      amount: payload.total_price, paymentStatusLabel: payload.payment_status,
+      activity: payload.activity, specialRequests: payload.special_requests,
+      emergencyName: payload.emergency_name, emergencyNumber: payload.emergency_number
+    },
+    {
+      customerName: "Customer", email: "Email", phone: "Phone",
+      trailName: "Trail", packageName: "Package", guideName: "Guide",
+      date: "Date", departureTime: "Departure time", groupSize: "Group size",
+      amount: "Amount", paymentStatusLabel: "Payment status",
+      activity: "Activity", specialRequests: "Special requests",
+      emergencyName: "Emergency contact", emergencyNumber: "Emergency number"
+    }
+  );
+
+  // Nothing moved — don't write, and don't put a meaningless line in
+  // the audit log or the booking's own history.
+  if (!changes.length) return false;
+
+  // The booking carries its own visible history on the detail page, so
+  // the edit is recorded there as well as in the audit log.
+  const entry = {
+    title: "Booking details edited",
+    detail:
+      `${changes.map((c) => c.field).join(", ")} updated by ` +
+      (adminUser?.displayName || adminUser?.email || "an administrator"),
+    time: new Date().toISOString()
+  };
+
+  await updateDoc(doc(db, COL.bookings, booking.id), {
+    ...payload,
+    history: [...(booking.history || []), entry]
+  });
+
+  await logAudit({
+    action: "update", entity: "booking", entityId: booking.id,
+    entityLabel: `#${booking.orderId}`,
+    summary: `Edited booking #${booking.orderId} (${changes.length} field${changes.length === 1 ? "" : "s"})`,
+    changes,
+    amount: payload.total_price,
+    status: String(booking.status || "pending").toLowerCase()
+  });
+
+  return true;
+}
+
 /* ==========================================================
    8. WRITES — USERS, PROFILE, WISHLIST, NOTIFICATIONS
    ========================================================== */
@@ -1134,6 +1847,56 @@ export async function updateUserProfile(uid, fields, label = "") {
       status: fields.disabled ? "cancelled" : "completed"
     });
   }
+}
+
+/**
+ * ADDED — an admin switching an account on or off.
+ *
+ * NOTE ON SCOPE. This deliberately writes ONE field. An earlier
+ * version of this function also let an admin edit the customer's
+ * display name and phone; that was removed at your instruction, and
+ * it is the right call — those belong to the customer and are theirs
+ * to change from their own account page. An admin panel that can
+ * quietly rewrite someone's name is a panel you cannot lean on when a
+ * record is disputed, which is the same reasoning that took the editor
+ * off the orders page.
+ *
+ * Both the table's quick toggle and the modal switch call this, so a
+ * disable always behaves identically: it is logged AND the customer is
+ * told. Before, the table used updateUserProfile(), which logged but
+ * never notified, so whether a blocked customer found out depended on
+ * which button you happened to press.
+ */
+export async function setAccountDisabled(user, disabled, adminUser = null) {
+  const next = disabled === true;
+  if (user.disabled === next) return false;
+
+  await updateDoc(doc(db, COL.users, user.id), {
+    disabled: next,
+    updatedAt: serverTimestamp()
+  });
+
+  const label = user.displayName || user.email || user.id;
+  await logAudit({
+    action: "update",
+    entity: "user",
+    entityId: user.id,
+    entityLabel: label,
+    summary: `${next ? "Disabled" : "Re-enabled"} the account of ${label}`,
+    changes: [{ field: "Account", from: next ? "active" : "disabled",
+                to: next ? "disabled" : "active" }],
+    status: next ? "cancelled" : "completed"
+  });
+
+  await notifyUser(user.id, {
+    title: next ? "Account disabled" : "Account re-enabled",
+    message: next
+      ? "An administrator has disabled your account. Contact support if you think this is a mistake."
+      : "An administrator has re-enabled your account. Welcome back.",
+    type: "info"
+  });
+
+  return true;
 }
 
 /**
@@ -1383,7 +2146,88 @@ export function describeError(err) {
   return `Firestore error${code ? ` (${code})` : ""}: ${err?.message || "unknown"}`;
 }
 
+/**
+ * ADDED — puts the Reviews link in the sidebar on EVERY admin page.
+ *
+ * The sidebar is copied by hand into each admin HTML file, so a new
+ * page normally means editing ten files. admin-reviews.html existed
+ * but was only reachable from admin-users.html, because that is the
+ * one file the reviews batch happened to touch.
+ *
+ * This inserts the link at runtime instead, which every admin page
+ * picks up for free because every one of them imports this module.
+ * It is idempotent — a page whose HTML already carries the link (that
+ * is, admin-users.html and admin-reviews.html) is left alone — so
+ * adding the markup to the other files later is safe and this can
+ * simply be deleted once that is done.
+ *
+ * The guard on `.admin-nav` means it does nothing at all on the
+ * customer-facing pages, which import this module too.
+ */
+/* The sidebar is copied by hand into each admin HTML file, so a link
+   added to one page is missing from the other nine until someone
+   edits them all. That is not hypothetical: admin-products.html was
+   the only page without Activity Log, months after it was added, and
+   Reviews reached only the two files its own batch happened to touch.
+
+   These are inserted at runtime instead. Every admin page imports this
+   module, so they all get them. Idempotent — a page whose HTML already
+   carries a link is left alone — so pasting the markup into the files
+   later is safe, and this can be deleted once they all have it. */
+const NAV_LINKS = [
+  {
+    href: "admin-reviews.html",
+    label: "Reviews",
+    icon: 'm12 17.3 6.2 3.7-1.6-7 5.4-4.7-7.1-.6L12 2 9.1 8.7 2 9.3l5.4 4.7-1.6 7z',
+    after: 'a[href="admin-users.html"]'   // sits in the main Menu group
+  },
+  {
+    href: "admin-activity.html",
+    label: "Activity Log",
+    icon: 'M13 3a9 9 0 0 0-9 9H1l4 4 4-4H6a7 7 0 1 1 2 4.9l-1.4 1.5A9 9 0 1 0 13 3zm-1 5v5l4 2 .8-1.3-3.3-1.9V8z',
+    after: ".admin-nav-label--system"     // first item under the System heading
+  }
+];
+
+export function ensureAdminNav() {
+  const nav = document.querySelector(".admin-nav");
+  if (!nav) return; // not an admin page — the customer pages import this too
+
+  for (const { href, label, icon, after } of NAV_LINKS) {
+    if (nav.querySelector(`a[href="${href}"]`)) continue; // already in the HTML
+
+    const link = document.createElement("a");
+    link.href = href;
+    link.className = "admin-nav-link";
+    link.innerHTML =
+      `<svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="${icon}"/></svg>${label}`;
+
+    // endsWith, not includes: /admin-activity-export.html should not
+    // light up the Activity Log link.
+    if (window.location.pathname.endsWith(href)) link.classList.add("active");
+
+    const anchor = nav.querySelector(after);
+    if (anchor) anchor.insertAdjacentElement("afterend", link);
+    else {
+      const systemLabel = nav.querySelector(".admin-nav-label--system");
+      systemLabel ? systemLabel.insertAdjacentElement("beforebegin", link) : nav.appendChild(link);
+    }
+  }
+}
+
+/* Run as soon as the sidebar exists, not after sign-in: the nav should
+   be complete while the page is still loading its data. */
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", ensureAdminNav, { once: true });
+  } else {
+    ensureAdminNav();
+  }
+}
+
 export function renderAdminSidebarProfile(user, { avatarImg, avatarFallback, nameEl }) {
+  // Belt and braces: covers a page that renders its sidebar after auth.
+  ensureAdminNav();
   if (nameEl) nameEl.textContent = user.displayName || user.email || "Admin";
   if (!avatarImg || !avatarFallback) return;
 
@@ -1404,7 +2248,9 @@ export function renderAdminSidebarProfile(user, { avatarImg, avatarFallback, nam
   }
 }
 
-export function attachLogoutConfirm(logoutBtn, loginPage = "admin-login.html") {
+/* CHANGED — logging out of the panel now lands on the shared
+   login.html rather than a separate admin page. */
+export function attachLogoutConfirm(logoutBtn, loginPage = "login.html") {
   if (!logoutBtn) return;
 
   logoutBtn.addEventListener("click", () => {
@@ -1450,6 +2296,151 @@ export function attachLogoutConfirm(logoutBtn, loginPage = "admin-login.html") {
     backdrop.hidden = false;
     modal.hidden = false;
   });
+}
+
+/* ==========================================================
+   NOTIFICATION BELL
+   ----------------------------------------------------------
+   The bell in the topbar was decoration — a static icon on nine
+   pages and a literal "●" character on two others. It now carries
+   the one thing an admin genuinely needs pushing at them: a
+   customer has written in and nobody has answered yet.
+
+   "Unread" is deliberately NOT stored per-admin. A message counts
+   as unread while its status is still "New", which is the same
+   state the Support page shows and the same state that clears when
+   any admin replies or closes it. So the badge means "needs
+   someone", not "I personally haven't looked" — with a team
+   sharing one panel, that is the number that matters, and it can
+   never drift between two people's browsers.
+
+   Mounted from requireAdmin() rather than from each page, so every
+   admin page gets it without ten separate wiring steps.
+   ========================================================== */
+
+const BELL_MAX = 8;
+
+export function mountNotificationBell() {
+  const button = document.querySelector(".admin-bell-btn");
+  // The login and diagnose pages have no topbar. Nothing to do.
+  if (!button || button.dataset.bellReady) return null;
+  button.dataset.bellReady = "1";
+
+  // Wrap the button so the dropdown can anchor to it without the
+  // topbar needing a position of its own.
+  const wrap = document.createElement("div");
+  wrap.className = "admin-bell";
+  button.replaceWith(wrap);
+  wrap.appendChild(button);
+
+  const badge = document.createElement("span");
+  badge.className = "admin-bell-badge";
+  badge.hidden = true;
+  button.appendChild(badge);
+
+  const panel = document.createElement("div");
+  panel.className = "admin-bell-panel";
+  panel.hidden = true;
+  wrap.appendChild(panel);
+
+  button.setAttribute("aria-haspopup", "true");
+  button.setAttribute("aria-expanded", "false");
+
+  const baseTitle = document.title;
+  let messages = [];
+
+  const open = () => {
+    panel.hidden = false;
+    button.setAttribute("aria-expanded", "true");
+  };
+  const close = () => {
+    panel.hidden = true;
+    button.setAttribute("aria-expanded", "false");
+  };
+
+  button.addEventListener("click", (e) => {
+    e.stopPropagation();
+    panel.hidden ? open() : close();
+  });
+  panel.addEventListener("click", (e) => e.stopPropagation());
+  document.addEventListener("click", close);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") close();
+  });
+
+  // Clicking an item hands the id to the Support page, which opens
+  // that message on load — see the ?msg= handler in admin-support.js.
+  panel.addEventListener("click", (e) => {
+    const row = e.target.closest("[data-msg-id]");
+    if (row) window.location.href = `admin-support.html?msg=${encodeURIComponent(row.dataset.msgId)}`;
+  });
+
+  const render = () => {
+    const unread = messages.filter((m) => String(m.status).toLowerCase() === "new");
+
+    badge.textContent = unread.length > 99 ? "99+" : String(unread.length);
+    badge.hidden = unread.length === 0;
+    button.classList.toggle("has-unread", unread.length > 0);
+    button.setAttribute(
+      "aria-label",
+      unread.length ? `Notifications, ${unread.length} unanswered` : "Notifications"
+    );
+
+    // Visible even when the admin is on another browser tab.
+    document.title = unread.length ? `(${unread.length}) ${baseTitle}` : baseTitle;
+
+    const items = messages.slice(0, BELL_MAX);
+
+    panel.innerHTML = `
+      <div class="admin-bell-head">
+        <p>Notifications</p>
+        <span>${unread.length ? `${unread.length} unanswered` : "All caught up"}</span>
+      </div>
+      ${
+        items.length
+          ? `<div class="admin-bell-list">${items.map(bellRow).join("")}</div>`
+          : '<p class="admin-bell-empty">No customer messages yet. New ones land here the moment they are sent.</p>'
+      }
+      <a class="admin-bell-all" href="admin-support.html">View all messages</a>`;
+  };
+
+  render();
+
+  const stop = watchSupportMessages(
+    (items) => {
+      messages = items;
+      render();
+    },
+    {
+      onError: (err) => {
+        console.warn("Notification bell offline:", err?.code || err?.message);
+        panel.innerHTML =
+          '<p class="admin-bell-empty">Messages could not be loaded. Check your Firestore rules.</p>';
+      }
+    }
+  );
+
+  window.addEventListener("beforeunload", () => stop?.());
+  return stop;
+}
+
+function bellRow(m) {
+  const isNew = String(m.status).toLowerCase() === "new";
+  const snippet = m.message.length > 90 ? `${m.message.slice(0, 90)}…` : m.message;
+
+  return `<button type="button" class="admin-bell-item${
+    isNew ? " is-unread" : ""
+  }" data-msg-id="${escapeHtml(m.id)}">
+    <span class="admin-bell-dot" aria-hidden="true"></span>
+    <span class="admin-bell-item-body">
+      <span class="admin-bell-item-top">
+        <strong>${escapeHtml(m.name || m.email || "Someone")}</strong>
+        <time>${escapeHtml(timeAgo(m.createdAt) || "just now")}</time>
+      </span>
+      <span class="admin-bell-item-text">${escapeHtml(snippet || "(no message)")}</span>
+      <span class="admin-bell-item-meta">#${escapeHtml(m.ref)} · ${escapeHtml(m.status)}</span>
+    </span>
+  </button>`;
 }
 
 /** Tidy up every listener a page opened when it unloads. */

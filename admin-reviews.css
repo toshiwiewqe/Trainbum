@@ -1,0 +1,108 @@
+/* ==========================================================
+   admin-reviews.css
+   ----------------------------------------------------------
+   New file, linked AFTER admin.css and admin-products.css.
+
+   WHY IT EXISTS. admin.css registers the modal scroll region
+   by ID, for exactly three elements:
+
+       #catalog-form-fields
+       .admin-product-modal > #order-modal-body
+       .admin-product-modal > #support-modal-body
+
+   #review-modal-body is not one of them, so it got no padding
+   at all while `.admin-product-modal .admin-modal-header` and
+   `.admin-modal-actions` both carry 1.5rem. That is the
+   misalignment: the header and the buttons were inset and the
+   body was flush to the card edge, with the help paragraph
+   running into the right-hand border.
+
+   It also got no `flex: 1`, so it was not the scroll region
+   either — on a review with extra fields the modal would have
+   clipped the content instead of scrolling it.
+   ========================================================== */
+
+.admin-product-modal > #review-modal-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    /* Same gutter as the other three, so all four modals line up. */
+    padding: 1.25rem 1.5rem 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 90, 69, 0.45) transparent;
+}
+
+.admin-product-modal > #review-modal-body::-webkit-scrollbar { width: 8px; }
+.admin-product-modal > #review-modal-body::-webkit-scrollbar-track { background: transparent; }
+.admin-product-modal > #review-modal-body::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 90, 69, 0.4);
+    border-radius: 999px;
+}
+
+/* The delete button is destructive, so it should not look like
+   every other primary submit in the panel. */
+#review-delete-btn {
+    background: rgba(255, 90, 69, 0.14);
+    border: 1px solid rgba(255, 90, 69, 0.55);
+    color: #ffb4a8;
+}
+
+#review-delete-btn:hover:not(:disabled) {
+    background: var(--admin-accent);
+    color: #1a0401;
+}
+
+/* ---------- rating breakdown chips ---------- */
+
+/* These duplicate `.admin-chip` / `.admin-chip-row` from
+   admin-products.css ON PURPOSE.
+
+   Those rules live in the block added to that file during the
+   product-editor work, and on your machine they are not arriving:
+   the breakdown rendered as one unbroken run of text with no
+   backgrounds and no gaps, and the account switch on the users page
+   failed in the same way for the same reason — `.admin-switch-row`
+   sits in that same block. Rather than have this page depend on which
+   copy of that stylesheet is loaded, it carries its own.
+
+   Harmless if the newer admin-products.css is in place: identical
+   declarations, and this file is linked last. */
+.admin-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.admin-chip {
+    padding: 0.16rem 0.45rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--admin-text);
+    font-size: 0.66rem;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+/* A rating nobody gave. Still shown, so the five bands always line up
+   and a missing one is visibly zero rather than simply absent. */
+.admin-chip.is-empty {
+    border-color: var(--admin-border);
+    background: transparent;
+    color: var(--admin-text-faint, rgba(245, 239, 233, 0.4));
+}
+
+.admin-chip-count {
+    margin-left: 0.2rem;
+    font-weight: 700;
+}
+
+/* Six columns, two of them free text. */
+.admin-reviews-table { min-width: 1000px; }
+
+@media (max-width: 560px) {
+    .admin-product-modal > #review-modal-body {
+        padding-left: 1.15rem;
+        padding-right: 1.15rem;
+    }
+}

@@ -1,0 +1,78 @@
+/* ==========================================================
+   admin-dashboard.css
+   ----------------------------------------------------------
+   New file, linked after admin.css, for the one thing the
+   dashboard needs that the shared stylesheet has no shape for:
+   a stat card that carries a breakdown under its headline.
+
+   Total Revenue is two businesses added together — trail
+   bookings and gear orders — and putting that on the delta line
+   made it run to two wrapped lines of green text, which is what
+   made the card look messy next to its neighbours. The split is
+   its own small labelled pair instead.
+   ========================================================== */
+
+.admin-stat-split {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.55rem 0 0;
+}
+
+.admin-stat-split[hidden] { display: none; }
+
+.admin-stat-split > div {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.03);
+    /* Keeps a figure and its label on one line; the row wraps as a
+       whole instead of breaking "₱192,170" away from "Trails". */
+    white-space: nowrap;
+}
+
+.admin-stat-split dt {
+    margin: 0;
+    color: var(--admin-text-dim);
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.admin-stat-split dd {
+    margin: 0;
+    color: var(--admin-text);
+    font-size: 0.72rem;
+    font-weight: 600;
+    /* Tabular figures so the two chips line up rather than jittering
+       as the numbers change. */
+    font-variant-numeric: tabular-nums;
+}
+
+/* The rating card's star line sits in the same row and should not be
+   pushed out of alignment by the taller revenue card. */
+.admin-stats-grid .admin-stat-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-stats-grid .admin-stat-card .admin-stat-delta {
+    margin-top: auto;
+}
+
+/* ...except where a split follows it, which must stay attached to the
+   delta rather than being pushed to the bottom on its own. */
+.admin-stats-grid .admin-stat-card .admin-stat-delta:has(+ .admin-stat-split) {
+    margin-top: auto;
+}
+
+.admin-stat-delta--stars {
+    letter-spacing: 0.04em;
+}
+
+@media (max-width: 640px) {
+    .admin-stat-split { gap: 0.3rem; }
+}

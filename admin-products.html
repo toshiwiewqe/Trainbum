@@ -25,7 +25,9 @@
           <a href="admin-bookings.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm12 8H5v10h14V10z"/></svg>Bookings</a>
           <a href="admin-orders.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM1 2h3l3.6 11.6L6.3 16A2 2 0 0 0 8 19h11v-2H8.4l1-2h7.4a2 2 0 0 0 1.8-1.2l3.2-7.3L20 5H6.2l-.9-3H1v2z"/></svg>Orders</a>
           <a href="admin-users.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Users</a>
+          <a href="admin-reviews.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="m12 17.3 6.2 3.7-1.6-7 5.4-4.7-7.1-.6L12 2 9.1 8.7 2 9.3l5.4 4.7-1.6 7z"/></svg>Reviews</a>
           <p class="admin-nav-label admin-nav-label--system">System</p>
+          <a href="admin-activity.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3a9 9 0 0 0-9 9H1l4 4 4-4H6a7 7 0 1 1 2 4.9l-1.4 1.5A9 9 0 1 0 13 3zm-1 5v5l4 2 .8-1.3-3.3-1.9V8z"/></svg>Activity Log</a>
           <a href="admin-support.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>Support</a>
           <a href="admin-settings.html" class="admin-nav-link"><svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Settings</a>
         </nav>
@@ -46,11 +48,19 @@
         <header class="admin-topbar">
           <p class="admin-breadcrumb">Admin &nbsp;/&nbsp; <span>Product Management</span></p>
           <div class="admin-topbar-actions">
+            <!-- This page was the only one still on the original topbar:
+                 a "⌕" character for the search icon and a "●" for the
+                 bell, while the other nine admin pages had moved to the
+                 SVG pair. mountNotificationBell() was wiring itself to
+                 this button all along — only the glyph inside it was
+                 wrong. -->
             <label class="admin-search-wrap" aria-label="Search products">
-              <span aria-hidden="true">⌕</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
               <input id="product-search" type="search" placeholder="Search products...">
             </label>
-            <button class="admin-bell-btn" type="button" aria-label="Notifications">●</button>
+            <button class="admin-bell-btn" type="button" aria-label="Notifications">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a2.2 2.2 0 0 0 2.2-2.2h-4.4A2.2 2.2 0 0 0 12 22zm7-6.2V11c0-3.4-1.8-6.2-5-6.9V3a2 2 0 0 0-4 0v1.1C6.8 4.8 5 7.6 5 11v4.8L3 17.8V19h18v-1.2l-2-2z"/></svg>
+            </button>
           </div>
         </header>
 
@@ -73,17 +83,17 @@
           <section class="admin-panel admin-products-panel">
             <div class="admin-panel-header">
               <h3>Product Inventory</h3>
-              <select id="product-status-filter" class="admin-panel-select" aria-label="Filter product status">
-                <option value="all">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+              <select id="product-status-filter" class="admin-panel-select" aria-label="Filter by stock">
+                <option value="all">All stock states</option>
+                <option value="active">In stock</option>
+                <option value="inactive">Out of stock</option>
               </select>
             </div>
             <p id="product-feedback" class="admin-product-feedback" hidden></p>
             <div class="admin-product-table-wrap">
               <table class="admin-activity-table admin-product-table">
-                <thead><tr><th>Preview</th><th>Name & Description</th><th>Category</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
-                <tbody id="product-list"><tr><td colspan="6" class="admin-empty">Loading products...</td></tr></tbody>
+                <thead><tr><th>Preview</th><th>Name &amp; Description</th><th>Category</th><th>Price</th><th>Stock</th><th>Attributes</th><th>Actions</th></tr></thead>
+                <tbody id="product-list"><tr><td colspan="7" class="admin-empty">Loading products...</td></tr></tbody>
               </table>
             </div>
           </section>
@@ -98,14 +108,123 @@
         <button class="admin-modal-close" id="product-modal-close" type="button" aria-label="Close">×</button>
       </div>
       <form id="product-form" class="admin-product-form">
-        <label>Product name<input id="product-name" required maxlength="80" placeholder="e.g. Mt. Pulag Expedition"></label>
-        <label>Category<input id="product-category" required maxlength="50" placeholder="e.g. Major Climb"></label>
-        <label>Description<textarea id="product-description" rows="3" placeholder="Describe the trail or product..."></textarea></label>
-        <div class="admin-product-form-row">
-          <label>Price (PHP)<input id="product-price" type="number" min="0" step="1" required placeholder="2500"></label>
-          <label>Status<select id="product-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+        <!-- The scroll region. The product modal never had one: the modal
+             is a flex column with overflow:hidden, so a form taller than
+             the card was simply clipped, Save button and all. With this
+             many fields that would happen immediately. -->
+        <div id="product-form-fields">
+
+          <section class="admin-form-section">
+            <p class="admin-form-section-title">Basics</p>
+            <div class="admin-form-section-body">
+              <label>Product name<input id="product-name" required maxlength="120" placeholder="e.g. Ridgeline 2P Tent"></label>
+              <div class="admin-product-form-row">
+                <label>Category<input id="product-category" required maxlength="60" placeholder="e.g. Camp Essentials"></label>
+                <label>Subcategory<input id="product-subcategory" maxlength="60" placeholder="e.g. Tents"></label>
+              </div>
+              <div class="admin-product-form-row">
+                <label>Price (PHP)<input id="product-price" type="number" min="0" step="1" required placeholder="6499"></label>
+                <label>Popularity<input id="product-popularity" type="number" min="0" max="100" step="1" placeholder="92"></label>
+              </div>
+              <p class="admin-form-hint">Popularity is stored on the record, but the shop's
+                &ldquo;Popularity&rdquo; sort does not read it &mdash; products.js ranks by average star
+                rating from <code>product_reviews</code>, with review count breaking ties. Editing this
+                changes the stored number, not the shop's ordering.</p>
+              <!-- Rebuilt as a switch. The bare checkbox gave no
+                   indication of which state was current without reading
+                   the label and inferring, and it inherited the form's
+                   grid layout so the box sat above its own text. -->
+              <div class="admin-stock-card" id="product-stock-card">
+                <label class="admin-stock-row" for="product-instock">
+                  <span class="admin-stock-copy">
+                    <span class="admin-stock-heading">Stock status</span>
+                    <span class="admin-stock-state" id="product-stock-state">In stock &mdash; on sale</span>
+                  </span>
+                  <input type="checkbox" id="product-instock" class="admin-stock-input">
+                  <span class="admin-stock-track" aria-hidden="true"><span class="admin-stock-knob"></span></span>
+                </label>
+                <p class="admin-stock-help">This is the field the shop reads. Switching it off leaves the
+                  product listed with a &ldquo;Sold Out&rdquo; badge and the Add to Cart button disabled.</p>
+              </div>
+              <label>Description<textarea id="product-description" rows="3" placeholder="Freestanding shelter built for fast pitching..."></textarea></label>
+            </div>
+          </section>
+
+          <section class="admin-form-section">
+            <p class="admin-form-section-title">
+              Images <span class="admin-form-count" id="product-images-count"></span>
+            </p>
+            <div class="admin-form-section-body">
+              <p class="admin-form-hint">The first image is the one used as the thumbnail. Each row previews
+                live, so a URL that cannot load shows up here rather than on the shop.
+                Upload a file or paste a URL &mdash; both end up as a URL on the product.</p>
+
+              <!-- Drop target. A label wrapping a file input is the whole
+                   control: clicking it opens the picker, and the drag
+                   handlers are wired in admin-products.js. -->
+              <label class="admin-dropzone" id="product-dropzone">
+                <input type="file" id="product-image-file" accept="image/*" multiple hidden>
+                <span class="admin-dropzone-icon" aria-hidden="true">&#8679;</span>
+                <span class="admin-dropzone-text">
+                  <strong>Drop images here, or click to choose</strong>
+                  <!-- Was "... · uploaded to Firebase Storage", stated as
+                       fact. Storage is not enabled on this project yet, so
+                       the hint was promising a destination no upload could
+                       actually reach. It says what WILL happen and what to
+                       do meanwhile. -->
+                  <small>PNG, JPG or WebP &middot; up to 5&nbsp;MB each</small>
+                  <small class="admin-dropzone-note">Goes to Firebase Storage. If that isn't set up on
+                    this project yet, paste a URL instead &mdash; it works either way.</small>
+                </span>
+              </label>
+              <p class="admin-upload-error" id="product-upload-error" hidden></p>
+
+              <div class="admin-repeat" id="product-images"></div>
+              <button type="button" class="admin-repeat-add" data-add="images">+ Add image URL</button>
+            </div>
+          </section>
+
+          <section class="admin-form-section">
+            <p class="admin-form-section-title">
+              Attributes <span class="admin-form-count" id="product-attrs-count"></span>
+            </p>
+            <div class="admin-form-section-body">
+              <p class="admin-form-hint">Picker options on the product page — <code>color</code>, <code>size</code>,
+                and anything else you add. Separate the values with commas.</p>
+              <div class="admin-repeat admin-repeat--pair" id="product-attributes"></div>
+              <button type="button" class="admin-repeat-add" data-add="attributes">+ Add attribute</button>
+            </div>
+          </section>
+
+          <section class="admin-form-section">
+            <p class="admin-form-section-title">
+              Specs <span class="admin-form-count" id="product-specs-count"></span>
+            </p>
+            <div class="admin-form-section-body">
+              <p class="admin-form-hint">The spec table on the product page — Material, Weight, Warranty, Origin.</p>
+              <div class="admin-repeat admin-repeat--pair" id="product-specs"></div>
+              <button type="button" class="admin-repeat-add" data-add="specs">+ Add spec</button>
+            </div>
+          </section>
+
+          <section class="admin-form-section" id="product-meta-section">
+            <p class="admin-form-section-title">Record</p>
+            <div class="admin-form-section-body">
+              <dl class="admin-meta-list">
+                <div><dt>Document ID</dt><dd id="product-meta-id">—</dd></div>
+                <div><dt>Date added</dt><dd id="product-meta-added">—</dd></div>
+                <div><dt>Last updated</dt><dd id="product-meta-updated">—</dd></div>
+                <div><dt>Availability field</dt><dd id="product-meta-availability">—</dd></div>
+              </dl>
+              <!-- ADDED. Anything in the document this form has no input
+                   for. If a product grows a field tomorrow it shows up
+                   here instead of sitting in Firestore unseen. -->
+              <dl class="admin-meta-list" id="product-meta-extras" hidden></dl>
+              <p class="admin-form-hint">Written by Firestore. Shown so you can tell records apart; not editable here.</p>
+            </div>
+          </section>
+
         </div>
-        <label>Image URL<input id="product-image" type="url" placeholder="https://..."></label>
         <div class="admin-modal-actions">
           <button class="admin-modal-cancel" id="product-modal-cancel" type="button">Cancel</button>
           <button class="admin-modal-submit" type="submit">Save Product <span aria-hidden="true">›</span></button>

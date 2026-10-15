@@ -22,6 +22,7 @@
    ========================================================== */
 
 import {
+  uploadImage,
   archiveGuide,
   archivePackage,
   archiveTrail,
@@ -353,6 +354,33 @@ const field = (label, id, attrs = "", type = "input") =>
     ? `<label>${label}<textarea id="${id}" ${attrs}></textarea></label>`
     : `<label>${label}<input id="${id}" ${attrs}></label>`;
 
+/* ADDED — an image field that accepts a FILE as well as a URL.
+   Same control as the one on the Gear modal: the file is uploaded to
+   Firebase Storage and the resulting download URL is written into the
+   same text input the field always had, so nothing downstream changes
+   and pasted URLs keep working exactly as before. */
+const imageField = (label, id, placeholder) => `
+  <div class="admin-image-field" data-image-field="${id}">
+    <span class="admin-image-field-label">${label}</span>
+    <div class="admin-image-field-row">
+      <img class="admin-image-field-thumb" alt=""
+           onerror="this.classList.add('is-broken');this.removeAttribute('src')">
+      <input id="${id}" class="admin-image-field-input" placeholder="${placeholder}">
+      <button type="button" class="admin-row-upload" data-upload-for="${id}">Upload</button>
+    </div>
+    <label class="admin-dropzone admin-dropzone--slim" data-dropzone-for="${id}">
+      <input type="file" accept="image/*" hidden>
+      <span class="admin-dropzone-icon" aria-hidden="true">&#8679;</span>
+      <span class="admin-dropzone-text">
+        <strong>Drop an image here, or click to choose</strong>
+        <small>PNG, JPG or WebP &middot; up to 5&nbsp;MB</small>
+        <small class="admin-dropzone-note">Goes to Firebase Storage. If that isn't set up on this
+          project yet, paste a URL instead &mdash; it works either way.</small>
+      </span>
+    </label>
+    <p class="admin-upload-error" data-upload-error-for="${id}" hidden></p>
+  </div>`;
+
 const section = (title, inner) =>
   `<section class="admin-form-section">
      <h4 class="admin-form-section-title">${title}</h4>
@@ -383,7 +411,7 @@ function formHtml(item) {
           'type="number" min="0" step="1" placeholder="1500"'
         )}
          ${field("Description", "f-description", 'rows="3" placeholder="What makes this trail worth booking?"', "textarea")}
-         ${field("Image URL or path", "f-image", 'placeholder="public/trails/pulag.jpg"')}`
+         ${imageField("Image URL or path", "f-image", "public/trails/pulag.jpg")}`
       ) +
       section(
         `Guides <span class="admin-form-count" id="f-guides-count">${chosen.length} selected</span>`,
@@ -471,8 +499,98 @@ function openModal(item = null) {
     sync();
   }
 
+  wireImageUploads(item);
+
   el.modal.hidden = false;
   el.backdrop.hidden = false;
+}
+
+/* ---------- image upload ---------- */
+
+/* Wired after every openModal, because formHtml() rebuilds the fields
+   from scratch each time — listeners attached to the previous markup
+   are gone with it. */
+function wireImageUploads(item) {
+  document.querySelectorAll("[data-image-field]").forEach((wrap) => {
+    const id = wrap.dataset.imageField;
+    const input = wrap.querySelector(`#${id}`);
+    const thumb = wrap.querySelector(".admin-image-field-thumb");
+    const dropzone = wrap.querySelector("[data-dropzone-for]");
+    const fileInput = dropzone?.querySelector('input[type="file"]');
+    const button = wrap.querySelector("[data-upload-for]");
+    const errorBox = wrap.querySelector("[data-upload-error-for]");
+    if (!input) return;
+
+    const paintThumb = () => {
+      const url = input.value.trim();
+      thumb.classList.remove("is-broken");
+      if (url) thumb.src = url;
+      else thumb.removeAttribute("src");
+    };
+    paintThumb();
+    input.addEventListener("input", paintThumb);
+
+    const fail = (message) => {
+      if (!errorBox) return;
+      errorBox.textContent = message;
+      errorBox.hidden = false;
+    };
+    const clear = () => { if (errorBox) errorBox.hidden = true; };
+
+    async function upload(file) {
+      if (!file) return;
+      clear();
+      input.disabled = true;
+      button.disabled = true;
+      const previous = button.textContent;
+      try {
+        const url = await uploadImage(file, {
+          // Groups uploads by record in Storage, so a trail's photos sit
+          // together and are findable in the Firebase console.
+          folder: tab,
+          id: item?.id || "new",
+          onProgress: (pct) => { button.textContent = `${pct}%`; }
+        });
+        input.value = url;
+        paintThumb();
+      } catch (err) {
+        console.error("Image upload failed:", err);
+        fail(err.message || "The upload failed.");
+      } finally {
+        input.disabled = false;
+        button.disabled = false;
+        button.textContent = previous;
+      }
+    }
+
+    button?.addEventListener("click", () => fileInput?.click());
+    fileInput?.addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      upload(file);
+    });
+
+    ["dragenter", "dragover"].forEach((type) =>
+      dropzone?.addEventListener(type, (event) => {
+        event.preventDefault();
+        dropzone.classList.add("is-dragging");
+      })
+    );
+    ["dragleave", "drop"].forEach((type) =>
+      dropzone?.addEventListener(type, (event) => {
+        event.preventDefault();
+        if (type === "dragleave" && dropzone.contains(event.relatedTarget)) return;
+        dropzone.classList.remove("is-dragging");
+      })
+    );
+    dropzone?.addEventListener("drop", (event) => {
+      const file = [...(event.dataTransfer?.files || [])].find((f) =>
+        String(f.type || "").startsWith("image/")
+      );
+      if (!file) return fail("That was not an image file.");
+      upload(file);
+    });
+  });
 }
 
 function fillForm(item) {
@@ -660,4 +778,4 @@ el.body?.addEventListener("click", async (event) => {
     console.error("Catalog action failed:", err);
     showFeedback("That could not be saved. Check your Firestore rules.");
   }
-});
+});   

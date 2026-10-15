@@ -5,6 +5,13 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "redirects": [
+      {
+        "source": "/admin-login.html",
+        "destination": "/login.html",
+        "type": 302
+      }
     ]
   },
   "firestore": {
