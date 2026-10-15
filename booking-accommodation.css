@@ -1,0 +1,450 @@
+
+/* ==========================================================
+   STEP 03 — Accommodation
+   No accommodation / Trailbound Basecamp / Nearby hotel, then the
+   hotel list (address + Google Maps link), the embedded map and the
+   nights / check-in row. Built by booking.js.
+   ========================================================== */
+
+/* `hidden` must win: .form-group and .form-row set their own display */
+#stay-step [hidden],
+#summary-stay-line[hidden] {
+  display: none !important;
+}
+
+/* The real radio inputs stay in the page for keyboard + screen
+   readers, but are invisible; the cards are what people click.
+   ".form-group .stay-radio" outranks booking.css's
+   ".form-group input" (full-width, padded, bordered). */
+.stay-radio,
+.form-group .stay-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The cards are <label>s inside .form-group, so they'd pick up
+   booking.css's small uppercase field-label style; undo that */
+.form-group .stay-option,
+.form-group .stay-hotel {
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--tb-ink);
+}
+
+/* ---- The three choices ---- */
+
+.stay-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.stay-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.1rem 1.1rem 1.2rem;
+  border: 1px solid var(--tb-border);
+  border-radius: 14px;
+  background-color: var(--tb-cream-soft);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stay-option:hover {
+  border-color: var(--tb-green);
+}
+
+.stay-option.is-selected {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green-soft);
+  box-shadow: inset 0 0 0 1px var(--tb-green);
+}
+
+.stay-option:focus-within {
+  outline: 2px solid var(--tb-green);
+  outline-offset: 2px;
+}
+
+.stay-option.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.stay-option.is-disabled:hover {
+  border-color: var(--tb-border);
+}
+
+/* Little radio dot in the top-right corner, like the package cards */
+.stay-option::after {
+  content: "";
+  position: absolute;
+  top: 1.1rem;
+  right: 1.1rem;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--tb-border);
+  border-radius: 50%;
+  background-color: #fff;
+}
+
+.stay-option.is-selected::after {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green);
+  box-shadow: inset 0 0 0 3px #fff;
+}
+
+.stay-option-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 0.2rem;
+  border-radius: 10px;
+  background-color: var(--tb-green-soft);
+  color: var(--tb-green-dark);
+}
+
+.stay-option.is-selected .stay-option-icon {
+  background-color: var(--tb-green-dark);
+  color: #fff;
+}
+
+.stay-option-title {
+  padding-right: 1.4rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+}
+
+.stay-option-sub {
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--tb-ink-soft);
+}
+
+.stay-option-price {
+  margin-top: auto;
+  padding-top: 0.25rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--tb-green);
+}
+
+.stay-option-price small {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--tb-ink-faint);
+}
+
+/* "Prefer somewhere else? Find hotels near … on Google Maps" */
+.stay-google {
+  margin-top: 0.35rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--tb-ink-soft);
+}
+
+.stay-google a {
+  font-weight: 600;
+  color: var(--tb-green);
+}
+
+/* ---- Basecamp details ---- */
+
+.stay-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.15rem;
+  border-radius: 14px;
+  background-color: var(--tb-green-soft);
+  font-family: var(--font-body);
+}
+
+.stay-info-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.stay-info-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+}
+
+.stay-info-where {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--tb-ink-soft);
+}
+
+.stay-info-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+  color: var(--tb-ink);
+}
+
+.stay-info-list li {
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.stay-info-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+  color: var(--tb-green);
+}
+
+/* ---- Hotel list ---- */
+
+.stay-hotel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.stay-hotel {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.25rem 0.9rem;
+  align-items: start;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--tb-border);
+  border-radius: 14px;
+  background-color: #fff;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stay-hotel:hover {
+  border-color: var(--tb-green);
+}
+
+.stay-hotel.is-selected {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green-soft);
+  box-shadow: inset 0 0 0 1px var(--tb-green);
+}
+
+.stay-hotel:focus-within {
+  outline: 2px solid var(--tb-green);
+  outline-offset: 2px;
+}
+
+.stay-hotel-dot {
+  width: 18px;
+  height: 18px;
+  margin-top: 0.1rem;
+  border: 1.5px solid var(--tb-border);
+  border-radius: 50%;
+  background-color: #fff;
+}
+
+.stay-hotel.is-selected .stay-hotel-dot {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green);
+  box-shadow: inset 0 0 0 4px #fff;
+}
+
+.stay-hotel-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.stay-hotel-name {
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--tb-ink);
+}
+
+.stay-hotel-address {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--tb-ink);
+}
+
+.stay-hotel-address svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--tb-green);
+}
+
+.stay-hotel-meta {
+  font-size: 0.74rem;
+  color: var(--tb-ink-faint);
+}
+
+.stay-hotel-map {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--tb-green);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.stay-hotel-map:hover {
+  color: var(--tb-green-dark);
+}
+
+.stay-hotel-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--tb-green);
+  white-space: nowrap;
+  text-align: right;
+}
+
+.stay-hotel-price small {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--tb-ink-faint);
+}
+
+.stay-hotel-price .stay-hotel-rooms {
+  font-weight: 600;
+  color: var(--tb-ink-soft);
+}
+
+/* ---- Map ---- */
+
+.stay-map {
+  height: 230px;
+  border: 1px solid var(--tb-border);
+  border-radius: 14px;
+  overflow: hidden;
+  background-color: var(--tb-green-soft);
+}
+
+.stay-map iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* ---- Check-in → check-out (read-only, looks like a field) ---- */
+
+.stay-checkin {
+  display: block;
+  padding: 0.85rem 1.15rem;
+  border: 1px solid var(--tb-border);
+  border-radius: 12px;
+  background-color: var(--tb-green-soft);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--tb-ink);
+}
+
+/* ---- Phones ---- */
+
+@media (max-width: 640px) {
+  .stay-options {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  /* Compact rows: icon | name + note | price */
+  .stay-option {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.1rem 0.75rem;
+    padding: 0.8rem 1rem;
+  }
+
+  .stay-option-icon {
+    grid-row: 1 / span 3;
+    width: 32px;
+    height: 32px;
+    margin: 0;
+  }
+
+  .stay-option::after {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .stay-option-sub,
+  .stay-option-price {
+    padding-right: 1.6rem;
+  }
+
+  .stay-option-price {
+    padding-top: 0.15rem;
+  }
+
+  .stay-info-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Hotel rows: price drops under the details */
+  .stay-hotel {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 0.9rem 1rem;
+  }
+
+  .stay-hotel-price {
+    grid-column: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+    text-align: left;
+  }
+
+  .stay-map {
+    height: 190px;
+  }
+
+  .stay-checkin {
+    padding: 0.75rem 0.85rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* Error / success messages under the Confirm button were coming out
+   in all caps (site-wide <p> style); show them as normal sentences */
+.booking-feedback {
+  text-transform: none;
+  font-family: var(--font-body);
+}

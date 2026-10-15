@@ -1,8 +1,9 @@
 /* ==========================================================
    Trailbound — Cart page
-   Layout borrowed from the KIXY-style reference (checkboxes,
-   tag pills, itemized summary, promo code), restyled in the
-   site's maroon / forest / clay palette.
+   Same look as the checkout page: no outer box, a paper page under
+   a brown header band, items on the left and the summary in a
+   darker panel on the right that runs to the edge of the screen.
+   Maroon / forest / clay palette.
    ========================================================== */
 
 :root {
@@ -10,79 +11,148 @@
   --tb-maroon-soft: #3a120c;
   --tb-forest: #33502f;
   --tb-forest-dark: #24391f;
-  --tb-clay: #a8592f;
+  --tb-clay: #2a1209;
   --tb-clay-dark: #8f4a26;
   --tb-paper: #f6f1e7;
   --tb-paper-dim: #ece4d3;
   --tb-ink: #241a12;
   --tb-ink-soft: #6b5c4c;
   --tb-line: #ddd2ba;
-  --tb-danger: #a3402e;
-}
-body {
-  padding-top: 90px; /* Adjust this value depending on your header's actual height */
-}
-.cart-page {
-  max-width: 1080px;
-  margin: 2rem auto 5rem;
-  padding: 2.5rem;
-  color: var(--tb-ink);
-  background: var(--tb-paper);
-  border-radius: 20px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  --tb-danger: #2a1209;
+  --tb-page: #2a1209;        /* brown behind the header */
+
+  --cart-header-h: 80px;     /* height of the fixed site header */
+  --cart-gutter: 24px;       /* space at the left/right screen edges */
+  --cart-summary-w: 380px;   /* width of the summary column */
 }
 
-@media (max-width: 560px) {
-  .cart-page {
-    margin: 1rem;
-    padding: 1.5rem;
-    border-radius: 14px;
+@media (min-width: 1200px) {
+  :root {
+    --cart-summary-w: 440px;
   }
+}
+
+/* Paper page under a solid brown header band */
+body {
+  padding-top: var(--cart-header-h);
+  background: var(--tb-paper);
+}
+
+body:has(.cart-page) .site-header {
+  background-color: var(--tb-page);
+}
+
+/* ---------- Page layout ----------
+   One grid for the whole page. The outer two columns are the
+   screen-edge gutters, so the content stays centred at up to
+   1120px while the summary panel can still reach the right edge.
+
+     [gutter] [title + items      ] [summary] [gutter]
+
+   .cart-layout is set to display:contents so its two children
+   (the item list and the summary) sit directly in this grid. */
+
+.cart-page {
+  display: grid;
+  grid-template-columns:
+    minmax(var(--cart-gutter), 1fr)
+    minmax(0, calc(1120px - var(--cart-summary-w)))
+    var(--cart-summary-w)
+    minmax(var(--cart-gutter), 1fr);
+  grid-template-rows: auto auto 1fr;
+  min-height: calc(100vh - var(--cart-header-h));
+  color: var(--tb-ink);
+}
+
+/* The summary's darker panel, from the summary column to the right
+   edge of the screen, top to bottom */
+.cart-page::before {
+  content: "";
+  grid-column: 3 / 5;
+  grid-row: 1 / -1;
+  background: var(--tb-paper-dim);
+  border-left: 1px solid var(--tb-line);
+}
+
+/* No panel when the cart is empty */
+.cart-page:has(.cart-empty:not([hidden]))::before {
+  display: none;
 }
 
 .cart-page-header {
-  margin-bottom: 2rem;
-}
-
-.cart-eyebrow {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--tb-clay);
-  font-weight: 600;
-}
-
-.cart-page-header h3 {
-  font-size: 2rem;
-  margin: 0.25rem 0 0.4rem;
-  color: var(--tb-maroon);
-}
-
-.cart-page-header p {
-  color: var(--tb-ink-soft);
-  margin: 0;
+  grid-column: 2;
+  grid-row: 1;
+  padding: 44px 64px 0 0;
+  margin-bottom: 28px;
 }
 
 .cart-layout {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 2.5rem;
-  align-items: start;
+  display: contents;
 }
 
-@media (max-width: 780px) {
-  .cart-layout {
-    grid-template-columns: 1fr;
-  }
+/* display:contents would otherwise ignore `hidden` */
+.cart-layout[hidden],
+.cart-page [hidden] {
+  display: none !important;
 }
 
-/* ---------- list header ---------- */
+/* The item list column */
+.cart-layout > :first-child {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  padding: 0 64px 80px 0;
+}
+
+.cart-summary {
+  grid-column: 3;
+  grid-row: 1 / 3;
+}
+
+.cart-empty {
+  grid-column: 2 / 4;
+  grid-row: 3;
+}
+
+/* ---------- Page heading ---------- */
+
+.cart-eyebrow {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--tb-clay);
+}
+
+.cart-page-header h3 {
+  margin: 0.35rem 0 0.5rem;
+  font-size: clamp(1.9rem, 3.2vw, 2.4rem);
+  line-height: 1;
+  color: var(--tb-maroon);
+}
+
+/* styles.css makes every <p> uppercase in the headline font; undo
+   that for the cart's sentence text so it reads normally */
+.cart-page p {
+  text-transform: none;
+  font-family: inherit;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.cart-page-header p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--tb-ink-soft);
+}
+
+/* ---------- List header ---------- */
 
 .cart-list-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding-bottom: 1rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
   border-bottom: 1px solid var(--tb-line);
 }
 
@@ -92,14 +162,14 @@ body {
   gap: 0.75rem;
 }
 
-.cart-list-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--tb-maroon);
-  margin: 0;
+.cart-page .cart-list-title {
   display: flex;
   align-items: baseline;
   gap: 0.4rem;
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--tb-maroon);
 }
 
 .cart-list-count {
@@ -112,38 +182,38 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  padding: 0;
   border: none;
   background: none;
-  color: var(--tb-danger);
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 600;
+  color: var(--tb-danger);
   cursor: pointer;
-  padding: 0;
 }
 
 .cart-remove-all:hover {
   text-decoration: underline;
 }
 
-/* ---------- custom checkbox ---------- */
+/* ---------- Round checkbox ---------- */
 
 .cart-checkbox {
   appearance: none;
   -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 1.5px solid var(--tb-line);
-  background: #fff;
-  cursor: pointer;
   position: relative;
   flex-shrink: 0;
+  width: 20px;
+  height: 20px;
   margin: 0;
+  border: 1.5px solid var(--tb-line);
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
 }
 
 .cart-checkbox:checked {
-  background: var(--tb-maroon);
   border-color: var(--tb-maroon);
+  background: var(--tb-maroon);
 }
 
 .cart-checkbox:checked::after {
@@ -163,7 +233,7 @@ body {
   outline-offset: 2px;
 }
 
-/* ---------- item rows ---------- */
+/* ---------- Item rows ---------- */
 
 .cart-list {
   display: flex;
@@ -172,10 +242,10 @@ body {
 
 .cart-row {
   display: grid;
-  grid-template-columns: auto 84px 1fr auto;
+  grid-template-columns: auto 84px minmax(0, 1fr) auto;
   gap: 1rem;
   align-items: center;
-  padding: 1.15rem 0;
+  padding: 1.25rem 0;
   border-bottom: 1px solid var(--tb-line);
 }
 
@@ -190,6 +260,7 @@ body {
 .cart-row-img {
   width: 84px;
   height: 84px;
+  border: 1px solid var(--tb-line);
   border-radius: 10px;
   overflow: hidden;
   background: var(--tb-paper-dim);
@@ -205,6 +276,7 @@ body {
 }
 
 .cart-row-img--booking {
+  border-color: transparent;
   font-size: 1.8rem;
   background: var(--tb-forest);
   color: var(--tb-paper);
@@ -212,13 +284,13 @@ body {
 
 .cart-row-tag {
   display: inline-block;
+  padding: 0.2em 0.65em;
+  border-radius: 999px;
+  background: #f1e4d5;
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   color: var(--tb-clay-dark);
-  background: #f1e4d5;
-  padding: 0.2em 0.65em;
-  border-radius: 999px;
 }
 
 .cart-row-tag--booking {
@@ -229,15 +301,15 @@ body {
 .cart-row-body h4 {
   margin: 0.35rem 0 0.3rem;
   font-size: 1.02rem;
-  color: var(--tb-maroon);
   line-height: 1.3;
+  color: var(--tb-maroon);
 }
 
 .cart-row-attrs {
   display: flex;
-  align-items: center;
-  gap: 1rem;
   flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
 }
 
 .cart-row-attr {
@@ -249,8 +321,8 @@ body {
 }
 
 .cart-row-attr b {
-  color: var(--tb-ink);
   font-weight: 600;
+  color: var(--tb-ink);
 }
 
 .cart-row-attr svg {
@@ -258,12 +330,12 @@ body {
 }
 
 .cart-row-note {
+  margin: 0.3rem 0 0;
   font-size: 0.8rem;
   color: var(--tb-forest-dark);
-  margin: 0.3rem 0 0;
 }
 
-/* right-hand price + controls block */
+/* Right-hand block: icons, quantity, price */
 
 .cart-row-side {
   display: flex;
@@ -278,47 +350,50 @@ body {
   gap: 0.6rem;
 }
 
+/* The copy (duplicate) button does the same job as the + button, so
+   it's hidden. It's always the icon before the trash can; the trash
+   can is the last one, and booking rows only have the trash can. */
+.cart-row-top > .cart-icon-btn:not(:last-child) {
+  display: none;
+}
+
 .cart-icon-btn {
+  display: inline-flex;
+  padding: 0.3rem;
   border: none;
+  border-radius: 6px;
   background: none;
   color: var(--tb-ink-soft);
   cursor: pointer;
-  padding: 0.2rem;
-  display: inline-flex;
-  border-radius: 6px;
   transition: color 0.15s ease, background 0.15s ease;
 }
 
 .cart-icon-btn:hover {
-  color: var(--tb-maroon);
-  background: var(--tb-paper-dim);
-}
-
-.cart-icon-btn--danger:hover {
   color: var(--tb-danger);
+  background: var(--tb-paper-dim);
 }
 
 .cart-qty-stepper {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  padding: 0.15rem 0.3rem;
   border: 1px solid var(--tb-line);
   border-radius: 999px;
-  padding: 0.15rem 0.3rem;
   background: #fff;
 }
 
 .cart-qty-btn {
-  border: none;
-  background: none;
-  width: 1.6rem;
-  height: 1.6rem;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: none;
+  border-radius: 50%;
+  background: none;
   color: var(--tb-maroon);
+  cursor: pointer;
   transition: background 0.15s ease;
 }
 
@@ -333,64 +408,66 @@ body {
 }
 
 .cart-row-price {
-  font-weight: 700;
   font-size: 1.02rem;
+  font-weight: 700;
   color: var(--tb-maroon);
 }
 
-/* ---------- summary ---------- */
+/* ---------- Summary (right panel) ---------- */
 
 .cart-summary {
-  background: #fff;
-  border: 1px solid var(--tb-line);
-  border-radius: 14px;
-  padding: 1.5rem;
   position: sticky;
-  top: 1.5rem;
+  top: var(--cart-header-h);
+  align-self: start;
+  padding: 44px 0 48px 48px;
 }
 
 .cart-summary h5 {
-  font-size: 1.05rem;
+  margin: 0 0 1.1rem;
+  font-size: 1.02rem;
   font-weight: 700;
   color: var(--tb-maroon);
-  margin: 0 0 1.1rem;
 }
 
 .summary-row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.88rem;
+  gap: 12px;
+  margin-bottom: 0.7rem;
+  font-size: 0.9rem;
   color: var(--tb-ink-soft);
-  margin-bottom: 0.65rem;
 }
 
 .summary-row span:last-child {
-  color: var(--tb-ink);
   font-weight: 600;
+  color: var(--tb-ink);
 }
 
 .summary-row--tax span:last-child { color: var(--tb-clay-dark); }
 .summary-row--discount span:last-child { color: var(--tb-forest-dark); }
 
 .summary-divider {
+  margin: 1rem 0;
   border: none;
   border-top: 1px solid var(--tb-line);
-  margin: 0.9rem 0;
+  opacity: 1;
 }
 
 .summary-row--total {
-  font-size: 1.15rem;
-  margin-bottom: 1.2rem;
+  align-items: baseline;
+  margin-bottom: 1.4rem;
+  font-size: 1.05rem;
 }
 
 .summary-row--total span:first-child {
-  color: var(--tb-ink);
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--tb-maroon);
 }
 
 .summary-row--total span:last-child {
-  color: var(--tb-maroon);
+  font-size: 1.35rem;
   font-weight: 700;
+  color: var(--tb-maroon);
 }
 
 .promo-row {
@@ -401,11 +478,11 @@ body {
 
 .promo-input {
   flex: 1;
+  padding: 0.6rem 0.75rem;
   border: 1px solid var(--tb-line);
   border-radius: 8px;
-  padding: 0.6rem 0.75rem;
+  background: #fff;
   font-size: 0.85rem;
-  background: var(--tb-paper);
   color: var(--tb-ink);
 }
 
@@ -415,21 +492,21 @@ body {
 }
 
 .promo-apply-btn {
+  padding: 0 1.1rem;
   border: none;
+  border-radius: 8px;
   background: var(--tb-maroon);
-  color: #fff;
   font-size: 0.82rem;
   font-weight: 600;
-  padding: 0 1.1rem;
-  border-radius: 8px;
+  color: #fff;
   cursor: pointer;
 }
 
 .promo-apply-btn:hover { background: var(--tb-maroon-soft); }
 
 .promo-message {
-  font-size: 0.78rem;
   margin: -0.8rem 0 1.1rem;
+  font-size: 0.78rem;
 }
 
 .promo-message--ok { color: var(--tb-forest-dark); }
@@ -437,24 +514,24 @@ body {
 
 .cart-checkout-btn {
   width: 100%;
-  padding: 0.85rem;
+  padding: 16px;
   border: none;
   border-radius: 8px;
   background: var(--tb-clay);
-  color: #fff;
   font-size: 1rem;
   font-weight: 600;
+  color: #fff;
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
-.cart-checkout-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .cart-checkout-btn:not(:disabled):hover {
   background: var(--tb-clay-dark);
+}
+
+.cart-checkout-btn:disabled {
+  background: #d3c2b2;
+  cursor: not-allowed;
 }
 
 .cart-member-btn {
@@ -464,9 +541,9 @@ body {
   border: 1px solid var(--tb-maroon);
   border-radius: 8px;
   background: transparent;
-  color: var(--tb-maroon);
   font-size: 0.92rem;
   font-weight: 600;
+  color: var(--tb-maroon);
   cursor: pointer;
   transition: background 0.15s ease;
 }
@@ -482,55 +559,126 @@ body {
 
 .cart-continue-link {
   display: block;
-  text-align: center;
   margin-top: 1rem;
-  color: var(--tb-ink-soft);
-  font-size: 0.85rem;
+  text-align: center;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--tb-clay);
+  text-decoration: none;
+}
+
+.cart-continue-link:hover {
+  color: var(--tb-clay-dark);
   text-decoration: underline;
 }
 
-.cart-continue-link:hover { color: var(--tb-maroon); }
-
-/* ---------- empty state ---------- */
+/* ---------- Empty cart ---------- */
 
 .cart-empty {
-  text-align: center;
   padding: 4rem 1rem;
+  text-align: center;
   color: var(--tb-ink-soft);
+}
+
+.cart-page .cart-empty p {
+  font-size: 1rem;
 }
 
 .cart-empty-actions {
   display: flex;
-  gap: 0.75rem;
-  justify-content: center;
-  margin-top: 1.2rem;
   flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.2rem;
 }
 
 .cart-empty-btn {
-  padding: 0.7rem 1.4rem;
+  padding: 0.75rem 1.4rem;
   border-radius: 8px;
-  background: var(--tb-maroon);
+  background: var(--tb-clay);
+  font-size: 0.92rem;
+  font-weight: 600;
   color: #fff;
   text-decoration: none;
-  font-size: 0.9rem;
 }
 
-.cart-empty-btn:hover { background: var(--tb-maroon-soft); color: #fff; }
+.cart-empty-btn:hover { background: var(--tb-clay-dark); color: #fff; }
 
 .cart-empty-btn--ghost {
+  border: 1px solid var(--tb-line);
   background: transparent;
   color: var(--tb-maroon);
-  border: 1px solid var(--tb-maroon);
 }
 
-.cart-empty-btn--ghost:hover { background: var(--tb-paper-dim); }
+.cart-empty-btn--ghost:hover {
+  border-color: var(--tb-maroon);
+  background: var(--tb-paper-dim);
+  color: var(--tb-maroon);
+}
+
+/* ---------- Tablets & phones (one column) ---------- */
+
+@media (max-width: 860px) {
+  .cart-page {
+    grid-template-columns: 16px minmax(0, 1fr) 16px;
+    grid-template-rows: auto auto auto auto;
+    min-height: 0;
+  }
+
+  .cart-page::before {
+    display: none;
+  }
+
+  .cart-page-header {
+    grid-column: 2;
+    padding: 28px 0 0;
+    margin-bottom: 20px;
+  }
+
+  .cart-layout > :first-child {
+    grid-column: 2;
+    padding: 0 0 24px;
+  }
+
+  /* Summary drops below the items as a full-width darker strip */
+  .cart-summary {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    position: static;
+    padding: 24px 16px 40px;
+    background: var(--tb-paper-dim);
+    border-top: 1px solid var(--tb-line);
+  }
+
+  .cart-empty {
+    grid-column: 2;
+    grid-row: 4;
+  }
+}
 
 @media (max-width: 560px) {
+  /* Photo sized to its 64px column, so it can't slide over the
+     item's name and details */
   .cart-row {
-    grid-template-columns: auto 64px 1fr;
-    row-gap: 0.6rem;
+    grid-template-columns: auto 64px minmax(0, 1fr);
+    gap: 0.6rem 0.75rem;
   }
+
+  .cart-row-img {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+  }
+
+  .cart-row-img--booking {
+    font-size: 1.4rem;
+  }
+
+  .cart-row-body h4 {
+    font-size: 0.95rem;
+  }
+
+  /* Icons, quantity and price on one line under the item */
   .cart-row-side {
     grid-column: 1 / -1;
     flex-direction: row;

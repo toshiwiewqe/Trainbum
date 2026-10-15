@@ -24,43 +24,26 @@
         #frame-canvas         the frame sequence
         #frame-veil           the loading cover
         #frame-veil-fill      the loading bar
-        [data-panel="1|2|3"]  the three copy panels
+        [data-panel="1|2"]    the copy panels (panel 3 was removed;
+                              script.js skips a missing panel)
         [data-fs-split]       the wordmark that wipes in per character
     -->
     <section class="framescene" id="framescene">
-      <!-- revealed as the hero lifts away -->
+      <!-- revealed as the hero lifts away. Used to hold the footer;
+           the real footer now sits at the bottom of the page (footer.js),
+           so this is just the brand moment + where to go next. -->
       <div class="framescene-under">
         <div>
           <h3 class="framescene-under-line" data-fs-split>Trailbound</h3>
-          <p class="footer-tagline">Your basecamp for Luzon's trails.</p>
+          <p class="framescene-under-tagline">Your basecamp for Luzon's trails.</p>
         </div>
 
-        <div class="footer-columns">
-          <div class="footer-col">
-            <span class="footer-col-label">Explore</span>
-            <a href="trail.html">Trails</a>
-            <a href="about.html">About</a>
-            <a href="booking.html">Book a trek</a>
-          </div>
-
-          <div class="footer-col">
-            <span class="footer-col-label">Connect</span>
-            <a href="https://instagram.com/trailbound.ph" target="_blank" rel="noopener">Instagram</a>
-            <a href="https://facebook.com/trailbound.ph" target="_blank" rel="noopener">Facebook</a>
-          </div>
-
-          <div class="footer-col">
-            <span class="footer-col-label">Reach us</span>
-            <a href="tel:+639261234567">+63 926 123 4567</a>
-            <a href="mailto:hello@trailbound.ph">hello@trailbound.ph</a>
-          </div>
+        <div class="framescene-under-actions">
+          <a href="trail.html" class="home-btn home-btn--light">Find your trail</a>
+          <a href="products.html" class="home-btn home-btn--ghost">Shop gear</a>
         </div>
 
-        <div class="framescene-under-bottom">
-          <span class="framescene-under-dim">&copy; 2026 Trailbound</span>
-
-          <span class="framescene-under-dim">Based in the Philippines</span>
-        </div>
+        <span class="framescene-under-scroll" aria-hidden="true">Scroll</span>
       </div>
 
       <!-- the hero itself — this is what lifts and clips -->
@@ -87,22 +70,6 @@
               <span class="fs-dim-45">and every summit between</span>
             </h3>
           </div>
-
-          <div class="framescene-panel framescene-panel--three" data-panel="3">
-            <div class="fs-inner">
-              <h3 class="fs-rise" style="transition-delay: 150ms">
-                Plan it. Book it.<br />Climb it.
-              </h3>
-              <a href="trail.html" class="framescene-cta fs-rise" style="transition-delay: 300ms">
-                <span>Find your trail</span>
-                <span class="framescene-cta-dot" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path>
-                  </svg>
-                </span>
-              </a>
-            </div>
-          </div>
         </div>
 
         <div class="framescene-veil" id="frame-veil" aria-hidden="true">
@@ -113,7 +80,60 @@
       </div>
     </section>
 
+    <!-- ================= FEATURED TRAILS =================
+         Filled in by home-featured.js from Firestore. The grey cards
+         below are loading placeholders until the real ones arrive. -->
+    <section class="home-section home-trails" id="featured-trails" aria-labelledby="featured-trails-title">
+      <div class="home-section-inner">
+        <div class="home-section-head">
+          <div>
+            <span class="home-eyebrow">Featured trails</span>
+            <h2 class="home-title" id="featured-trails-title">Find your next summit</h2>
+          </div>
+          <a href="trail.html" class="home-more">
+            All trails
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+          </a>
+        </div>
+
+        <div class="home-trails-grid" id="featured-trails-grid" aria-busy="true">
+          <div class="home-trail-card is-loading" aria-hidden="true"></div>
+          <div class="home-trail-card is-loading" aria-hidden="true"></div>
+          <div class="home-trail-card is-loading" aria-hidden="true"></div>
+          <div class="home-trail-card is-loading" aria-hidden="true"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= FEATURED GEAR ================= -->
+    <section class="home-section home-gear" id="featured-gear" aria-labelledby="featured-gear-title">
+      <div class="home-section-inner">
+        <div class="home-section-head">
+          <div>
+            <span class="home-eyebrow">Trail-ready gear</span>
+            <h2 class="home-title" id="featured-gear-title">Pack for the climb</h2>
+          </div>
+          <a href="products.html" class="home-more">
+            Shop all gear
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+          </a>
+        </div>
+
+        <div class="home-gear-grid" id="featured-gear-grid" aria-busy="true">
+          <div class="home-gear-card is-loading" aria-hidden="true"><span class="home-gear-media"></span><span class="home-gear-body"><span class="home-skel-line"></span><span class="home-skel-line home-skel-line--short"></span></span></div>
+          <div class="home-gear-card is-loading" aria-hidden="true"><span class="home-gear-media"></span><span class="home-gear-body"><span class="home-skel-line"></span><span class="home-skel-line home-skel-line--short"></span></span></div>
+          <div class="home-gear-card is-loading" aria-hidden="true"><span class="home-gear-media"></span><span class="home-gear-body"><span class="home-skel-line"></span><span class="home-skel-line home-skel-line--short"></span></span></div>
+          <div class="home-gear-card is-loading" aria-hidden="true"><span class="home-gear-media"></span><span class="home-gear-body"><span class="home-skel-line"></span><span class="home-skel-line home-skel-line--short"></span></span></div>
+        </div>
+      </div>
+    </section>
+
     <script type="module" src="script.js"></script>
     <script type="module" src="auth-nav.js"></script>
+    <script type="module" src="home-featured.js"></script>
+
+    <!-- Shared footer: these two lines go at the bottom of every page -->
+    <div id="site-footer-root"></div>
+    <script type="module" src="footer.js"></script>
   </body>
 </html>

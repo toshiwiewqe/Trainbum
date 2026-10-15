@@ -1,356 +1,645 @@
 /* ==========================================================
    Contact / Support Page (contact.html)
-   Reuses design tokens (--base-100/200/300) and fonts defined
-   in styles.css. Load styles.css BEFORE this file so the
-   variables exist. Mirrors account.css / products.html's
-   conventions rather than the separate "tb-" theme used by
-   cart.css / checkout.css / login.css.
+   Redesign: dark trail-map hero with contour lines and a ridge
+   line at the bottom, the form sitting right on the page (no box),
+   and one dark "reach us" panel with icons beside it.
+
+   Load styles.css BEFORE this file. Only class names that
+   contact.html already uses are styled here, so the HTML and
+   contact.js don't need any changes.
    ========================================================== */
 
+:root {
+  --contact-paper: #f6f1e7;      /* page background */
+  --contact-surface: #ffffff;    /* inputs */
+  --contact-ink: #241a12;        /* main text */
+  --contact-ink-soft: #6b5c4c;   /* secondary text */
+  --contact-ink-faint: #a3968a;  /* placeholders */
+  --contact-line: #e2d8c4;       /* input borders */
+  --contact-line-strong: #cdbfa6;
+  --contact-night: #2a0f06;      /* hero + side panel */
+  --contact-clay: #a8592f;       /* accent, same as cart / checkout */
+  --contact-clay-dark: #8f4a26;
+  --contact-sun: #f5f0a8;        /* same yellow as the active nav pill */
+  --contact-forest: #33502f;     /* success */
+  --contact-danger: #b3261e;     /* errors */
+}
+
+/* `hidden` must always win over the display values set below */
+.contact-page [hidden] {
+  display: none !important;
+}
+
 .contact-page {
-  background-color: var(--base-100);
   min-height: 100vh;
-  padding-bottom: 4rem;
+  padding-bottom: 5rem;
+  background-color: var(--contact-paper);
+}
+
+/* styles.css gives every <section> height: 100svh and
+   overflow: hidden; that's what made the form box run past the
+   bottom of the screen. Let these size to their content. */
+.contact-layout,
+.contact-form-card,
+.contact-info-card {
+  height: auto;
+  overflow: visible;
 }
 
 /* ---- Hero banner ---- */
 
 .contact-hero {
+  position: relative;
   height: auto;
-  overflow: visible;
-  padding: 7rem 1.5rem 2.5rem;
-  background-color: var(--base-300);
-  color: var(--base-100);
+  overflow: hidden;
+  padding: 8.5rem 1.5rem 6.5rem;
+  background-color: var(--contact-night);
+  /* warm glow at the top; the contour lines are added at the very
+     bottom of this file (one long line) */
+  background-image: radial-gradient(ellipse 55% 85% at 50% 0%, rgba(168, 89, 47, 0.38), transparent 72%);
+  background-repeat: no-repeat;
+  color: var(--contact-paper);
   text-align: center;
 }
 
+/* Mountain ridge where the hero meets the page */
+.contact-hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: clamp(34px, 5vw, 70px);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 90' preserveAspectRatio='none'%3E%3Cpath fill='%23f6f1e7' fill-opacity='.18' d='M0 90V40l90-14 110 22 120-34 110 30 95-20 120 36 130-40 105 26 120-30 115 34 110-18 115 22 100-12v108z'/%3E%3Cpath fill='%23f6f1e7' d='M0 90V62l120-18 90 12 120-30 100 24 90-12 120 32 120-36 100 20 130-34 110 30 90-12 130 22 120-14v114z'/%3E%3C/svg%3E") bottom / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+.contact-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
 .contact-eyebrow {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.4rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid rgba(245, 240, 168, 0.3);
+  border-radius: 999px;
+  background-color: rgba(245, 240, 168, 0.08);
   font-family: "Inter", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 0.5px;
-  color: var(--base-200);
-  margin-bottom: 0.4rem;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--contact-sun);
+}
+
+.contact-eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--contact-sun);
 }
 
 .contact-hero h3 {
-  color: var(--base-100);
-  font-size: clamp(1.75rem, 4vw, 3rem);
+  margin: 0;
+  color: var(--contact-paper);
+  font-size: clamp(2.4rem, 6.5vw, 5rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
 }
 
 .contact-hero p {
-  margin: 0.75rem auto 0;
-  max-width: 52ch;
-  color: var(--base-100);
-  opacity: 0.7;
+  max-width: 50ch;
+  margin: 1.25rem auto 0;
   font-family: "Inter", sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.6;
   text-transform: none;
-  font-size: 0.9rem;
-  line-height: 1.5;
+  color: rgba(246, 241, 231, 0.75);
 }
 
-/* ---- Two-column layout: form + info sidebar ---- */
+/* ---- Two-column layout: form + "reach us" panel ---- */
 
 .contact-layout {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 2rem;
-  max-width: 1100px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 400px);
+  gap: clamp(2.5rem, 5vw, 4.5rem);
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem 0;
+  padding: 3.25rem 1.5rem 0;
   align-items: start;
 }
 
-@media (max-width: 860px) {
-  .contact-layout {
-    grid-template-columns: 1fr;
-  }
+/* ---- The form (no box, sits on the page) ---- */
+
+.contact-form-card {
+  padding: 0.5rem 0 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
 
-/* ---- Form card ---- */
-
-.contact-form-card,
-.contact-info-card {
-  background-color: var(--base-300);
-  border-radius: 20px;
-  padding: 2.25rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-}
-
-.contact-info-card {
-  /* Sticks while scrolling the form, same pattern as .cart-summary /
-     .checkout-summary. Offset clears the fixed 80px site header
-     (see .site-header in styles.css) instead of the bare 1.5rem
-     those two use, so the card doesn't scroll in underneath it. */
-  position: sticky;
-  top: 6rem;
-}
-
-@media (max-width: 860px) {
-  /* Below the breakpoint where .contact-layout drops to a single
-     column (see above), the sidebar sits after the form in normal
-     flow — sticky here would just pin it mid-page, so turn it off. */
-  .contact-info-card {
-    position: static;
-  }
-}
-
-.contact-form-card h4,
-.contact-info-card h4 {
-  color: var(--base-100);
+.contact-form-card h4 {
+  margin: 0 0 0.45rem;
   font-family: "PP Neue Montreal", sans-serif;
+  font-size: clamp(1.7rem, 2.8vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
   text-transform: none;
-  font-size: 1.3rem;
-  margin-bottom: 0.3rem;
+  color: var(--contact-ink);
 }
 
 .contact-form-note {
+  margin: 0 0 2rem;
   font-family: "Inter", sans-serif;
+  font-size: 0.88rem;
+  font-weight: 400;
+  line-height: 1.5;
   text-transform: none;
-  color: var(--base-100);
-  opacity: 0.55;
-  font-size: 0.8rem;
-  margin-bottom: 1.5rem;
+  color: var(--contact-ink-soft);
 }
 
 .contact-form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-@media (max-width: 480px) {
-  .contact-form-row {
-    grid-template-columns: 1fr;
-  }
+  gap: 1.1rem;
 }
 
 .contact-field {
-  margin-bottom: 1.1rem;
+  margin-bottom: 1.35rem;
 }
 
 .contact-field label {
   display: block;
+  margin-bottom: 0.5rem;
   font-family: "Inter", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-size: 0.7rem;
-  letter-spacing: 0.5px;
-  color: var(--base-100);
-  opacity: 0.6;
-  margin-bottom: 0.45rem;
+  color: var(--contact-ink-soft);
+  opacity: 1;
 }
 
 .contact-input {
+  display: block;
   width: 100%;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--contact-line);
+  border-radius: 12px;
+  background-color: var(--contact-surface);
+  box-shadow: 0 1px 2px rgba(36, 26, 18, 0.04);
   font-family: "Inter", sans-serif;
-  padding: 0.7rem 0.9rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background-color: rgba(255, 255, 255, 0.06);
-  color: var(--base-100);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  text-transform: none;
+  color: var(--contact-ink);
   outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .contact-input::placeholder {
-  color: var(--base-100);
-  opacity: 0.4;
+  color: var(--contact-ink-faint);
+  opacity: 1;
+}
+
+.contact-input:hover {
+  border-color: var(--contact-line-strong);
 }
 
 .contact-input:focus {
-  border-color: var(--base-200);
+  border-color: var(--contact-clay);
+  box-shadow: 0 0 0 4px rgba(168, 89, 47, 0.14);
+}
+
+/* Red border on a field the person already touched and left wrong */
+.contact-input:user-invalid {
+  border-color: var(--contact-danger);
+}
+
+/* Topic dropdown: own arrow instead of the browser's */
+select.contact-input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.75rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b5c4c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 16px;
+  cursor: pointer;
+}
+
+.contact-input option {
+  color: var(--contact-ink);
 }
 
 .contact-textarea {
+  min-height: 150px;
   resize: vertical;
-  min-height: 110px;
-}
-
-/* Native <select> options render with browser-default colors
-   regardless of the dark background — force readable text. */
-.contact-input option {
-  color: #000;
 }
 
 .contact-submit-btn {
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  padding: 0.85rem 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  margin-top: 0.4rem;
+  padding: 1.05rem 1.6rem 1.05rem 1.9rem;
   border: none;
   border-radius: 999px;
-  background-color: var(--base-200);
-  color: var(--base-100);
+  background-color: var(--contact-night);
+  box-shadow: 0 12px 24px -14px rgba(42, 15, 6, 0.7);
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--contact-paper);
   cursor: pointer;
-  transition: background-color 0.2s ease, opacity 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+}
+
+.contact-submit-btn::after {
+  content: "→";
+  font-family: "Inter", sans-serif;
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
 }
 
 .contact-submit-btn:hover:not(:disabled) {
-  background-color: #c62313;
+  background-color: var(--contact-clay);
+}
+
+.contact-submit-btn:hover:not(:disabled)::after {
+  transform: translateX(3px);
+}
+
+.contact-submit-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.contact-submit-btn:focus-visible {
+  outline: 2px solid var(--contact-clay);
+  outline-offset: 3px;
 }
 
 .contact-submit-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
 .contact-feedback {
-  margin-top: 0.75rem;
+  margin-top: 1rem;
   font-family: "Inter", sans-serif;
-  font-size: 0.8rem;
-  color: #7ee19a;
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-transform: none;
+  color: var(--contact-forest);
 }
 
 .contact-feedback--error {
-  color: #ff9d9d;
+  color: var(--contact-danger);
 }
 
 /* ---- Confirmation state (replaces the form on success) ---- */
 
 .contact-confirmation {
+  padding: 2.5rem 0 1rem;
   text-align: center;
-  padding: 1.5rem 0;
 }
 
 .contact-confirmation-icon {
-  width: 3rem;
-  height: 3rem;
-  line-height: 3rem;
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1.25rem;
   border-radius: 50%;
-  background-color: var(--base-200);
-  color: var(--base-100);
-  font-size: 1.3rem;
-  margin: 0 auto 1rem;
+  background-color: var(--contact-forest);
+  box-shadow: 0 0 0 8px rgba(51, 80, 47, 0.12);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #fff;
 }
 
 .contact-confirmation h4 {
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
 }
 
 .contact-confirmation p {
+  max-width: 42ch;
+  margin: 0 auto 1.75rem;
   font-family: "Inter", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.6;
   text-transform: none;
-  color: var(--base-100);
-  opacity: 0.7;
-  font-size: 0.85rem;
-  margin-bottom: 1.5rem;
+  color: var(--contact-ink-soft);
+  opacity: 1;
 }
 
-/* ---- Info sidebar ---- */
+/* ---- "Other ways to reach us" panel ---- */
+
+.contact-info-card {
+  /* Stays in view while the form scrolls; 6rem clears the
+     fixed 80px header */
+  position: sticky;
+  top: 6rem;
+  padding: 2.1rem 2rem;
+  border-radius: 24px;
+  background-color: var(--contact-night);
+  background-image: radial-gradient(circle at 100% 0%, rgba(168, 89, 47, 0.35), transparent 55%);
+  box-shadow: 0 28px 50px -28px rgba(42, 15, 6, 0.65);
+  color: var(--contact-paper);
+}
+
+.contact-info-card h4 {
+  margin: 0 0 1.5rem;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--contact-paper);
+}
 
 .contact-info-item {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 1.1rem;
+  gap: 0.2rem;
+  margin-bottom: 1.15rem;
+}
+
+/* Icon tiles for email / phone / hours. Email and phone are picked
+   by their mailto: / tel: links; hours is the item without a link
+   that comes before the first divider. */
+.contact-info-item:has(a[href^="mailto:"]),
+.contact-info-item:has(a[href^="tel:"]),
+.contact-info-item:not(:has(a)):not(.contact-divider ~ .contact-info-item) {
+  justify-content: center;
+  min-height: 2.75rem;
+  padding-left: 3.6rem;
+}
+
+.contact-info-item:has(a[href^="mailto:"])::before,
+.contact-info-item:has(a[href^="tel:"])::before,
+.contact-info-item:not(:has(a)):not(.contact-divider ~ .contact-info-item)::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 12px;
+  background-color: rgba(245, 240, 168, 0.1);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 19px;
+  transform: translateY(-50%);
+}
+
+/* envelope */
+.contact-info-item:has(a[href^="mailto:"])::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5f0a8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E");
+}
+
+/* phone */
+.contact-info-item:has(a[href^="tel:"])::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5f0a8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z'/%3E%3C/svg%3E");
+}
+
+/* clock (support hours) */
+.contact-info-item:not(:has(a)):not(.contact-divider ~ .contact-info-item)::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5f0a8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
 }
 
 .contact-info-label {
   font-family: "Inter", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-size: 0.7rem;
-  letter-spacing: 0.5px;
-  color: var(--base-100);
-  opacity: 0.55;
+  color: rgba(246, 241, 231, 0.55);
+  opacity: 1;
 }
 
 .contact-info-value {
   font-family: "Inter", sans-serif;
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1.4;
   text-transform: none;
-  color: var(--base-100);
-  font-size: 0.95rem;
   text-decoration: none;
+  color: var(--contact-paper);
+  overflow-wrap: anywhere;
 }
 
 a.contact-info-value:hover {
-  color: var(--base-200);
+  color: var(--contact-sun);
   text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* No extra gap under whatever comes last in the panel */
+.contact-info-card > :last-child {
+  margin-bottom: 0;
 }
 
 .contact-divider {
   height: 1px;
-  background-color: rgba(255, 255, 255, 0.12);
-  margin: 1.25rem 0;
+  margin: 1.5rem 0;
+  background-color: rgba(246, 241, 231, 0.1);
+}
+
+/* Live chat: a small inset card inside the panel */
+.contact-livechat {
+  padding: 1.15rem 1.2rem 1.2rem;
+  border: 1px solid rgba(246, 241, 231, 0.08);
+  border-radius: 16px;
+  background-color: rgba(246, 241, 231, 0.05);
 }
 
 .contact-livechat-heading {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: none;
-  color: var(--base-100);
-  font-size: 1rem;
+  gap: 0.55rem;
   margin-bottom: 0.5rem;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: none;
+  color: var(--contact-paper);
 }
 
 .contact-badge-soon {
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background-color: var(--contact-sun);
   font-family: "Inter", sans-serif;
-  text-transform: uppercase;
   font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: 0.4px;
-  background-color: rgba(255, 255, 255, 0.12);
-  color: var(--base-100);
-  padding: 0.2rem 0.5rem;
-  border-radius: 999px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--contact-night);
 }
 
 .contact-livechat p {
-  font-family: "Inter", sans-serif;
-  text-transform: none;
-  color: var(--base-100);
-  opacity: 0.65;
-  font-size: 0.82rem;
-  line-height: 1.5;
   margin-bottom: 1rem;
+  font-family: "Inter", sans-serif;
+  font-size: 0.84rem;
+  font-weight: 400;
+  line-height: 1.55;
+  text-transform: none;
+  color: rgba(246, 241, 231, 0.65);
+  opacity: 1;
 }
 
 .contact-secondary-btn {
   width: 100%;
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  padding: 0.75rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(246, 241, 231, 0.3);
   border-radius: 999px;
   background-color: transparent;
-  color: var(--base-100);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--contact-paper);
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .contact-secondary-btn:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(246, 241, 231, 0.08);
 }
 
+/* "Coming soon": dashed outline so it reads as not-yet-available */
 .contact-secondary-btn:disabled {
-  opacity: 0.4;
+  border-style: dashed;
+  border-color: rgba(246, 241, 231, 0.22);
+  color: rgba(246, 241, 231, 0.45);
+  opacity: 1;
   cursor: not-allowed;
 }
 
+/* Quick links: full-width rows with an arrow */
 .contact-quicklinks {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .contact-quicklinks a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(246, 241, 231, 0.08);
   font-family: "Inter", sans-serif;
+  font-size: 0.92rem;
+  font-weight: 500;
   text-transform: none;
-  color: var(--base-100);
-  font-size: 0.9rem;
   text-decoration: none;
-  opacity: 0.85;
+  color: var(--contact-paper);
+  opacity: 1;
+  transition: color 0.2s ease;
+}
+
+.contact-quicklinks a:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.contact-quicklinks a::after {
+  content: "→";
+  color: var(--contact-sun);
+  transition: transform 0.2s ease;
 }
 
 .contact-quicklinks a:hover {
-  color: var(--base-200);
-  text-decoration: underline;
+  color: var(--contact-sun);
+  text-decoration: none;
+}
+
+.contact-quicklinks a:hover::after {
+  transform: translateX(3px);
+}
+
+/* ---- Tablets and phones ---- */
+
+@media (max-width: 860px) {
+  .contact-layout {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 2.5rem;
+  }
+
+  /* One column now: the panel just follows the form */
+  .contact-info-card {
+    position: static;
+  }
+}
+
+@media (max-width: 575px) {
+  .contact-hero {
+    padding: 7rem 1.25rem 4.5rem;
+  }
+
+  .contact-hero p {
+    font-size: 0.92rem;
+  }
+
+  .contact-layout {
+    padding: 2rem 1.25rem 0;
+  }
+
+  .contact-form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .contact-form-note {
+    margin-bottom: 1.5rem;
+  }
+
+  .contact-submit-btn {
+    width: 100%;
+  }
+
+  .contact-info-card {
+    padding: 1.6rem 1.35rem;
+    border-radius: 20px;
+  }
+}
+
+/* ---- Contour lines behind the hero (decoration only; this is one
+   long line on purpose, no need to edit it) ---- */
+
+.contact-hero {
+  background-image:
+    radial-gradient(ellipse 55% 85% at 50% 0%, rgba(168, 89, 47, 0.38), transparent 72%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 420' fill='none' stroke='%23f5f0a8' stroke-opacity='.13' stroke-width='1.2'%3E%3Cpath d='M1025 120C1026 124 1025 129 1022 132C1020 136 1016 139 1012 142C1009 144 1005 147 1001 149C997 151 992 152 987 153C983 154 978 153 973 153C968 152 963 151 958 150C954 148 948 146 945 143C942 140 940 136 940 132C939 128 941 124 941 120C942 116 942 113 943 109C943 105 944 101 947 98C949 94 953 91 958 89C962 87 967 86 972 85C977 84 983 84 988 85C992 86 997 89 1001 91C1004 94 1006 97 1009 100C1012 103 1015 106 1018 109C1021 112 1025 116 1025 120ZM1072 120C1073 128 1068 137 1064 144C1059 152 1051 157 1044 163C1037 168 1030 174 1022 178C1014 182 1004 185 995 186C985 187 975 186 966 185C956 184 945 184 936 181C927 178 915 174 909 167C904 161 902 151 901 143C900 135 904 127 904 120C905 113 903 106 905 98C906 91 907 81 913 75C918 68 927 62 935 58C944 54 954 51 964 49C974 48 986 48 995 50C1005 52 1014 58 1021 64C1028 69 1032 75 1038 81C1044 87 1052 91 1058 97C1063 104 1071 112 1072 120ZM1119 120C1119 132 1111 145 1104 156C1096 167 1085 175 1074 183C1064 192 1055 201 1043 207C1030 212 1016 216 1002 218C988 220 973 219 958 219C943 218 926 218 912 214C898 209 881 202 874 191C866 181 865 166 864 154C863 142 868 131 868 120C869 109 864 98 866 87C868 75 870 62 878 52C886 42 900 33 913 27C926 21 941 15 956 13C972 11 989 11 1003 15C1017 19 1029 29 1040 37C1051 45 1057 54 1067 62C1076 70 1091 76 1099 85C1108 95 1118 108 1119 120ZM1166 120C1165 136 1152 153 1141 167C1131 181 1118 192 1105 204C1092 215 1079 227 1063 235C1047 243 1028 247 1009 250C990 253 971 254 951 253C930 253 906 255 887 249C868 242 848 229 838 215C829 201 831 179 830 164C829 148 834 135 833 120C832 105 824 90 826 75C828 60 833 42 844 28C854 15 873 5 890 -4C908 -13 928 -21 948 -23C968 -26 992 -25 1011 -19C1029 -14 1044 1 1058 12C1072 22 1082 32 1096 42C1110 52 1132 59 1143 72C1155 85 1166 104 1166 120ZM1212 120C1210 140 1190 160 1177 177C1164 195 1150 209 1134 224C1119 238 1103 254 1083 263C1064 273 1039 278 1016 282C992 287 968 289 943 290C917 290 884 293 861 285C838 276 814 257 804 238C793 220 800 192 799 173C798 153 799 138 797 120C795 102 783 82 785 63C787 44 796 22 809 6C823 -11 846 -24 868 -35C890 -46 915 -58 940 -60C965 -63 995 -60 1018 -52C1041 -44 1058 -25 1076 -13C1094 -1 1108 9 1128 21C1147 33 1176 42 1190 59C1204 75 1214 100 1212 120ZM1256 120C1251 144 1227 167 1211 187C1196 208 1182 226 1164 243C1146 261 1127 279 1103 291C1080 302 1051 307 1023 314C995 320 965 327 934 329C903 330 861 334 834 322C807 311 782 283 772 260C761 236 771 205 769 181C767 158 764 142 759 120C755 98 740 74 742 51C745 28 759 2 776 -17C793 -37 820 -53 846 -66C872 -80 902 -95 932 -97C962 -100 998 -93 1025 -83C1052 -73 1070 -50 1093 -36C1116 -23 1137 -15 1162 -2C1186 12 1224 24 1240 44C1256 65 1261 96 1256 120ZM1298 120C1290 148 1261 173 1244 197C1226 221 1213 243 1193 263C1173 283 1149 303 1122 317C1095 331 1063 337 1030 346C997 354 962 368 925 370C888 372 837 375 807 360C776 345 753 308 742 280C731 251 744 216 740 190C737 163 726 145 719 120C712 95 695 65 699 38C703 12 722 -17 743 -39C763 -62 793 -82 823 -98C853 -113 889 -131 924 -134C959 -136 1000 -124 1031 -112C1062 -100 1082 -74 1110 -60C1138 -46 1169 -42 1199 -27C1229 -12 1275 5 1291 29C1308 54 1306 92 1298 120ZM188 330C187 334 184 338 182 342C180 346 178 350 175 353C172 357 167 359 163 361C158 364 153 365 148 367C143 368 137 371 131 371C125 370 118 369 114 366C109 363 107 358 104 354C102 350 101 346 100 342C98 338 95 334 94 330C93 326 93 321 95 317C96 313 100 309 103 305C107 302 111 298 115 296C120 294 126 292 132 291C137 291 143 293 148 294C153 296 157 298 162 299C167 301 173 302 178 305C182 307 187 312 189 316C190 320 189 326 188 330ZM234 330C232 339 228 347 224 354C220 362 216 370 209 376C203 383 194 388 185 392C176 397 167 401 156 405C146 408 133 413 122 413C110 412 97 408 88 402C80 396 75 385 71 377C66 369 63 361 59 354C55 346 48 338 46 330C45 322 46 312 49 303C52 295 59 287 66 280C73 273 81 266 91 262C100 257 113 254 123 254C134 254 145 258 155 261C166 263 175 265 185 268C196 270 209 272 218 278C227 283 235 293 238 302C240 310 237 321 234 330ZM279 330C276 343 272 355 266 367C260 378 253 390 243 399C233 408 220 415 207 423C194 430 181 438 165 444C149 450 129 457 112 456C95 455 76 445 64 436C51 426 46 410 38 398C30 387 23 377 17 366C10 355 -1 343 -3 330C-6 317 -2 303 3 290C8 278 19 266 29 256C40 245 52 234 66 228C81 222 100 219 116 219C132 219 147 226 162 228C178 231 193 231 209 234C225 238 248 240 261 249C273 258 283 274 286 287C289 301 283 317 279 330ZM324 330C320 348 316 364 308 379C300 394 289 409 276 421C263 434 246 442 229 453C212 464 195 478 174 485C153 493 125 502 103 499C80 496 57 481 41 467C25 454 19 434 7 419C-4 404 -18 394 -28 379C-39 364 -52 347 -55 330C-57 313 -51 293 -43 277C-35 260 -23 244 -9 230C6 217 23 202 42 194C62 187 87 187 109 187C130 188 148 195 169 197C190 198 213 195 235 198C258 202 288 207 304 220C321 232 330 255 333 274C336 292 328 312 324 330ZM368 330C364 352 361 373 351 391C341 410 325 428 308 443C292 459 272 470 251 484C231 499 210 519 184 529C157 538 121 547 93 541C66 536 40 512 21 495C1 479 -8 457 -24 440C-40 423 -62 411 -76 393C-90 375 -105 352 -108 330C-110 308 -99 284 -89 263C-79 242 -65 221 -47 205C-29 188 -6 170 19 162C44 155 76 158 102 158C128 158 150 164 177 164C203 165 234 155 263 160C292 164 330 173 349 190C368 207 374 237 378 261C381 284 373 308 368 330Z'/%3E%3C/svg%3E");
+  background-position: center top, center top;
+  background-size: auto, max(1200px, 100%) auto;
+}
+
+/* Phones only see the middle of the pattern, which is mostly empty;
+   shift it so one "peak" of contour lines shows on the right */
+@media (max-width: 575px) {
+  .contact-hero {
+    background-position: center top, 78% top;
+    background-size: auto, 1000px auto;
+  }
 }

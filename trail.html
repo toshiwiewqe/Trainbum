@@ -18,9 +18,9 @@
 
     <!--
       Trail discovery. Markup only — trail.js owns the data load,
-      the filter/sort state, and everything inside #trails-grid.
-      The IDs below are the contract with that file; renaming one
-      silently breaks the page.
+      the filter/sort state, and everything inside #trails-grid
+      and #trail-panel-body. The IDs below are the contract with
+      that file; renaming one silently breaks the page.
 
       This lived at the bottom of index.html under the pinned hero.
       On its own now, so .trails-section--page supplies the top
@@ -29,7 +29,7 @@
     <section class="trails-section trails-section--page" id="trails">
       <div class="trails-header">
         <h3>Find Your Trail</h3>
-        <p>Search hiking trails by difficulty, location, and price</p>
+        <p>Search hiking trails by difficulty and location</p>
       </div>
 
       <div class="trails-filters">
@@ -42,10 +42,11 @@
           <option value="Hard">Hard</option>
         </select>
 
+        <!-- Price sorting went with the price. Difficulty replaces it. -->
         <select id="trail-sort">
           <option value="name">Sort: Name (A-Z)</option>
-          <option value="price-asc">Sort: Price (Low to High)</option>
-          <option value="price-desc">Sort: Price (High to Low)</option>
+          <option value="difficulty-asc">Sort: Easiest First</option>
+          <option value="difficulty-desc">Sort: Hardest First</option>
         </select>
       </div>
 
@@ -54,8 +55,33 @@
       </div>
     </section>
 
+    <!--
+      Trail detail panel. Slides in from the right when a card is
+      clicked. trail.js fills #trail-panel-body — the description,
+      the detail rows, the map, and the Book Now button.
+    -->
+    <div class="trail-panel-backdrop" id="trail-panel-backdrop"></div>
+    <!-- tabindex="-1" makes the panel focusable, so arrow keys and
+         Page Up/Down scroll it. That's a keyboard path to scrolling
+         that doesn't depend on wheel events reaching the panel at
+         all — see the wheel note in trail.js. -->
+    <aside
+      class="trail-panel"
+      id="trail-panel"
+      aria-label="Trail details"
+      aria-hidden="true"
+      tabindex="-1"
+    >
+      <button type="button" class="trail-panel-close" id="trail-panel-close" aria-label="Close">
+        &#10005;
+      </button>
+      <div class="trail-panel-body" id="trail-panel-body"></div>
+    </aside>
+
     <script type="module" src="trail.js"></script>
     <script type="module" src="script.js"></script>
     <script type="module" src="auth-nav.js"></script>
+    <div id="site-footer-root"></div>
+    <script type="module" src="footer.js"></script>
   </body>
 </html>

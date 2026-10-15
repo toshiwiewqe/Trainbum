@@ -1,6 +1,6 @@
 :root {
-  --tb-green-dark: #173b22;
-  --tb-green: #24552d;
+  --tb-green-dark: #2a1209;
+  --tb-green: #2a1209;
   --tb-green-soft: rgba(23, 59, 34, 0.08);
   --tb-cream: #f7f3e9;
   --tb-cream-soft: #fffdf8;
@@ -9,7 +9,7 @@
   --tb-ink: #22281f;
   --tb-ink-soft: rgba(34, 40, 31, 0.66);
   --tb-ink-faint: rgba(34, 40, 31, 0.46);
-  --tb-muted: #6f716b;
+  --tb-muted: #2a1209;
   --tb-border: #ddd8cc;
   --tb-gold: #b08d57;
   --tb-shadow: 0 30px 60px rgba(15, 35, 21, 0.22);
@@ -30,13 +30,24 @@
   background-attachment: fixed;
 }
 
-.visually-hidden-select {
+/* Hidden stand-in <select>s (package + guide) that the cards drive.
+   The second selector outranks `.form-group select { width: 100% }`
+   further down. Before, that rule won: the "hidden" select was
+   100% wide, absolutely positioned, and poked past the right edge of
+   the screen on phones — that was the brown strip down the right side. */
+.visually-hidden-select,
+.form-group .visually-hidden-select {
   position: absolute;
   width: 1px;
   height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
   overflow: hidden;
   clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
+  pointer-events: none;
 }
 
 /* ---------- Header ----------
@@ -104,10 +115,30 @@
 
 /* ---------- Hero / page header ---------- */
 
+/* The background photo sits on a fixed layer behind the page instead of
+   `background-attachment: fixed` (it used to be an inline style in
+   booking.html). Phones ignore fixed attachment and stretch the photo
+   over the whole, very tall page; a fixed layer looks the same on
+   every device. `overflow-x: clip` makes sure nothing inside can ever
+   widen the page sideways again. */
 .booking-page {
+  position: relative;
   background-color: transparent;
   padding: 2.25rem 3rem 6rem;
   min-height: 100vh;
+  overflow-x: clip;
+}
+
+.booking-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(12, 24, 15, 0.5) 0%, rgba(12, 24, 15, 0.22) 35%, rgba(12, 24, 15, 0.5) 100%),
+    url("trail-hero-bg.jpg") center / cover no-repeat,
+    var(--tb-green-dark);
 }
 
 .booking-page-header {
@@ -150,6 +181,7 @@
 
 .booking-page-header p {
   font-family: var(--font-body);
+  text-transform: none;
   color: rgba(255, 255, 255, 0.88);
   margin-top: 0.75rem;
   font-size: 1rem;
@@ -178,8 +210,15 @@
 
 @media (max-width: 900px) {
   .booking-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Grid items default to min-width:auto, which lets wide content (a
+   long option, a scrolling card row) stretch a column past the screen.
+   0 keeps both columns inside the layout. */
+.booking-layout > * {
+  min-width: 0;
 }
 
 /* ---------- Form (left column) ---------- */
@@ -261,6 +300,7 @@
 }
 
 .form-group {
+  position: relative; /* keeps the hidden selects anchored inside */
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -339,6 +379,12 @@
   color: var(--tb-ink);
 }
 
+/* Bootstrap gives every <p> a 1rem bottom margin, which left an empty
+   band at the bottom of these boxes */
+.trail-info-details p:last-child {
+  margin-bottom: 0;
+}
+
 #trail-info-meta {
   font-size: 0.75rem;
   font-weight: 700;
@@ -382,6 +428,7 @@
 .package-cards-placeholder {
   grid-column: 1 / -1;
   font-family: var(--font-body);
+  text-transform: none;
   font-size: 0.82rem;
   color: var(--tb-ink-faint);
   border: 1px dashed var(--tb-border);
@@ -463,6 +510,147 @@
   font-weight: 500;
   color: var(--tb-ink-faint);
   font-size: 0.72rem;
+}
+
+/* ---------- Guide selection cards ----------
+   Rendered by renderGuideCards() in booking.js. Photo comes from the
+   guide's `photo` field in Firestore; without one, the initials show. */
+
+.guide-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.85rem;
+  transition: opacity 0.2s ease;
+}
+
+.guide-cards--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.guide-cards-placeholder {
+  grid-column: 1 / -1;
+  font-family: var(--font-body);
+  text-transform: none;
+  font-size: 0.82rem;
+  color: var(--tb-ink-faint);
+  border: 1px dashed var(--tb-border);
+  border-radius: 14px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.guide-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.3rem;
+  padding: 1.1rem 0.75rem 1.15rem;
+  background-color: var(--tb-cream-soft);
+  border: 1px solid var(--tb-border);
+  border-radius: 16px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+.guide-card:hover {
+  border-color: var(--tb-green);
+  transform: translateY(-1px);
+}
+
+.guide-card--selected {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green-soft);
+  box-shadow: inset 0 0 0 1px var(--tb-green);
+}
+
+.guide-card:focus-visible {
+  outline: 2px solid var(--tb-green);
+  outline-offset: 2px;
+}
+
+.guide-card-photo {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+  margin-bottom: 0.4rem;
+  border-radius: 50%;
+  background-color: #dfe6d8;
+}
+
+.guide-card-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.guide-card-initials {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--tb-green-dark);
+}
+
+/* Green check badge on the photo of the chosen guide */
+.guide-card-check {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--tb-green-dark)
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none'><path d='M5 13l4 4L19 7' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+    center / 14px no-repeat;
+  transform: scale(0);
+  transition: transform 0.2s ease;
+}
+
+.guide-card--selected .guide-card-check {
+  transform: scale(1);
+}
+
+.guide-card-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--tb-ink);
+}
+
+/* Long specialties stop at two lines */
+.guide-card-specialty {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--tb-ink-soft);
+}
+
+.guide-card-rating {
+  display: inline-block;
+  margin-top: 0.15rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+}
+
+.guide-card-rating::first-letter {
+  color: var(--tb-gold);
 }
 
 /* ---------- Booking summary (right column) ---------- */
@@ -771,20 +959,238 @@
   outline-offset: 2px;
 }
 
-/* ---------- Small screens ---------- */
+/* ---------- Tablets & phones: total + confirm bar ----------
+   Below 900px the layout is one column, and the full summary card
+   used to sit under the whole form, repeating everything the form
+   already shows. Here it shrinks to a slim bar (total + Confirm
+   button) that stays pinned to the bottom of the screen while the
+   form scrolls, and settles into place at the end of it. */
+
+@media (max-width: 900px) {
+  .booking-summary {
+    position: sticky;
+    top: auto;
+    bottom: 0.75rem;
+    z-index: 5;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1rem;
+    padding: 0.75rem 0.75rem 0.75rem 1.25rem;
+    border-radius: 18px;
+    box-shadow: 0 14px 40px rgba(15, 35, 21, 0.35);
+  }
+
+  /* !important because booking.js toggles `hidden` on some of these */
+  .booking-summary-header,
+  .summary-empty-state,
+  .summary-content,
+  .booking-submit-note {
+    display: none !important;
+  }
+
+  .price-summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding-top: 0;
+    border-top: 0;
+    font-size: 0.66rem;
+    letter-spacing: 0.5px;
+    color: var(--tb-ink-soft);
+  }
+
+  #price-total {
+    font-size: 1.45rem;
+    line-height: 1.1;
+  }
+
+  .booking-submit-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 0.95rem 1rem;
+  }
+
+  /* Errors ("Please select a guide") show inside the bar, full width */
+  .booking-feedback {
+    order: 3;
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 0.8rem;
+  }
+}
+
+/* ---------- Phones: tighter spacing ---------- */
 
 @media (max-width: 640px) {
   .booking-page {
-    padding: 1.75rem 1.2rem 4rem;
+    padding: 1.25rem 1rem 3rem;
   }
 
-  .booking-form,
-  .booking-summary {
-    padding: 1.5rem;
+  /* 80px header + a little air, instead of the desktop 8rem */
+  .booking-page-header {
+    margin-top: 4.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .booking-eyebrow {
+    margin-bottom: 0.6rem;
+  }
+
+  .booking-page-header h1 {
+    font-size: 2.1rem;
+  }
+
+  .booking-page-header p {
+    font-size: 0.88rem;
+    margin-top: 0.5rem;
+  }
+
+  .booking-form {
+    padding: 1.25rem;
+    gap: 1.1rem;
+    border-radius: 18px;
+  }
+
+  .form-step {
+    gap: 0.9rem;
+  }
+
+  .form-step-label {
+    gap: 0.75rem;
+  }
+
+  .form-step-number {
+    width: 30px;
+    height: 30px;
+    font-size: 0.78rem;
+  }
+
+  .form-step-title {
+    font-size: 1.1rem;
+  }
+
+  .form-step-desc {
+    font-size: 0.78rem;
+  }
+
+  /* Date and group size side by side again (they stacked below 550px) */
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .form-group input,
+  .form-group select {
+    font-size: 16px; /* under 16px, iPhones zoom in when you tap a field */
+    padding: 0.75rem 0.85rem;
+  }
+
+  .form-group select:not(.visually-hidden-select) {
+    background-position: right 0.8rem center;
+    padding-right: 2rem;
+  }
+
+  /* Trail preview: smaller photo, description capped at 3 lines */
+  .trail-info {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .trail-info img {
+    width: 64px;
+    height: 64px;
+  }
+
+  #trail-info-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Package cards become compact rows: name + price. What's included
+     shows in the box under them once one is picked. */
+  .package-cards {
+    gap: 0.5rem;
+  }
+
+  .package-card {
+    padding: 0.8rem 1rem;
+    gap: 0.2rem;
+  }
+
+  .package-card-radio {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .package-card-desc {
+    display: none;
+  }
+
+  /* Guides scroll sideways instead of stacking: about 2½ cards in
+     view, so it's obvious there are more to swipe to */
+  .guide-cards {
+    display: flex;
+    gap: 0.6rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 2px 2px 0.4rem;
+    margin: 0 -2px;
+    scrollbar-width: none;
+  }
+
+  .guide-cards::-webkit-scrollbar {
+    display: none;
+  }
+
+  .guide-card {
+    flex: 0 0 42%;
+    scroll-snap-align: start;
+    padding: 0.9rem 0.6rem 1rem;
+  }
+
+  .guide-cards-placeholder {
+    flex: 1 1 100%;
+  }
+
+  .guide-card-photo {
+    width: 68px;
+    height: 68px;
+  }
+
+  .guide-card-initials {
+    font-size: 1.25rem;
   }
 
   .booking-summary {
-    position: static;
+    bottom: 0.5rem;
+  }
+
+  /* Trust row: 2 × 2 instead of 4 stacked */
+  .trust-features {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem 1rem;
+    margin-top: 1.5rem;
+    padding: 1.1rem 1.1rem;
+    border-radius: 18px;
+  }
+
+  .trust-features strong {
+    font-size: 0.78rem;
+  }
+
+  .trust-features p {
+    font-size: 0.72rem;
+  }
+}
+
+/* Phones have no hover: a tapped card would otherwise stay lifted */
+@media (hover: none) {
+  .guide-card:hover,
+  .package-card:hover {
+    transform: none;
   }
 }
 

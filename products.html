@@ -15,7 +15,7 @@
   <script type="module" src="header.js"></script>
   <script type="module" src="bootstrap-init.js"></script>
   <script type="module" src="auth-nav.js"></script>
-   <script type="module" src="cart-badge.js"></script>
+  <script type="module" src="cart-badge.js"></script>
 
   <div class="products-hero">
     <h1>Hiking Gear</h1>
@@ -168,5 +168,43 @@
   
 <script type="module" src="taxonomy.js"></script>
 <script type="module" src="products.js"></script>
+
+<!-- Adds/removes `drawer-open` on <body> while the filters drawer or
+     the product drawer is open. styles.css uses that class to take the
+     fixed site header off the page, so its logo and hamburger can't
+     sit on top of the drawer or cover the drawer's own ✕ button.
+     Done in JS rather than with CSS :has() so it doesn't depend on
+     stacking contexts or browser support. -->
+<script>
+  (function () {
+    const body = document.body;
+    const filters = document.getElementById("productsFilters");
+    const drawer = document.getElementById("product-drawer");
+
+    function sync() {
+      const filtersOpen = filters ? filters.classList.contains("show") : false;
+      const drawerOpen = drawer ? drawer.classList.contains("is-open") : false;
+      body.classList.toggle("drawer-open", filtersOpen || drawerOpen);
+    }
+
+    // Bootstrap fires these on the offcanvas element itself
+    if (filters) {
+      filters.addEventListener("show.bs.offcanvas", () => body.classList.add("drawer-open"));
+      filters.addEventListener("hidden.bs.offcanvas", sync);
+    }
+
+    // products.js toggles .is-open on the product drawer, so watch for it
+    if (drawer) {
+      new MutationObserver(sync).observe(drawer, {
+        attributes: true,
+        attributeFilter: ["class"],
+      });
+    }
+
+    sync();
+  })();
+</script>
+<div id="site-footer-root"></div>
+<script type="module" src="footer.js"></script>
 </body>
 </html>

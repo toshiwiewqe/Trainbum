@@ -113,10 +113,19 @@
   display: flex;
   flex-direction: column;
   transition: transform 0.25s ease;
+  /* The whole card opens the detail panel now */
+  cursor: pointer;
 }
 
 .trail-card:hover {
   transform: translateY(-4px);
+}
+
+/* The card is focusable (tabindex="0" in trail.js) so it can be
+   opened with Enter/Space — that needs a visible focus ring. */
+.trail-card:focus-visible {
+  outline: 2px solid var(--base-200);
+  outline-offset: 3px;
 }
 
 .trail-card--closed {
@@ -193,6 +202,28 @@
   flex: 1;
 }
 
+/* Jump-off point — where the hike actually starts. Only rendered
+   when the trail document has a `jumpoff` field. */
+.trail-card-jumpoff {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--base-100);
+  opacity: 0.7;
+}
+
+.trail-card-jumpoff span {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--base-200);
+  opacity: 1;
+  margin-bottom: 0.15rem;
+}
+
 .trail-card-footer {
   display: flex;
   align-items: center;
@@ -200,18 +231,34 @@
   margin-top: 0.75rem;
 }
 
-.trail-card-price {
+/* Replaces the price. Tells people the card itself is clickable. */
+.trail-card-details-hint {
   font-family: "PP Neue Montreal", sans-serif;
-  font-size: 1.1rem;
+  text-transform: uppercase;
+  font-size: 0.68rem;
   font-weight: 600;
+  letter-spacing: 0.5px;
   color: var(--base-100);
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
 }
 
-.trail-card-price small {
-  font-size: 0.65rem;
-  opacity: 0.6;
+.trail-card:hover .trail-card-details-hint {
+  opacity: 1;
+}
+
+/* Shown in place of nothing when a trail is closed — the Book
+   button that used to carry that message is gone from the card. */
+.trail-card-status {
+  font-family: "PP Neue Montreal", sans-serif;
   text-transform: uppercase;
-  margin-left: 0.15rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background-color: var(--base-200);
+  color: var(--base-100);
 }
 
 .trail-card-btn {
@@ -238,4 +285,626 @@
   border: 1px solid var(--base-100);
   opacity: 0.5;
   pointer-events: none;
+}
+/* ==========================================================
+   PHONES — compact 2-column trail grid
+   One full-width card per screen made browsing a long scroll.
+   Two columns of smaller cards fit about three times as many trails
+   on screen.
+   ========================================================== */
+@media (max-width: 767.98px) {
+  .trails-header {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Filter bar: search on its own row, the two dropdowns share one */
+  .trails-filters {
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .trails-filters input {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: none;
+    font-size: 16px; /* under 16px, iPhones zoom in when you tap it */
+  }
+
+  .trails-filters select {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0.8rem 0.9rem;
+  }
+
+  .trails-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .trail-card {
+    border-radius: 12px;
+  }
+
+  .trail-badge {
+    top: 0.5rem;
+    left: 0.5rem;
+    font-size: 0.55rem;
+    padding: 0.25rem 0.55rem;
+  }
+
+  .trail-badge--closed {
+    left: auto;
+    right: 0.5rem;
+  }
+
+  .trail-card-body {
+    padding: 0.75rem 0.8rem 0.85rem;
+    gap: 0.3rem;
+  }
+
+  .trail-card-body h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.15;
+  }
+
+  .trail-card-location {
+    font-size: 0.7rem;
+  }
+
+  /* The description is hidden on phones to keep cards short.
+     Delete this rule if you'd rather keep it. */
+  .trail-card-desc {
+    display: none;
+  }
+
+  /* Hint on top, full-width button under it; margin-top:auto keeps
+     the buttons lined up across a row when names wrap */
+  .trail-card-footer {
+    margin-top: auto;
+    padding-top: 0.35rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  /* Jump-off is hidden on phones for the same reason as the
+     description — it keeps the two-column cards short. It's still
+     in the detail panel. */
+  .trail-card-jumpoff {
+    display: none;
+  }
+
+  .trail-card-details-hint {
+    text-align: center;
+    font-size: 0.6rem;
+  }
+
+  .trail-card-btn {
+    text-align: center;
+    padding: 0.55rem 0.5rem;
+    font-size: 0.65rem;
+  }
+}
+
+/* Phones have no hover, so a tapped card would stay lifted */
+@media (hover: none) {
+  .trail-card:hover {
+    transform: none;
+  }
+}
+
+/* ==========================================================
+   TRAIL DETAIL PANEL
+   Slides in from the right when a card is clicked. Holds the
+   full description, the detail rows, the map and Book Now.
+
+   On z-index: .site-header is position:fixed and jumps to 1050
+   while `body.nav-busy` is set, so the panel has to clear that
+   — and the header is taken off the page entirely while the
+   panel is open, so its logo and hamburger can't land on top of
+   the panel or cover the ✕.
+   ========================================================== */
+
+body.trail-panel-open .site-header {
+  display: none;
+}
+
+/* Stops the page behind scrolling while the panel is open */
+body.trail-panel-open {
+  overflow: hidden;
+}
+
+.trail-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 4, 1, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1065;
+}
+
+.trail-panel-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* The PANEL ITSELF scrolls — same shape as .product-drawer in
+   styles.css, which is already proven to scroll on this site. An
+   inner flex child with its own overflow looked right but didn't
+   actually scroll here, so this copies what works. */
+.trail-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(640px, 100%);
+  height: 100svh;
+  background-color: var(--base-100);
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+  z-index: 1070;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(78, 34, 15, 0.45) rgba(78, 34, 15, 0.08);
+}
+
+.trail-panel::-webkit-scrollbar { width: 10px; }
+.trail-panel::-webkit-scrollbar-track {
+  background: rgba(78, 34, 15, 0.08);
+}
+.trail-panel::-webkit-scrollbar-thumb {
+  background-color: rgba(78, 34, 15, 0.45);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.trail-panel::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(78, 34, 15, 0.7);
+}
+
+.trail-panel.is-open {
+  transform: translateX(0);
+}
+
+/* Sticky, not absolute — it rides along as the panel scrolls, so
+   the ✕ is reachable from anywhere in a long trail description. */
+.trail-panel-close {
+  position: sticky;
+  top: 1.1rem;
+  margin-left: calc(100% - 3.6rem);
+  z-index: 3;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--base-300);
+  color: var(--base-100);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.trail-panel-close:hover {
+  background-color: var(--base-200);
+}
+
+/* The close button is sticky inside the scroller, so it takes up a
+   row of its own at the top. Pull the content back up under it. */
+.trail-panel-body {
+  margin-top: -3.6rem;
+}
+
+/* ---- Panel hero: photo with the name laid over it ---- */
+
+.trail-panel-hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background-color: #2f1409; /* stands in for a missing/broken photo */
+}
+
+.trail-panel-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  color: transparent; /* hides alt text if the src is broken */
+}
+
+/* Dark gradient so light type stays readable over any photo —
+   some trail shots are bright sky, some are dark jungle. */
+.trail-panel-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(26, 4, 1, 0.15) 0%,
+    rgba(26, 4, 1, 0) 35%,
+    rgba(26, 4, 1, 0.75) 100%
+  );
+}
+
+.trail-panel-hero-text {
+  position: absolute;
+  left: 1.75rem;
+  right: 1.75rem;
+  bottom: 1.1rem;
+}
+
+.trail-panel-title {
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 1.75rem;
+  font-weight: 500;
+  line-height: 1.02;
+  color: var(--base-100);
+  margin: 0;
+  text-shadow: 0 1px 12px rgba(26, 4, 1, 0.5);
+}
+
+.trail-panel-location {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--base-100);
+  opacity: 0.85;
+  margin: 0.25rem 0 0;
+}
+
+/* ---- Fact chips ---- */
+
+.trail-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 1.1rem 1.75rem;
+  border-bottom: 1px solid rgba(78, 34, 15, 0.14);
+}
+
+.trail-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 10px;
+  background-color: rgba(78, 34, 15, 0.07);
+}
+
+.trail-chip-label {
+  font-family: "Inter", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  color: var(--base-300);
+  opacity: 0.5;
+}
+
+.trail-chip-value {
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--base-300);
+}
+
+/* Status chip earns a colour — it's the one fact that changes */
+.trail-chip--open { background-color: rgba(51, 80, 47, 0.12); }
+.trail-chip--open .trail-chip-value { color: #33502f; }
+.trail-chip--closed { background-color: rgba(225, 44, 26, 0.12); }
+.trail-chip--closed .trail-chip-value { color: var(--base-200); }
+
+/* ---- Sections ---- */
+
+.trail-panel-main {
+  padding: 0 1.75rem;
+}
+
+/* styles.css has a global `section { height: 100svh; overflow: hidden }`
+   for the full-screen page sections. These are <section> tags too, so
+   without this override every block in the panel becomes a full screen
+   tall and the panel balloons to ~6000px. Same reason .trails-section
+   resets it at the top of this file. */
+.trail-section {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(78, 34, 15, 0.12);
+}
+
+.trail-section:last-child {
+  border-bottom: none;
+}
+
+.trail-section-title {
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--base-300);
+  opacity: 0.5;
+  margin: 0 0 0.85rem;
+}
+
+.trail-prose {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--base-300);
+  opacity: 0.88;
+  margin: 0;
+}
+
+.trail-section-empty {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--base-300);
+  opacity: 0.6;
+  margin: 0 0 0.9rem;
+}
+
+/* ---- Getting there ---- */
+
+.trail-jumpoff {
+  background-color: rgba(78, 34, 15, 0.06);
+  border-left: 3px solid var(--base-200);
+  border-radius: 0 10px 10px 0;
+  padding: 0.75rem 0.95rem;
+  margin-bottom: 0.9rem;
+}
+
+.trail-jumpoff-label {
+  display: block;
+  font-family: "Inter", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  color: var(--base-200);
+  margin-bottom: 0.2rem;
+}
+
+.trail-jumpoff-value {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--base-300);
+}
+
+.trail-steps {
+  margin: 0 0 1rem;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.trail-steps li {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--base-300);
+  opacity: 0.88;
+}
+
+.trail-directions-btn {
+  display: inline-block;
+  padding: 0.7rem 1.3rem;
+  border-radius: 999px;
+  border: 1px solid var(--base-300);
+  text-decoration: none;
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--base-300);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.trail-directions-btn:hover {
+  background-color: var(--base-300);
+  color: var(--base-100);
+}
+
+/* ---- Map ---- */
+
+.trail-map {
+  width: 100%;
+  height: 260px;
+  border-radius: 14px;
+  overflow: hidden;
+  background-color: var(--base-300);
+}
+
+.trail-map iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+/* Google's and Leaflet's map canvases drop <img> tiles in; the
+   global `img { height:100% }` rule in styles.css stretches those
+   into a mess unless they're let alone inside the map. */
+.trail-map img {
+  width: auto;
+  height: auto;
+  max-width: none;
+  object-fit: fill;
+}
+
+.trail-map-loading {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.8rem;
+  color: var(--base-100);
+  opacity: 0.7;
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+/* Shown only when the trail has no lat/lon and the pin is just a
+   search for the place name. */
+.trail-map-note {
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.75rem;
+  color: var(--base-300);
+  opacity: 0.55;
+  margin: 0.5rem 0 0;
+}
+
+/* ---- Book Now: sticky at the foot of the panel ---- */
+
+.trail-panel-foot {
+  position: sticky;
+  bottom: 0;
+  padding: 1rem 1.75rem 1.25rem;
+  background: linear-gradient(
+    to bottom,
+    rgba(220, 219, 213, 0) 0%,
+    var(--base-100) 35%
+  );
+}
+
+.trail-panel-book {
+  display: block;
+  width: 100%;
+  padding: 1rem 1.5rem;
+  border-radius: 999px;
+  text-align: center;
+  text-decoration: none;
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background-color: var(--base-200);
+  color: var(--base-100);
+  box-shadow: 0 6px 18px rgba(225, 44, 26, 0.28);
+  transition: background-color 0.2s ease, transform 0.12s ease;
+}
+
+.trail-panel-book:hover {
+  background-color: #c62313;
+  transform: translateY(-1px);
+}
+
+.trail-panel-book--disabled {
+  background-color: transparent;
+  border: 1px solid var(--base-300);
+  color: var(--base-300);
+  opacity: 0.5;
+  pointer-events: none;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ---- Panel on phones ---- */
+
+@media (max-width: 767.98px) {
+  .trail-panel {
+    width: 100%;
+  }
+
+  .trail-panel-hero-text {
+    left: 1.1rem;
+    right: 1.1rem;
+  }
+
+  .trail-panel-title {
+    font-size: 1.35rem;
+  }
+
+  .trail-chips {
+    padding: 0.9rem 1.1rem;
+    gap: 0.4rem;
+  }
+
+  /* Two chips per row rather than a cramped four */
+  .trail-chip {
+    flex: 1 1 calc(50% - 0.4rem);
+    min-width: 0;
+  }
+
+  .trail-panel-main {
+    padding: 0 1.1rem;
+  }
+
+  .trail-panel-foot {
+    padding: 0.9rem 1.1rem 1.1rem;
+  }
+
+  .trail-map {
+    height: 220px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trail-panel,
+  .trail-panel-backdrop {
+    transition-duration: 0.01ms;
+  }
+}
+/* ==========================================================
+   "VIEW DETAILS" BUTTON
+   Yellow pill with an arrow so it stands out on the dark card.
+   The whole card still opens the panel, same as before.
+   ========================================================== */
+.trail-card-details-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem 0.65rem 1.15rem;
+  border-radius: 999px;
+  background-color: #f5f0a8;
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: var(--base-300);
+  opacity: 1;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.trail-card-details-hint::after {
+  content: "→";
+  font-family: "Inter", sans-serif;
+  font-size: 0.9rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+/* Hover (or keyboard focus): turns red, arrow nudges right */
+.trail-card:hover .trail-card-details-hint,
+.trail-card:focus-visible .trail-card-details-hint {
+  background-color: var(--base-200);
+  color: var(--base-100);
+}
+
+.trail-card:hover .trail-card-details-hint::after {
+  transform: translateX(3px);
+}
+
+/* Phones: full-width button under the name */
+@media (max-width: 767.98px) {
+  .trail-card-details-hint {
+    font-size: 0.62rem;
+    padding: 0.6rem;
+    gap: 0.35rem;
+  }
 }

@@ -3,22 +3,32 @@
    Fetches trails from Firestore and renders them as
    searchable, filterable cards into #trails-grid.
 
-   Each card links to booking.html?trail=<trail_id>, which
-   booking.js reads in preselectTrailFromURL() to pre-select
-   the trail — so the trail_id here must match the trail_id
-   field booking.js looks up. Same collection, same field
-   names, one source of truth.
+   CHANGED: price is gone from the cards, and so is the Book
+   button — the whole card now opens a detail panel showing the
+   full description, the trail details, a map of where it is, and
+   the Book Now button.
+
+   The map is the Google Maps JavaScript API (see trail-map.js).
+   It pins to the document's `lat`/`lon` when those exist and
+   geocodes the `location` text when they don't, so trails that
+   haven't had coordinates added yet still show something useful.
+
+   The panel's "Book Now" links to booking.html?trail=<trail_id>,
+   which booking.js reads in preselectTrailFromURL() to pre-select
+   the trail — so the trail_id here must match the trail_id field
+   booking.js looks up. Same collection, same field names, one
+   source of truth.
 
    Safe to load on any page: if #trails-grid isn't present
    the module exits quietly.
    ========================================================== */
 
-// CHANGED: was a one-shot getDocs read. watchTrails() is a live
-// Firestore listener, so a trail added, edited, closed or re-opened in
-// Admin -> Catalog appears on this page within about a second, with no
-// refresh. Everything below still works on the raw document shape
-// (trail_id, base_price, guide_id...), so none of the rendering changed.
+// watchTrails() is a live Firestore listener, so a trail added,
+// edited, closed or re-opened in Admin -> Catalog appears on this
+// page within about a second, with no refresh.
 import { watchTrails } from "./trailbound-data.js";
+import { showTrailMap, getCoords } from "./trail-map.js";
+import { directionsUrl, getDirectionSteps } from "./trail-info.js";
 
 /* ---------- elements ---------- */
 const grid = document.getElementById("trails-grid");
@@ -26,15 +36,16 @@ const searchInput = document.getElementById("trail-search");
 const difficultyFilter = document.getElementById("trail-difficulty-filter");
 const sortSelect = document.getElementById("trail-sort");
 
+const panel = document.getElementById("trail-panel");
+const panelBackdrop = document.getElementById("trail-panel-backdrop");
+const panelClose = document.getElementById("trail-panel-close");
+const panelBody = document.getElementById("trail-panel-body");
+
 /* ---------- state ---------- */
 let allTrails = [];
+let lastFocused = null; // so focus returns to the card after closing
 
 /* ---------- helpers ---------- */
-
-function formatPrice(value) {
-  const n = Number(value) || 0;
-  return `₱${n.toLocaleString("en-PH")}`;
-}
 
 // Cards are built with innerHTML, so anything coming out of the
 // database gets escaped on the way in.
@@ -81,6 +92,11 @@ function imageSrc(raw) {
   return src.includes(" ") ? src.replace(/ /g, "%20") : src;
 }
 
+function getTrailById(id) {
+  const key = String(id ?? "").trim();
+  return allTrails.find((t) => String(t.trail_id ?? "").trim() === key);
+}
+
 /* ---------- loading ---------- */
 
 function loadTrails() {
@@ -90,6 +106,17 @@ function loadTrails() {
       // card code below keeps reading the same field names it always did.
       allTrails = items.map((t) => t._raw);
       renderTrails();
+
+      // A trail open in the panel may have just been edited in Admin —
+      // repaint it so the panel never shows stale details.
+      if (panel && panel.classList.contains("is-open")) {
+        const openId = panel.dataset.trailId;
+        const fresh = getTrailById(openId);
+        if (fresh) {
+          panelBody.innerHTML = panelHTML(fresh);
+          showTrailMap("trail-map", fresh); // the markup was just replaced
+        }
+      }
     },
     {
       onError: (err) => {
@@ -101,6 +128,14 @@ function loadTrails() {
 }
 
 /* ---------- filtering + sorting ---------- */
+
+// Easy -> Moderate -> Hard. Anything unrecognised sorts last rather
+// than silently landing in the "Easy" bucket.
+const DIFFICULTY_ORDER = { easy: 1, moderate: 2, hard: 3 };
+
+function difficultyRank(trail) {
+  return DIFFICULTY_ORDER[String(trail.difficulty || "").trim().toLowerCase()] ?? 99;
+}
 
 function getFilteredSortedTrails() {
   const query = (searchInput?.value || "").trim().toLowerCase();
@@ -122,23 +157,24 @@ function getFilteredSortedTrails() {
     return matchesQuery && matchesDifficulty;
   });
 
-  const priceOf = (t) => Number(t.base_price ?? t.price) || 0;
   const nameOf = (t) => String(t.name || "");
 
-  if (sortBy === "price-asc") {
+  // Price sorting is gone with the price. Difficulty replaces it;
+  // ties fall back to name so the order is stable.
+  if (sortBy === "difficulty-asc") {
     return result.sort(
-      (a, b) => priceOf(a) - priceOf(b) || nameOf(a).localeCompare(nameOf(b)),
+      (a, b) => difficultyRank(a) - difficultyRank(b) || nameOf(a).localeCompare(nameOf(b)),
     );
   }
-  if (sortBy === "price-desc") {
+  if (sortBy === "difficulty-desc") {
     return result.sort(
-      (a, b) => priceOf(b) - priceOf(a) || nameOf(a).localeCompare(nameOf(b)),
+      (a, b) => difficultyRank(b) - difficultyRank(a) || nameOf(a).localeCompare(nameOf(b)),
     );
   }
   return result.sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
 }
 
-/* ---------- rendering ---------- */
+/* ---------- card ---------- */
 
 function cardHTML(trail) {
   const open = isTrailOpen(trail);
@@ -147,18 +183,18 @@ function cardHTML(trail) {
     ? ` trail-badge--${esc(difficulty.toLowerCase())}`
     : "";
 
-  // Location and duration are joined only when both exist, so a
-  // missing field doesn't leave a stray separator on the card.
+  // Fields are joined only when they exist, so a missing one doesn't
+  // leave a stray separator on the card.
   const metaLine = [trail.location, trail.duration].filter(Boolean).join(" · ");
 
-  const action = open
-    ? `<a class="trail-card-btn" href="booking.html?trail=${encodeURIComponent(
-        trail.trail_id || "",
-      )}">Book</a>`
-    : `<span class="trail-card-btn trail-card-btn--disabled">Closed</span>`;
-
+  // No Book button on the card any more — booking happens from the
+  // detail panel, so there's one obvious way in.
   return `
-    <article class="trail-card${open ? "" : " trail-card--closed"}">
+    <article class="trail-card${open ? "" : " trail-card--closed"}"
+             data-trail-id="${esc(trail.trail_id)}"
+             tabindex="0"
+             role="button"
+             aria-label="View details for ${esc(trail.name)}">
       <div class="trail-card-img">
         <img src="${esc(imageSrc(trail.image))}" alt="${esc(trail.name)}" loading="lazy" />
         ${difficulty ? `<span class="trail-badge${difficultyClass}">${esc(difficulty)}</span>` : ""}
@@ -168,9 +204,14 @@ function cardHTML(trail) {
         <h4>${esc(trail.name)}</h4>
         ${metaLine ? `<p class="trail-card-location">${esc(metaLine)}</p>` : ""}
         ${trail.description ? `<p class="trail-card-desc">${esc(trail.description)}</p>` : ""}
+        ${
+          trail.jumpoff
+            ? `<p class="trail-card-jumpoff"><span>Jump-off</span>${esc(trail.jumpoff)}</p>`
+            : ""
+        }
         <div class="trail-card-footer">
-          <span class="trail-card-price">${formatPrice(trail.base_price ?? trail.price)}<small>/person</small></span>
-          ${action}
+          <span class="trail-card-details-hint">View details</span>
+          ${open ? "" : `<span class="trail-card-status">Closed</span>`}
         </div>
       </div>
     </article>
@@ -188,6 +229,158 @@ function renderTrails() {
   grid.innerHTML = trails.map(cardHTML).join("");
 }
 
+/* ---------- detail panel ---------- */
+
+/* A fact chip. Returns "" for a missing field, so the row only
+   ever contains chips that have something to say. */
+function chip(label, value, extraClass = "") {
+  if (!value) return "";
+  return `
+    <span class="trail-chip${extraClass}">
+      <span class="trail-chip-label">${esc(label)}</span>
+      <span class="trail-chip-value">${esc(value)}</span>
+    </span>`;
+}
+
+function section(title, body) {
+  if (!body) return "";
+  return `
+    <section class="trail-section">
+      <h4 class="trail-section-title">${esc(title)}</h4>
+      ${body}
+    </section>`;
+}
+
+/* ---------- Getting there ---------- */
+
+function gettingThereHTML(trail) {
+  const steps = getDirectionSteps(trail);
+
+  const jumpoff = trail.jumpoff
+    ? `<div class="trail-jumpoff">
+         <span class="trail-jumpoff-label">Jump-off point</span>
+         <span class="trail-jumpoff-value">${esc(trail.jumpoff)}</span>
+       </div>`
+    : "";
+
+  const stepList = steps.length
+    ? `<ol class="trail-steps">${steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>`
+    : `<p class="trail-section-empty">
+         Directions for this trail haven't been written up yet — open it in
+         Google Maps for turn-by-turn from where you are.
+       </p>`;
+
+  // Works for every trail, with or without stored coordinates.
+  const button = `
+    <a class="trail-directions-btn" href="${esc(directionsUrl(trail))}"
+       target="_blank" rel="noopener noreferrer">
+      Get directions
+    </a>`;
+
+  return jumpoff + stepList + button;
+}
+
+function panelHTML(trail) {
+  const open = isTrailOpen(trail);
+  const coords = getCoords(trail);
+  const difficulty = String(trail.difficulty || "");
+  const img = imageSrc(trail.image);
+
+  const bookBtn = open
+    ? `<a class="trail-panel-book" href="booking.html?trail=${encodeURIComponent(
+        trail.trail_id || "",
+      )}">Book Now</a>`
+    : `<span class="trail-panel-book trail-panel-book--disabled">Currently closed</span>`;
+
+  // Without coordinates the pin is only as accurate as the place name,
+  // so say so rather than letting someone trust a vague pin.
+  const mapNote = coords
+    ? ""
+    : `<p class="trail-map-note">Approximate — pinned to ${esc(trail.location || "the area")}.</p>`;
+
+  return `
+    <!-- Hero: the name and location sit ON the photo, so the panel
+         doesn't spend three separate rows saying where this is. -->
+    <div class="trail-panel-hero">
+      ${img ? `<img src="${esc(img)}" alt="${esc(trail.name)}" />` : ""}
+      <div class="trail-panel-hero-scrim"></div>
+      <div class="trail-panel-hero-text">
+        <h3 class="trail-panel-title">${esc(trail.name)}</h3>
+        ${trail.location ? `<p class="trail-panel-location">${esc(trail.location)}</p>` : ""}
+      </div>
+    </div>
+
+    <!-- Fact chips: the scannable version of the old detail table.
+         Location isn't repeated here — it's on the photo above. -->
+    <div class="trail-chips">
+      ${chip("Difficulty", trail.difficulty)}
+      ${chip("Duration", trail.duration)}
+      ${chip("Elevation", trail.elevation)}
+      ${chip("Status", trail.status, open ? " trail-chip--open" : " trail-chip--closed")}
+    </div>
+
+    <div class="trail-panel-main">
+      ${section("About this trail", trail.description ? `<p class="trail-prose">${esc(trail.description)}</p>` : "")}
+      ${section("Getting there", gettingThereHTML(trail))}
+      ${section(
+        "Where it is",
+        `<div class="trail-map" id="trail-map">
+           <p class="trail-map-loading">Loading map…</p>
+         </div>
+         ${mapNote}`,
+      )}
+    </div>
+
+    <!-- Sticky so Book Now is reachable from anywhere in the panel -->
+    <div class="trail-panel-foot">${bookBtn}</div>
+  `;
+}
+
+function openPanel(trailId, trigger) {
+  const trail = getTrailById(trailId);
+  if (!trail || !panel) return;
+
+  lastFocused = trigger || null;
+  panel.dataset.trailId = trail.trail_id || "";
+  panelBody.innerHTML = panelHTML(trail);
+  panelBody.scrollTop = 0;
+
+  panel.classList.add("is-open");
+  panelBackdrop.classList.add("is-open");
+  panel.setAttribute("aria-hidden", "false");
+
+  // The map is drawn after the markup is in the DOM. If they close
+  // the panel before it finishes loading, don't paint into it.
+  showTrailMap("trail-map", trail).then(() => {
+    if (panel.dataset.trailId !== String(trail.trail_id || "")) {
+      const stale = document.getElementById("trail-map");
+      if (stale) stale.innerHTML = "";
+    }
+  });
+
+  // Takes the fixed site header off the page while the panel is up,
+  // so its logo and hamburger can't sit on top of the panel or cover
+  // the ✕. Same approach as the products page.
+  document.body.classList.add("trail-panel-open");
+
+  panelClose?.focus();
+}
+
+function closePanel() {
+  if (!panel) return;
+  panel.classList.remove("is-open");
+  panelBackdrop.classList.remove("is-open");
+  panel.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("trail-panel-open");
+
+  // Stop the map loading/animating behind a closed panel
+  panelBody.innerHTML = "";
+  panel.dataset.trailId = "";
+
+  if (lastFocused && document.contains(lastFocused)) lastFocused.focus();
+  lastFocused = null;
+}
+
 /* ---------- wire it up ---------- */
 
 function init() {
@@ -198,6 +391,63 @@ function init() {
   searchInput?.addEventListener("input", debounce(renderTrails));
   difficultyFilter?.addEventListener("change", renderTrails);
   sortSelect?.addEventListener("change", renderTrails);
+
+  // One listener on the grid instead of one per card — the cards are
+  // replaced on every filter keystroke, and per-card listeners would
+  // be rebound (and leak) each time.
+  grid.addEventListener("click", (e) => {
+    const card = e.target.closest(".trail-card");
+    if (card) openPanel(card.dataset.trailId, card);
+  });
+
+  // Keyboard: the cards are focusable, so Enter/Space should open them
+  grid.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const card = e.target.closest(".trail-card");
+    if (!card) return;
+    e.preventDefault();
+    openPanel(card.dataset.trailId, card);
+  });
+
+  panelClose?.addEventListener("click", closePanel);
+  panelBackdrop?.addEventListener("click", closePanel);
+
+  /* ---------- making the panel actually scroll ----------
+     script.js drives the GSAP hero and installs a page-wide wheel
+     listener. That listener calls preventDefault() on every wheel
+     event, which also kills scrolling INSIDE this panel — the panel
+     is a perfectly normal scroll container, it just never receives
+     a usable wheel event.
+
+     So we scroll it ourselves. This listener sits on `window` in the
+     capture phase, which runs before anything bound to an element
+     deeper in the page, and it moves panel.scrollTop by hand — so it
+     works whether or not the other listener runs, and whether or not
+     that listener prevents the default scroll.
+
+     Only swallows the event when the panel actually moved, so
+     reaching the top or bottom of the panel doesn't trap the wheel. */
+  window.addEventListener(
+    "wheel",
+    (e) => {
+      if (!panel?.classList.contains("is-open")) return;
+      if (!panel.contains(e.target)) return;
+
+      const before = panel.scrollTop;
+      panel.scrollTop += e.deltaY;
+
+      if (panel.scrollTop !== before) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    },
+    { passive: false, capture: true },
+  );
+
+  // Touch devices: the same page-wide listener can swallow touchmove.
+  // Letting the browser handle touch scrolling inside the panel keeps
+  // the native momentum, which a manual handler would lose.
+  panel?.addEventListener("touchmove", (e) => e.stopPropagation(), { passive: true });
 
   loadTrails();
 }

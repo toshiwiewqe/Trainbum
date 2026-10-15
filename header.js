@@ -58,7 +58,7 @@
     <header class="site-header${variant}" id="site-header">
       <nav class="navbar navbar-expand-md w-100 p-0">
         <div class="site-header-logo">
-          <img src="public/logoo2.jpg" alt="Trailbound Adventures logo" />
+         <img src="/logoo2.jpg" alt="Trailbound Adventures logo" />
         </div>
 
         <!-- Two bars instead of Bootstrap's .navbar-toggler-icon SVG:

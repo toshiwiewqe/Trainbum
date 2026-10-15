@@ -6,7 +6,7 @@
 :root {
   --base-100: #dcdbd5;
   --base-200: #e12c1a;
-  --base-300: #4E220F;
+  --base-300: #2a1209;
 
   /* WonJYou section */
   --light: #edf1e8;
@@ -717,81 +717,88 @@ section {
 .framescene-under-line {
   font-size: clamp(3.375rem, 10.5vw, 7.5rem);
   line-height: 1;
+  white-space: nowrap; /* each letter is its own box for the wipe; never break the word */
   color: var(--base-100);
   margin-bottom: 1rem;
 }
 
-.footer-tagline {
+/* What the hero reveals as it lifts: the wordmark, a tagline and
+   two ways in. (This used to be the footer; the real footer is now
+   at the bottom of every page, see SITE FOOTER below.) */
+.framescene-under-tagline {
   font-size: 1.05rem;
   color: rgba(220, 219, 213, 0.55);
   letter-spacing: 0.04em;
 }
 
-/* three link groups: where to go, where to follow, how to reach us */
-.footer-columns {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.5rem 4.5rem;
-  max-width: 680px;
-}
-
-.footer-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.85rem;
-}
-
-.footer-col-label {
-  display: block;
-  font-family: "Inter", sans-serif;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(220, 219, 213, 0.4);
-}
-
-.footer-col a {
-  font-family: "Inter", sans-serif;
-  font-size: 1rem;
-  font-weight: 500;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--base-100);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.footer-col a:hover,
-.footer-col a:focus-visible {
-  color: var(--base-200);
-}
-
-.framescene-under-bottom {
+.framescene-under-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.5rem 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(220, 219, 213, 0.15);
+  gap: 0.75rem;
+}
+
+/* Small "Scroll" cue with a line under it, telling people the page
+   keeps going past the hero */
+.framescene-under-scroll {
+  position: absolute;
+  left: 50%;
+  bottom: 2rem;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
   font-family: "Inter", sans-serif;
-  font-size: 0.85rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
-}
-
-.framescene-under-dim {
   color: rgba(220, 219, 213, 0.45);
-
 }
 
-@media (max-width: 640px) {
-  .footer-columns {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-width: 420px;
-  }
+.framescene-under-scroll::after {
+  content: "";
+  width: 1px;
+  height: 32px;
+  background: linear-gradient(to bottom, rgba(220, 219, 213, 0.5), transparent);
+}
+
+/* Pill buttons, used in the hero reveal */
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.95rem 1.6rem;
+  border-radius: 999px;
+  font-family: "Inter", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.home-btn--light {
+  background-color: var(--base-100);
+  color: var(--base-300);
+}
+
+.home-btn--light:hover {
+  background-color: #f5f0a8;
+  color: var(--base-300);
+}
+
+.home-btn--ghost {
+  border: 1px solid rgba(220, 219, 213, 0.4);
+  color: var(--base-100);
+}
+
+.home-btn--ghost:hover {
+  border-color: var(--base-100);
+  background-color: rgba(220, 219, 213, 0.08);
+  color: var(--base-100);
 }
 
 /* Per-character wipe on the wordmark. Each character is boxed
@@ -814,244 +821,260 @@ section {
    ========================================================== */
 
 /* ==========================================================
-   PRODUCTS PAGE
+   PRODUCTS PAGE — "Forest & Sand" redesign
+   Clean outdoor-store look: sand page, white product cards,
+   forest-green actions, light filter panel.
+   Same class names as before, so products.html and products.js
+   need no changes.
    ========================================================== */
+
+:root {
+  --shop-forest: #2a1209;       /* hero band + header on this page */
+  --shop-bg: #f4f1ea;           /* sand page background */
+  --shop-surface: #ffffff;      /* cards, panels, inputs */
+  --shop-tile: #ebe6db;         /* behind product photos while they load */
+  --shop-ink: #1e2a22;          /* main text */
+  --shop-muted: #666b61;        /* secondary text */
+  --shop-line: #e2ddd1;         /* borders and dividers */
+  --shop-green: #2a1209;        /* buttons, active states */
+  --shop-green-dark: #2a1209;   /* button hover */
+  --shop-green-tint: #e5eee6;   /* active filter background */
+  --shop-clay: #b84f2c;         /* badges, out of stock */
+  --shop-star: #d39a2a;         /* rating stars */
+}
+
+/* Page background + a solid header on this page only. The header is
+   transparent site-wide; over sand content its cream pills would
+   disappear, so here it carries the hero's forest green instead. */
+body:has(.products-layout) {
+  background-color: var(--shop-bg);
+}
+
+body:has(.products-layout) .site-header {
+  background-color: var(--shop-forest);
+}
+
+/* ---- Hero band ---- */
+
 .products-hero {
-  padding: 140px 1.5rem 3rem;
+  padding: 150px 1.5rem 3.5rem;
   text-align: center;
+  background-color: var(--shop-forest);
 }
 
 .products-hero h1 {
-  font-size: clamp(1.75rem, 3.2vw, 2.75rem);
-  color: var(--base-100);
+  font-size: clamp(2rem, 4.5vw, 3.5rem);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: #f4f1ea;
 }
 
 .products-hero p {
-  margin: 0.6rem auto 0;
-  max-width: 46ch;
-  color: var(--base-100);
-  opacity: 0.6;
+  margin: 0.9rem auto 0;
+  max-width: 52ch;
+  color: rgba(244, 241, 234, 0.72);
   font-family: "Inter", sans-serif;
   text-transform: none;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
-/* ---- Two-column layout: sidebar + main content ----
-   The column split itself is Bootstrap's .row / .col-lg-3 /
-   .col-lg-9 (in products.html); this handles spacing/background
-   for the outer wrapper, plus the overlap-the-hero treatment. */
+/* ---- Layout ----
+   Full-width sand background, content capped at 1400px by the side
+   padding. No z-index here on purpose: a z-index would trap the
+   mobile filter drawer under the header again. */
 
 .products-layout {
-  position: relative;
-  z-index: 1;
-  max-width: 1400px;
-  margin: -2rem auto 0;
-  padding: 3rem 3rem 6rem;
-  background-color: var(--base-100);
-  border-radius: 28px 28px 0 0;
-  box-shadow: 0 -12px 30px rgba(26, 4, 1, 0.18);
+  background-color: var(--shop-bg);
+  padding: 2.5rem max(3rem, calc((100% - 1400px) / 2 + 3rem)) 6rem;
 }
 
-/* Gutter between the sidebar column and the main column — set
-   explicitly on the CSS variable Bootstrap's grid already reads,
-   so the gap is guaranteed and not dependent on column padding
-   staying untouched elsewhere. */
 .products-layout > .row {
-  --bs-gutter-x: 3rem;
+  --bs-gutter-x: 2.5rem;
 }
 
+/* Below 992px the sidebar is a drawer, so there's no column gap to
+   make; a gutter here would only push the row wider than a phone. */
 @media (max-width: 991.98px) {
   .products-layout > .row {
-    --bs-gutter-x: 1.5rem;
+    --bs-gutter-x: 0;
   }
 }
 
+/* ---- Product grid ----
+   Column counts are set here, so they win over the row-cols-*
+   classes in the HTML: 2 on phones, 3 from tablets up, 4 on wide
+   screens. The loading/empty message keeps its full width. */
 
-@media (min-width: 992px) {
+#products-grid {
+  --bs-gutter-x: 0.75rem;
+  --bs-gutter-y: 0.75rem;
+}
+
+#products-grid > *:not(.products-status) {
+  flex: 0 0 auto;
+  width: 50%;
+}
+
+@media (min-width: 768px) {
   #products-grid {
-    --bs-gutter-x: 1rem;
-    --bs-gutter-y: 1rem;
+    --bs-gutter-x: 1.25rem;
+    --bs-gutter-y: 1.25rem;
+  }
+
+  #products-grid > *:not(.products-status) {
+    width: 33.3333%;
   }
 }
 
-/* ---- Sidebar: category tree, price range, size/color chips ----
-   Also a Bootstrap responsive offcanvas (offcanvas-lg): at ≥lg it's
-   a plain sticky column; below lg, Bootstrap turns it into a
-   slide-in drawer automatically — these rules only style the
-   ≥lg "plain sidebar" state.
-
-   Bootstrap's own .offcanvas class paints its background from the
-   --bs-offcanvas-bg-color variable (and .offcanvas + .offcanvas-start
-   is a more specific selector than a single .products-sidebar class),
-   so it was winning over the background-color below. Overriding the
-   variable itself — instead of fighting the property — makes ours
-   win regardless of specificity, at both breakpoints. */
-.products-sidebar {
-  --bs-offcanvas-bg-color: var(--base-300);
-  --bs-offcanvas-color: var(--base-100);
-  --bs-offcanvas-border-color: transparent;
-  /* !important is required here: at >=992px Bootstrap's own
-     .offcanvas-lg rule sets `background-color: transparent !important`
-     to strip offcanvas styling and turn this into a plain static
-     column. A normal declaration — or even the CSS variable above —
-     can never beat an !important, regardless of specificity or
-     source order, so we have to match it. */
-  background-color: var(--base-300) !important;
-  color: var(--base-100) !important;
-  border-radius: 18px;
+@media (min-width: 1400px) {
+  #products-grid > *:not(.products-status) {
+    width: 25%;
+  }
 }
 
-/* Visual padding lives on .offcanvas-body, NOT on .products-sidebar.
-   .products-sidebar is also Bootstrap's col-lg-3 grid column, and
-   Bootstrap builds column gutters out of that column's own left/right
-   padding — a flat `padding` shorthand here would silently overwrite
-   that gutter padding and let the sidebar's edge crowd into the
-   product grid next to it. Padding a separate inner element keeps
-   the column's gutter untouched. */
+/* ---- Filter sidebar ----
+   A Bootstrap responsive offcanvas (offcanvas-lg): a drawer below
+   992px, a plain column above. On desktop the white panel is drawn
+   on .offcanvas-body rather than on .products-sidebar, because
+   .products-sidebar is also the grid column and its gutter padding
+   would end up inside the panel. */
+
+.products-sidebar {
+  --bs-offcanvas-bg-color: var(--shop-surface);
+  --bs-offcanvas-color: var(--shop-ink);
+  --bs-offcanvas-border-color: transparent;
+  color: var(--shop-ink);
+}
+
 .products-sidebar .offcanvas-body {
-  padding: 1.75rem;
+  padding: 1.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(30, 42, 34, 0.2) transparent;
+}
+
+.products-sidebar .offcanvas-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.products-sidebar .offcanvas-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.products-sidebar .offcanvas-body::-webkit-scrollbar-thumb {
+  background-color: rgba(30, 42, 34, 0.2);
+  border-radius: 999px;
 }
 
 @media (min-width: 992px) {
   .products-sidebar {
     position: sticky;
     top: 100px;
-    /* Cap the sidebar to the visible viewport (minus the sticky offset
-       and a little breathing room) so a long category list scrolls
-       inside the sidebar itself instead of growing the whole page. */
+    align-self: flex-start; /* don't stretch to the grid's height, or sticky has no room */
+  }
+
+  /* Bootstrap strips offcanvas-body's background, padding and scroll
+     at this width with its own rules; these come later, so they win
+     (the background needs !important to match Bootstrap's). */
+  .products-sidebar .offcanvas-body {
+    background-color: var(--shop-surface) !important;
+    border: 1px solid var(--shop-line);
+    border-radius: 16px;
+    padding: 1.5rem;
     max-height: calc(100svh - 120px);
     overflow-y: auto;
   }
 
-  /* Bootstrap's offcanvas markup includes a header (title + close
-     button) meant for the mobile drawer state — hide it once the
-     sidebar is back to being a plain static column. */
   .products-sidebar .offcanvas-header {
     display: none;
   }
 }
 
 @media (max-width: 991.98px) {
+  /* Drawer: a strip of page stays visible (tap it to close), square
+     on the screen edge, rounded on the open edge. Padding 0 drops the
+     grid-column gutter, which is useless once it's a drawer. */
+  .products-sidebar {
+    --bs-offcanvas-width: min(86vw, 360px);
+    padding-left: 0;
+    padding-right: 0;
+    border-radius: 0 18px 18px 0;
+  }
+
   .products-sidebar .offcanvas-header {
-    border-bottom: 1px solid rgba(237, 241, 232, 0.12);
-    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--shop-line);
+    padding: 1.1rem 1.5rem;
   }
 
   .products-sidebar .offcanvas-title {
-    font-family: "PP Neue Montreal", sans-serif;
-    text-transform: uppercase;
-    font-size: 0.9rem;
-    letter-spacing: 0.5px;
+    font-family: "Inter", sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--shop-ink);
   }
 
-  /* Overrides the 1.75rem default further up for the mobile drawer */
-  .products-sidebar .offcanvas-body {
-    padding: 1.5rem;
+  /* The close button was white for the old dark drawer; make it dark
+     so it shows on the white panel. */
+  .products-sidebar .btn-close {
+    --bs-btn-close-white-filter: none;
+    filter: none;
   }
 }
 
-/* Thin, dark-matched scrollbar for the sidebar (WebKit browsers) */
-.products-sidebar::-webkit-scrollbar {
-  width: 6px;
-}
+/* Filter groups */
 
-.products-sidebar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.products-sidebar::-webkit-scrollbar-thumb {
-  background-color: rgba(237, 241, 232, 0.25);
-  border-radius: 999px;
-}
-
-.products-sidebar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(237, 241, 232, 0.4);
-}
-
-/* Firefox */
-.products-sidebar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(237, 241, 232, 0.25) transparent;
-}
-
-/* Each filter block gets a hairline rule below it (instead of only
-   the flex gap) so "category / price / size / color" read as
-   distinct, ordered groups inside one panel. */
 .products-sidebar-block:not(:last-child) {
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(237, 241, 232, 0.1);
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--shop-line);
 }
 
 .products-sidebar-block h5 {
-  font-family: "PP Neue Montreal", sans-serif;
+  font-family: "Inter", sans-serif;
   text-transform: uppercase;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: var(--base-100);
-  opacity: 0.55;
-  margin-bottom: 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--shop-muted);
+  margin-bottom: 0.75rem;
 }
 
-/* Category buttons — top-level categories and their subcategories.
-   A left accent bar + tinted pill mark the active item, so state is
-   visible even at a glance (not just a subtle text-color change). */
+/* Category list */
 
 .products-cat-btn {
-  position: relative;
   display: block;
   width: 100%;
   text-align: left;
   background: none;
   border: none;
-  color: var(--base-100);
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.3px;
-  padding: 0.55rem 0.75rem 0.55rem 1rem;
-  margin-bottom: 0.15rem;
+  color: var(--shop-ink);
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 2px;
   border-radius: 8px;
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.15s ease, background-color 0.15s ease;
-}
-
-.products-cat-btn::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 3px;
-  height: 0%;
-  transform: translateY(-50%);
-  border-radius: 999px;
-  background-color: var(--base-200);
-  transition: height 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .products-cat-btn.indent {
-  padding-left: 1.75rem;
-  font-size: 0.72rem;
-  text-transform: none;
-  font-family: "Inter", sans-serif;
-  font-weight: 500;
+  padding-left: 1.5rem;
+  font-size: 0.86rem;
+  font-weight: 400;
+  color: var(--shop-muted);
 }
 
 .products-cat-btn:hover {
-  opacity: 1;
-  background-color: rgba(237, 241, 232, 0.06);
+  background-color: var(--shop-bg);
+  color: var(--shop-ink);
 }
 
 .products-cat-btn.is-active {
-  opacity: 1;
-  color: var(--base-100);
-  background-color: rgba(225, 44, 26, 0.18);
-}
-
-.products-cat-btn.is-active::before {
-  height: 55%;
+  background-color: var(--shop-green-tint);
+  color: var(--shop-green);
+  font-weight: 600;
 }
 
 .products-subtree {
@@ -1061,30 +1084,31 @@ section {
 .products-subtree-group {
   font-family: "Inter", sans-serif;
   text-transform: uppercase;
-  font-size: 0.62rem;
-  letter-spacing: 0.6px;
-  color: var(--base-100);
-  opacity: 0.4;
-  margin: 0.6rem 0 0.2rem 1rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--shop-muted);
+  margin: 0.6rem 0 0.2rem 0.75rem;
 }
 
-/* Price range sliders */
+/* Price range */
 
 .products-price-row {
   display: flex;
   justify-content: space-between;
   font-family: "Inter", sans-serif;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--shop-ink);
   margin-bottom: 0.6rem;
-  opacity: 0.85;
 }
 
 .products-sidebar input[type="range"] {
   width: 100%;
-  accent-color: var(--base-200);
+  accent-color: var(--shop-green);
 }
 
-/* Size / color filter chips */
+/* Size / color chips */
 
 .products-chip-row {
   display: flex;
@@ -1094,228 +1118,267 @@ section {
 
 .products-chip {
   font-family: "Inter", sans-serif;
-  font-size: 0.72rem;
-  letter-spacing: 0.2px;
-  padding: 0.4rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.38rem 0.8rem;
   border-radius: 999px;
-  border: 1px solid rgba(237, 241, 232, 0.35);
-  background: transparent;
-  color: var(--base-100);
+  border: 1px solid var(--shop-line);
+  background: var(--shop-surface);
+  color: var(--shop-ink);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.products-chip:hover {
+  border-color: var(--shop-ink);
 }
 
 .products-chip.is-active {
-  background-color: var(--base-200);
-  border-color: var(--base-200);
-  color: var(--base-100);
+  background-color: var(--shop-green);
+  border-color: var(--shop-green);
+  color: #fff;
 }
 
 .products-clear-btn {
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  letter-spacing: 0.5px;
-  background: none;
-  border: 1px solid rgba(237, 241, 232, 0.35);
-  color: var(--base-100);
-  padding: 0.6rem 1rem;
-  border-radius: 999px;
+  font-family: "Inter", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--shop-surface);
+  border: 1px solid var(--shop-line);
+  color: var(--shop-ink);
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
   cursor: pointer;
   width: 100%;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .products-clear-btn:hover {
-  border-color: var(--base-100);
-  background-color: rgba(237, 241, 232, 0.06);
+  border-color: var(--shop-ink);
+  background-color: var(--shop-bg);
 }
 
-/* ---- Main column: search/sort toolbar + product grid ---- */
+/* ---- Toolbar: search, sort, mobile Filters button ---- */
 
 .products-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
-  padding-bottom: 1.5rem;
-  margin-bottom: 1.75rem;
-  border-bottom: 1px solid rgba(78, 34, 15, 0.12);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .products-filter-toggle {
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.7rem;
+  font-family: "Inter", sans-serif;
+  font-size: 0.88rem;
   font-weight: 600;
-  letter-spacing: 0.5px;
-  padding: 0.8rem 1.2rem;
-  border-radius: 999px;
-  border: 1px solid var(--base-300);
-  background-color: var(--base-300);
-  color: var(--base-100);
+  padding: 0.8rem 1.1rem 0.8rem 2.6rem;
+  border-radius: 12px;
+  border: 1px solid var(--shop-line);
+  background: var(--shop-surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e2a22' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M4 7h10M18 7h2M4 17h4M12 17h8'/%3E%3Ccircle cx='16' cy='7' r='2'/%3E%3Ccircle cx='10' cy='17' r='2'/%3E%3C/svg%3E")
+    no-repeat 1rem center / 18px;
+  color: var(--shop-ink);
   cursor: pointer;
   white-space: nowrap;
+  transition: border-color 0.15s ease;
 }
 
 .products-filter-toggle:hover {
-  background-color: #3a1c0e;
+  border-color: var(--shop-ink);
 }
 
 .products-search {
   flex: 1;
   min-width: 220px;
   font-family: "Inter", sans-serif;
-  font-size: 0.85rem;
-  padding: 0.85rem 1.3rem;
-  border-radius: 999px;
-  border: 1px solid rgba(78, 34, 15, 0.25);
-  background-color: #fff;
-  color: var(--base-300);
+  font-size: 0.92rem;
+  padding: 0.8rem 1rem 0.8rem 2.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--shop-line);
+  background: var(--shop-surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666b61' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E")
+    no-repeat 1rem center / 18px;
+  color: var(--shop-ink);
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .products-search::placeholder {
-  color: var(--base-300);
-  opacity: 0.45;
+  color: var(--shop-muted);
 }
 
 .products-search:focus {
-  border-color: var(--base-200);
+  border-color: var(--shop-green);
+  box-shadow: 0 0 0 3px rgba(46, 94, 62, 0.15);
 }
 
 .products-sort {
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  letter-spacing: 0.4px;
-  padding: 0.8rem 1.2rem;
-  border-radius: 999px;
-  border: 1px solid rgba(78, 34, 15, 0.25);
-  background-color: var(--base-100);
-  color: var(--base-300);
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 0.8rem 2.6rem 0.8rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--shop-line);
+  background: var(--shop-surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e2a22' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 1rem center / 14px;
+  color: var(--shop-ink);
   cursor: pointer;
+}
+
+.products-sort:focus {
+  outline: none;
+  border-color: var(--shop-green);
+  box-shadow: 0 0 0 3px rgba(46, 94, 62, 0.15);
 }
 
 .products-result-line {
   font-family: "Inter", sans-serif;
-  font-size: 0.78rem;
-  color: var(--base-300);
-  opacity: 0.6;
-  margin-bottom: 1.25rem;
+  text-transform: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--shop-muted);
+  margin-bottom: 1rem;
 }
-
-/* Layout for #products-grid comes from Bootstrap's .row /
-   .row-cols-* classes in the HTML — no custom grid rule needed
-   here. Just the empty/loading state message below. */
 
 .products-status {
   width: 100%;
   text-align: center;
   padding: 3rem 1rem;
-  color: var(--base-300);
+  color: var(--shop-muted);
   font-family: "Inter", sans-serif;
-  opacity: 0.7;
 }
 
-/* Individual product card */
+/* ---- Product card ---- */
 
 .product-card {
-  background-color: var(--base-300);
-  padding: 0;
+  height: 100%;
+  background-color: var(--shop-surface);
+  border: 1px solid var(--shop-line);
   border-radius: 14px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.product-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 28px rgba(26, 4, 1, 0.3);
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
 }
 
 .product-card-img {
   position: relative;
   width: 100%;
-  aspect-ratio: 4/3;
+  aspect-ratio: 1 / 1;
+  background-color: var(--shop-tile);
+  overflow: hidden;
+}
+
+.product-card-img img {
+  transition: transform 0.5s ease;
+}
+
+/* Only devices with a real mouse get the lift; on phones a tapped
+   card would otherwise stay lifted. */
+@media (hover: hover) {
+  .product-card:hover {
+    border-color: transparent;
+    box-shadow: 0 14px 30px rgba(30, 42, 34, 0.12);
+    transform: translateY(-3px);
+  }
+
+  .product-card:hover .product-card-img img {
+    transform: scale(1.04);
+  }
 }
 
 .product-badge {
   position: absolute;
-  top: 0.7rem;
-  right: 0.7rem;
-  font-family: "PP Neue Montreal", sans-serif;
+  top: 0.65rem;
+  left: 0.65rem;
+  right: auto;
+  font-family: "Inter", sans-serif;
   text-transform: uppercase;
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.4px;
-  padding: 0.3rem 0.65rem;
-  border-radius: 999px;
-  background-color: var(--base-200);
-  color: var(--base-100);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  background-color: var(--shop-clay);
+  color: #fff;
 }
 
 .product-card-body {
-  padding: 1.1rem 1.25rem 1.3rem;
+  flex: 1;
+  padding: 0.9rem 1rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.25rem;
 }
 
 .product-card-cat {
   font-family: "Inter", sans-serif;
   text-transform: uppercase;
-  font-size: 0.65rem;
-  letter-spacing: 0.5px;
-  color: var(--base-200);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--shop-green);
 }
 
 .product-card-body h4 {
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 1.05rem;
-  font-weight: 500;
-  color: var(--base-100);
-  line-height: 1.15;
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--shop-ink);
 }
 
+/* margin-top:auto pins price + button to the bottom, so they line up
+   across a row even when titles wrap to two lines */
 .product-card-footer {
+  margin-top: auto;
+  padding-top: 0.6rem;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  margin-top: 0.5rem;
+  gap: 0.5rem;
 }
 
 .product-card-price {
-  font-family: "PP Neue Montreal", sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 1rem;
-  font-weight: 600;
-  color: var(--base-100);
+  font-weight: 700;
+  color: var(--shop-ink);
 }
 
 .product-card-btn {
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.65rem;
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.8rem;
   font-weight: 600;
-  letter-spacing: 0.4px;
-  padding: 0.55rem 1rem;
+  letter-spacing: 0;
+  padding: 0.45rem 0.95rem;
   border-radius: 999px;
-  border: none;
-  background-color: var(--base-100);
-  color: var(--base-300);
+  border: 1px solid var(--shop-line);
+  background-color: var(--shop-surface);
+  color: var(--shop-ink);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .product-card-btn:hover {
-  background-color: #f5f0a8;
+  background-color: var(--shop-green);
+  border-color: var(--shop-green);
+  color: #fff;
 }
 
-/* ---- Cart icon (in nav) + "added to cart" toast ---- */
+/* ---- Cart icon (in nav) + "added to cart" toast ----
+   Unchanged: the nav and toast appear on other pages too. */
 
 .cart-badge {
   position: relative;
@@ -1361,7 +1424,8 @@ section {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
-/* Add to styles.css — supports the "already in cart" feedback in products.js */
+
+/* Supports the "already in cart" feedback in products.js */
 
 .cart-toast--added {
   background: var(--tb-forest, #33502f);
@@ -1384,7 +1448,7 @@ section {
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(26, 4, 1, 0.55);
+  background: rgba(22, 32, 25, 0.45);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
@@ -1400,45 +1464,57 @@ section {
   position: fixed;
   top: 0;
   right: 0;
-  width: min(720px, 100%);
+  width: min(640px, 100%);
   height: 100svh;
-  background-color: var(--base-100);
+  background-color: var(--shop-surface);
   transform: translateX(100%);
   transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1);
   z-index: 50;
   overflow-y: auto;
 }
 
+/* Shadow only while open: on the closed drawer it would bleed onto
+   the right edge of the page */
 .product-drawer.is-open {
   transform: translateX(0);
+  box-shadow: -24px 0 60px rgba(22, 32, 25, 0.18);
 }
 
+/* Floats over the photo's top-right corner and stays put while the
+   drawer scrolls */
 .drawer-close {
   position: sticky;
-  top: 1.25rem;
-  margin-left: calc(100% - 3.5rem);
+  top: 1rem;
+  display: block;
+  margin: 1rem 0 0 calc(100% - 3.5rem);
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
-  border: none;
-  background-color: var(--base-300);
-  color: var(--base-100);
-  font-size: 1.1rem;
+  border: 1px solid var(--shop-line);
+  background-color: var(--shop-surface);
+  box-shadow: 0 2px 10px rgba(22, 32, 25, 0.1);
+  color: var(--shop-ink);
+  font-size: 1rem;
   cursor: pointer;
   z-index: 5;
+  transition: background-color 0.15s ease;
+}
+
+.drawer-close:hover {
+  background-color: var(--shop-bg);
 }
 
 .drawer-content {
-  padding: 0 2.5rem 3rem;
-  margin-top: -1.5rem;
+  padding: 0 2rem 3rem;
+  margin-top: -2.5rem;
 }
 
 .drawer-img-main {
   width: 100%;
-  aspect-ratio: 4/3;
-  border-radius: 16px;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
   overflow: hidden;
-  background-color: var(--base-300);
+  background-color: var(--shop-tile);
 }
 
 .drawer-img-main img {
@@ -1449,87 +1525,114 @@ section {
 
 .drawer-thumbs {
   display: flex;
-  gap: 0.6rem;
-  margin-top: 0.75rem;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
 }
 
 .drawer-thumb {
-  width: 70px;
-  height: 56px;
-  border-radius: 8px;
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
   overflow: hidden;
   border: 2px solid transparent;
   padding: 0;
   cursor: pointer;
-  background: none;
+  background: var(--shop-tile);
+  opacity: 0.75;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.drawer-thumb:hover {
+  opacity: 1;
 }
 
 .drawer-thumb.is-active {
-  border-color: var(--base-200);
+  border-color: var(--shop-green);
+  opacity: 1;
 }
 
 .drawer-info {
-  margin-top: 1.75rem;
+  margin-top: 1.5rem;
 }
 
 .drawer-category {
   font-family: "Inter", sans-serif;
   text-transform: uppercase;
-  font-size: 0.7rem;
-  letter-spacing: 0.5px;
-  color: var(--base-200);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--shop-green);
 }
 
 #drawer-title {
-  margin-top: 0.3rem;
-  color: var(--base-300);
+  margin-top: 0.35rem;
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: clamp(1.4rem, 2.6vw, 1.85rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--shop-ink);
   text-align: left;
 }
 
 .drawer-price {
-  font-family: "PP Neue Montreal", sans-serif;
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: var(--base-300);
-  margin-top: 0.5rem;
+  font-family: "Inter", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--shop-ink);
+  margin-top: 0.4rem;
 }
 
 .drawer-stock {
-  display: inline-block;
-  margin-top: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
   font-family: "Inter", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.68rem;
-  letter-spacing: 0.4px;
-  color: #3f7d42;
+  text-transform: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--shop-green);
+}
+
+.drawer-stock::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: currentColor;
 }
 
 .drawer-stock--out {
-  color: var(--base-200);
+  color: var(--shop-clay);
 }
 
 .drawer-desc {
-  margin-top: 1.25rem;
+  margin-top: 1.1rem;
   font-family: "Inter", sans-serif;
   text-transform: none;
-  font-size: 0.9rem;
-  line-height: 1.55;
-  color: var(--base-300);
-  opacity: 0.8;
+  font-size: 0.93rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--shop-muted);
 }
 
 .drawer-option-row {
-  margin-top: 1.5rem;
+  margin-top: 1.4rem;
 }
 
 .drawer-option-row h5 {
-  font-family: "PP Neue Montreal", sans-serif;
+  font-family: "Inter", sans-serif;
   text-transform: uppercase;
-  font-size: 0.7rem;
-  letter-spacing: 0.5px;
-  color: var(--base-300);
-  opacity: 0.6;
-  margin-bottom: 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--shop-ink);
+  margin-bottom: 0.55rem;
 }
 
 .drawer-opt-group {
@@ -1540,82 +1643,100 @@ section {
 
 .drawer-opt {
   font-family: "Inter", sans-serif;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
+  font-weight: 500;
   padding: 0.5rem 0.95rem;
-  border-radius: 999px;
-  border: 1px solid var(--base-300);
-  background: transparent;
-  color: var(--base-300);
+  border-radius: 10px;
+  border: 1px solid var(--shop-line);
+  background: var(--shop-surface);
+  color: var(--shop-ink);
   cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.drawer-opt:hover {
+  border-color: var(--shop-ink);
 }
 
 .drawer-opt.is-active {
-  background-color: var(--base-300);
-  color: var(--base-100);
+  background-color: var(--shop-green-tint);
+  border-color: var(--shop-green);
+  color: var(--shop-green);
+  font-weight: 600;
 }
 
 .drawer-specs {
-  margin-top: 1.75rem;
-  border-top: 1px solid rgba(26, 4, 1, 0.12);
-  padding-top: 1.25rem;
+  margin-top: 1.6rem;
+  border-top: 1px solid var(--shop-line);
 }
 
 .drawer-spec-row {
   display: flex;
   justify-content: space-between;
+  gap: 1rem;
   font-family: "Inter", sans-serif;
-  font-size: 0.82rem;
-  padding: 0.55rem 0;
-  border-bottom: 1px solid rgba(26, 4, 1, 0.08);
-  color: var(--base-300);
+  font-size: 0.86rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--shop-line);
+  color: var(--shop-ink);
 }
 
 .drawer-spec-row span:first-child {
-  opacity: 0.55;
+  color: var(--shop-muted);
+}
+
+.drawer-spec-row span:last-child {
+  text-align: right;
+  font-weight: 500;
 }
 
 .drawer-purchase-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-top: 2rem;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
 }
 
 .drawer-qty {
   width: 4.5rem;
   font-family: "Inter", sans-serif;
-  font-size: 0.9rem;
-  padding: 0.75rem;
-  border-radius: 10px;
-  border: 1px solid var(--base-300);
-  background: transparent;
-  color: var(--base-300);
+  font-size: 0.95rem;
+  padding: 0.85rem 0.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--shop-line);
+  background: var(--shop-surface);
+  color: var(--shop-ink);
   text-align: center;
+}
+
+.drawer-qty:focus {
+  outline: none;
+  border-color: var(--shop-green);
 }
 
 .drawer-add-btn {
   flex: 1;
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.8rem;
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.95rem;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  letter-spacing: 0;
   padding: 0.95rem 1.5rem;
-  border-radius: 999px;
+  border-radius: 12px;
   border: none;
-  background-color: var(--base-200);
-  color: var(--base-100);
+  background-color: var(--shop-green);
+  color: #fff;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .drawer-add-btn:hover:not(:disabled) {
-  background-color: #c62313;
+  background-color: var(--shop-green-dark);
 }
 
 .drawer-add-btn:disabled {
-  background-color: var(--base-300);
-  opacity: 0.4;
+  background-color: #c9ccc4;
+  color: #fff;
   cursor: not-allowed;
 }
 
@@ -1624,19 +1745,19 @@ section {
    next to the addDoc call. ---- */
 
 .drawer-reviews {
-  margin-top: 1.75rem;
-  border-top: 1px solid rgba(26, 4, 1, 0.12);
-  padding-top: 1.25rem;
+  margin-top: 2rem;
+  border-top: 1px solid var(--shop-line);
+  padding-top: 1.5rem;
 }
 
 .drawer-reviews-heading,
 .drawer-review-form h6 {
-  font-family: "PP Neue Montreal", sans-serif;
+  font-family: "Inter", sans-serif;
   text-transform: uppercase;
-  font-size: 0.7rem;
-  letter-spacing: 0.5px;
-  color: var(--base-300);
-  opacity: 0.6;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--shop-ink);
   margin-bottom: 0.75rem;
 }
 
@@ -1649,24 +1770,23 @@ section {
 }
 
 .drawer-reviews-summary-stars {
-  color: var(--base-200);
-  font-size: 1rem;
+  color: var(--shop-star);
+  font-size: 1.05rem;
   letter-spacing: 1px;
 }
 
 .drawer-reviews-summary-avg {
-  font-family: "PP Neue Montreal", sans-serif;
-  font-weight: 600;
-  color: var(--base-300);
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  color: var(--shop-ink);
   font-size: 0.95rem;
 }
 
 .drawer-reviews-summary-count {
   font-family: "Inter", sans-serif;
   text-transform: none;
-  color: var(--base-300);
-  opacity: 0.55;
-  font-size: 0.8rem;
+  color: var(--shop-muted);
+  font-size: 0.82rem;
 }
 
 .drawer-review-list {
@@ -1677,7 +1797,7 @@ section {
 }
 
 .drawer-review-item {
-  border-bottom: 1px solid rgba(26, 4, 1, 0.08);
+  border-bottom: 1px solid var(--shop-line);
   padding-bottom: 1rem;
 }
 
@@ -1689,21 +1809,20 @@ section {
 }
 
 .drawer-review-item-name {
-  font-family: "PP Neue Montreal", sans-serif;
-  font-size: 0.85rem;
+  font-family: "Inter", sans-serif;
+  font-size: 0.88rem;
   font-weight: 600;
-  color: var(--base-300);
+  color: var(--shop-ink);
 }
 
 .drawer-review-item-date {
   font-family: "Inter", sans-serif;
-  font-size: 0.72rem;
-  color: var(--base-300);
-  opacity: 0.5;
+  font-size: 0.75rem;
+  color: var(--shop-muted);
 }
 
 .drawer-review-item-stars {
-  color: var(--base-200);
+  color: var(--shop-star);
   font-size: 0.85rem;
   letter-spacing: 1px;
   margin-bottom: 0.35rem;
@@ -1712,32 +1831,31 @@ section {
 .drawer-review-item-comment {
   font-family: "Inter", sans-serif;
   text-transform: none;
-  font-size: 0.85rem;
-  line-height: 1.5;
-  color: var(--base-300);
-  opacity: 0.8;
+  font-size: 0.88rem;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--shop-ink);
 }
 
 .drawer-review-more-btn {
   display: block;
   width: 100%;
   font-family: "Inter", sans-serif;
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 0.6rem 1rem;
-  border-radius: 999px;
-  border: 1px solid var(--base-300);
-  background: transparent;
-  color: var(--base-300);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--shop-line);
+  background: var(--shop-surface);
+  color: var(--shop-ink);
   cursor: pointer;
-  opacity: 0.75;
   margin-bottom: 1.75rem;
-  transition: opacity 0.15s ease, background-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .drawer-review-more-btn:hover {
-  opacity: 1;
-  background-color: rgba(26, 4, 1, 0.05);
+  background-color: var(--shop-bg);
+  border-color: var(--shop-ink);
 }
 
 .drawer-review-stars-input {
@@ -1750,17 +1868,15 @@ section {
   background: none;
   border: none;
   padding: 0;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   line-height: 1;
-  color: var(--base-300);
-  opacity: 0.3;
+  color: #d5d1c6;
   cursor: pointer;
-  transition: opacity 0.15s ease, color 0.15s ease;
+  transition: color 0.15s ease;
 }
 
 .drawer-review-star-btn.is-active {
-  color: var(--base-200);
-  opacity: 1;
+  color: var(--shop-star);
 }
 
 .drawer-review-input {
@@ -1768,43 +1884,47 @@ section {
   width: 100%;
   font-family: "Inter", sans-serif;
   text-transform: none;
-  font-size: 0.85rem;
-  padding: 0.7rem 0.9rem;
+  font-size: 0.9rem;
+  padding: 0.75rem 0.9rem;
   border-radius: 10px;
-  border: 1px solid var(--base-300);
-  background: transparent;
-  color: var(--base-300);
+  border: 1px solid var(--shop-line);
+  background: var(--shop-surface);
+  color: var(--shop-ink);
   outline: none;
   margin-bottom: 0.7rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.drawer-review-input:focus {
+  border-color: var(--shop-green);
+  box-shadow: 0 0 0 3px rgba(46, 94, 62, 0.15);
 }
 
 .drawer-review-input::placeholder {
-  color: var(--base-300);
-  opacity: 0.45;
+  color: var(--shop-muted);
 }
 
 .drawer-review-textarea {
   resize: vertical;
-  min-height: 80px;
+  min-height: 90px;
 }
 
 .drawer-review-submit-btn {
-  font-family: "PP Neue Montreal", sans-serif;
-  text-transform: uppercase;
-  font-size: 0.75rem;
+  font-family: "Inter", sans-serif;
+  text-transform: none;
+  font-size: 0.88rem;
   font-weight: 600;
-  letter-spacing: 0.5px;
   padding: 0.75rem 1.4rem;
-  border-radius: 999px;
+  border-radius: 10px;
   border: none;
-  background-color: var(--base-200);
-  color: var(--base-100);
+  background-color: var(--shop-green);
+  color: #fff;
   cursor: pointer;
   transition: background-color 0.2s ease, opacity 0.2s ease;
 }
 
 .drawer-review-submit-btn:hover:not(:disabled) {
-  background-color: #c62313;
+  background-color: var(--shop-green-dark);
 }
 
 .drawer-review-submit-btn:disabled {
@@ -1815,14 +1935,847 @@ section {
 .drawer-review-feedback {
   margin-top: 0.6rem;
   font-family: "Inter", sans-serif;
-  font-size: 0.8rem;
-  color: #2e7d32;
+  font-size: 0.82rem;
+  color: var(--shop-green);
 }
 
 .drawer-review-feedback--error {
-  color: #c62313;
+  color: var(--shop-clay);
 }
 
-/* ---- Responsive: below lg, the sidebar is a Bootstrap offcanvas
-   drawer (handled by Bootstrap's own offcanvas-lg CSS) — this just
-   covers the rest of the page's small-screen spacing. ---- */
+/* ---- Phones ---- */
+
+@media (max-width: 767.98px) {
+  .products-hero {
+    padding: 115px 1.25rem 2.25rem;
+  }
+
+  .products-layout {
+    padding: 1.25rem 1rem 4rem;
+  }
+
+  /* Search on its own full-width row, then Filters + Sort */
+  .products-toolbar {
+    gap: 0.6rem;
+  }
+
+  .products-search {
+    order: -1;
+    flex: 1 1 100%;
+    min-width: 0;
+    font-size: 16px; /* under 16px, iPhones zoom in when you tap it */
+  }
+
+  .products-filter-toggle {
+    flex: 0 0 auto;
+  }
+
+  .products-sort {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .product-card-body {
+    padding: 0.7rem 0.8rem 0.85rem;
+  }
+
+  .product-card-body h4 {
+    font-size: 0.88rem;
+  }
+
+  .product-card-price {
+    font-size: 0.92rem;
+  }
+
+  .product-card-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.76rem;
+  }
+
+  .drawer-content {
+    padding: 0 1.25rem 2.5rem;
+  }
+
+  .drawer-qty,
+  .drawer-review-input {
+    font-size: 16px; /* same iPhone zoom fix */
+  }
+}
+
+/* ==========================================================
+   Mobile menu: keep the X (and logo) above the open menu panel
+   ========================================================== */
+@media (max-width: 767.98px) {
+  /* The panel is at Bootstrap's z-index 1045 inside the header,
+     so the toggler at 11 was underneath it. Lift it above. */
+  .site-header-toggler,
+  .site-header-logo {
+    position: relative;
+    z-index: 1046;
+  }
+
+  /* Keep the header above Bootstrap's backdrop the whole time the
+     menu is open, not only while it's animating */
+  body.nav-open .site-header {
+    z-index: 1050;
+  }
+}
+/* ==========================================================
+   Header spacing
+   ========================================================== */
+
+/* Same breathing room on both sides; scales down on small screens */
+.site-header {
+  padding: 0 clamp(1.25rem, 4vw, 3.5rem);
+}
+
+/* A 64px logo in the 80px header leaves 8px of air above and below,
+   instead of touching the top and bottom edges */
+.site-header-logo img {
+  height: 64px;
+}
+
+/* booking.css and login.css nudge the logo further into the corner;
+   this cancels that, so the logo sits the same on every page */
+.site-header .site-header-logo {
+  transform: none;
+}
+
+@media (min-width: 768px) {
+  /* The nav used to stop 8rem short of the right edge; now it sits
+     the same distance from the right as the logo does from the left */
+  .site-header-nav {
+    margin-right: 0;
+  }
+
+  .site-header-nav a {
+    white-space: nowrap;
+  }
+}
+
+/* Tablets: slightly smaller pills so the row fits on one line
+   (Book Now / Log In used to break onto two lines) */
+@media (min-width: 768px) and (max-width: 1099.98px) {
+  .site-header-nav {
+    gap: 0.35rem;
+  }
+
+  .site-header-nav a {
+    padding: 0.6rem 0.85rem;
+    font-size: 0.65rem;
+  }
+}
+
+/* ==========================================================
+   HOMEPAGE — Featured trails + Featured gear
+   Sit right after the hero. Cards are built by home-featured.js
+   from Firestore; until then the grey .is-loading cards hold the
+   space. Trails sit on the hero's brown, gear on the shop's sand,
+   so the page steps from the brand into the store.
+   ========================================================== */
+
+/* The global `section` rule makes every <section> one full screen
+   tall with overflow hidden; these need their natural height. */
+.home-section {
+  height: auto;
+  overflow: visible;
+  padding: clamp(4rem, 9vw, 7.5rem) 0;
+}
+
+.home-section[hidden] {
+  display: none;
+}
+
+.home-section-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 4vw, 3.5rem);
+}
+
+.home-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: clamp(1.75rem, 4vw, 2.75rem);
+}
+
+.home-eyebrow {
+  display: block;
+  margin-bottom: 0.9rem;
+  font-family: "Inter", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.home-title {
+  margin: 0;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: clamp(2rem, 5.2vw, 4.25rem);
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.home-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid currentColor;
+  font-family: "Inter", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.home-more svg {
+  transition: transform 0.2s ease;
+}
+
+.home-more:hover svg {
+  transform: translateX(3px);
+}
+
+@keyframes home-shimmer {
+  to { background-position: -200% 0; }
+}
+
+/* ---------- Featured trails (dark) ---------- */
+
+.home-trails {
+  background-color: var(--base-300);
+  color: var(--base-100);
+}
+
+.home-trails .home-eyebrow { color: rgba(220, 219, 213, 0.55); }
+.home-trails .home-title { color: var(--base-100); }
+.home-trails .home-more { color: var(--base-100); }
+.home-trails .home-more:hover { color: #f5f0a8; }
+
+/* --cols is set by home-featured.js to the number of trails shown
+   (1–4), so two trails fill the row instead of leaving gaps */
+.home-trails-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.home-trail-card {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  aspect-ratio: 3 / 4;
+  border-radius: 18px;
+  overflow: hidden;
+  background-color: #3a180b;
+  color: var(--base-100);
+  text-decoration: none;
+}
+
+/* Fewer, wider cards get a wider shape so they don't turn into towers */
+.home-trails-grid[data-count="2"] .home-trail-card { aspect-ratio: 4 / 3; }
+.home-trails-grid[data-count="1"] .home-trail-card { aspect-ratio: 21 / 9; }
+
+.home-trail-card img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Dark fade at the bottom so the name always reads over the photo */
+.home-trail-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    to top,
+    rgba(20, 8, 3, 0.9) 0%,
+    rgba(20, 8, 3, 0.4) 45%,
+    rgba(20, 8, 3, 0) 72%
+  );
+}
+
+/* Photo missing or broken: warm gradient with a mountain outline */
+.home-trail-card.no-photo {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 60' fill='none' stroke='%23dcdbd5' stroke-opacity='.18' stroke-width='1.5' stroke-linejoin='round'%3E%3Cpath d='M2 58 38 14l18 22 14-12 48 34z'/%3E%3C/svg%3E")
+      center 38% / 70% no-repeat,
+    linear-gradient(160deg, #6b3a22, #2a1209);
+}
+
+.home-trail-card:focus-visible {
+  outline: 2px solid #f5f0a8;
+  outline-offset: 3px;
+}
+
+.home-trail-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background-color: rgba(246, 241, 231, 0.94);
+  font-family: "Inter", sans-serif;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--base-300);
+}
+
+/* Coloured dot: green easy, amber moderate, red hard */
+.home-trail-badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #8a7f74;
+}
+
+.home-trail-badge--easy::before { background-color: #3f7d42; }
+.home-trail-badge--moderate::before { background-color: #c58a12; }
+.home-trail-badge--hard::before { background-color: var(--base-200); }
+
+.home-trail-go {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--base-100);
+  color: var(--base-300);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.home-trail-body {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.25rem 1.25rem 1.4rem;
+}
+
+.home-trail-location {
+  font-family: "Inter", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(246, 241, 231, 0.72);
+}
+
+/* h3 is restyled site-wide (huge, tight); bring it back to card size */
+.home-trail-card .home-trail-name {
+  margin: 0;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: clamp(1.25rem, 1.7vw, 1.55rem);
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: #f6f1e7;
+}
+
+.home-trail-meta {
+  font-family: "Inter", sans-serif;
+  font-size: 0.82rem;
+  color: rgba(246, 241, 231, 0.8);
+}
+
+.home-trail-meta strong {
+  font-weight: 700;
+  color: #f6f1e7;
+}
+
+@media (hover: hover) {
+  .home-trail-card:hover img {
+    transform: scale(1.06);
+  }
+
+  .home-trail-card:hover .home-trail-go {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Touch screens have no hover, so show the arrow all the time */
+@media (hover: none) {
+  .home-trail-go {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Loading placeholders */
+.home-trail-card.is-loading {
+  background: linear-gradient(100deg, #5a2a15 30%, #6c361e 50%, #5a2a15 70%) 0 0 / 200% 100%;
+  animation: home-shimmer 1.4s linear infinite;
+}
+
+.home-trail-card.is-loading::after {
+  display: none;
+}
+
+/* ---------- Featured gear (sand, like the shop) ---------- */
+
+.home-gear {
+  background-color: var(--shop-bg);
+  color: var(--shop-ink);
+}
+
+.home-gear .home-eyebrow { color: var(--shop-clay); }
+.home-gear .home-title { color: var(--base-300); }
+.home-gear .home-more { color: var(--base-300); }
+.home-gear .home-more:hover { color: var(--shop-clay); }
+
+.home-gear-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.home-gear-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--shop-line);
+  border-radius: 16px;
+  overflow: hidden;
+  background-color: var(--shop-surface);
+  color: var(--shop-ink);
+  text-decoration: none;
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+
+.home-gear-card:focus-visible {
+  outline: 2px solid var(--base-300);
+  outline-offset: 3px;
+}
+
+.home-gear-media {
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background-color: var(--shop-tile);
+}
+
+.home-gear-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.home-gear-media.no-photo {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234E220F' stroke-opacity='.25' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 5V3h8v2'/%3E%3Crect x='4' y='5' width='16' height='16' rx='3'/%3E%3Cpath d='M4 11h16M10 11v3h4v-3'/%3E%3C/svg%3E")
+      center / 34% no-repeat,
+    var(--shop-tile);
+}
+
+.home-gear-badge {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.7rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  background-color: var(--shop-clay);
+  font-family: "Inter", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.home-gear-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.95rem 1.05rem 1.1rem;
+}
+
+.home-gear-cat {
+  font-family: "Inter", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--shop-clay);
+}
+
+.home-gear-card .home-gear-name {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--shop-ink);
+}
+
+/* Price + "View" stay on the bottom line, even when names wrap */
+.home-gear-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.6rem;
+}
+
+.home-gear-price {
+  font-family: "Inter", sans-serif;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--base-300);
+}
+
+.home-gear-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: "Inter", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--shop-muted);
+  transition: color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .home-gear-card:hover {
+    border-color: transparent;
+    box-shadow: 0 16px 34px rgba(30, 20, 12, 0.12);
+    transform: translateY(-3px);
+  }
+
+  .home-gear-card:hover .home-gear-media img {
+    transform: scale(1.05);
+  }
+
+  .home-gear-card:hover .home-gear-view {
+    color: var(--base-300);
+  }
+}
+
+/* Loading placeholders */
+.home-gear-card.is-loading .home-gear-media,
+.home-skel-line {
+  background: linear-gradient(100deg, #ebe6db 30%, #f5f1e8 50%, #ebe6db 70%) 0 0 / 200% 100%;
+  animation: home-shimmer 1.4s linear infinite;
+}
+
+.home-skel-line {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+}
+
+.home-skel-line--short {
+  width: 45%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-trail-card.is-loading,
+  .home-gear-card.is-loading .home-gear-media,
+  .home-skel-line {
+    animation: none;
+  }
+}
+
+/* ---------- Tablets ---------- */
+
+@media (max-width: 1100px) {
+  .home-trails-grid,
+  .home-gear-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-trails-grid[data-count="1"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-trails-grid .home-trail-card,
+  .home-trails-grid[data-count="2"] .home-trail-card {
+    aspect-ratio: 4 / 5;
+  }
+
+  .home-trails-grid[data-count="1"] .home-trail-card {
+    aspect-ratio: 16 / 9;
+  }
+}
+
+/* ---------- Phones ---------- */
+
+@media (max-width: 767.98px) {
+  .home-section-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  /* Trails swipe sideways instead of stacking into a long scroll;
+     a sliver of the next card shows so it's clear there are more */
+  .home-trails-grid {
+    display: flex;
+    gap: 0.85rem;
+    margin: 0 calc(-1 * clamp(1.25rem, 4vw, 3.5rem));
+    padding: 0 clamp(1.25rem, 4vw, 3.5rem) 0.25rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 clamp(1.25rem, 4vw, 3.5rem);
+    scrollbar-width: none;
+  }
+
+  .home-trails-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home-trails-grid .home-trail-card,
+  .home-trails-grid[data-count="2"] .home-trail-card {
+    flex: 0 0 78%;
+    aspect-ratio: 4 / 5;
+    scroll-snap-align: start;
+  }
+
+  .home-trails-grid[data-count="1"] .home-trail-card {
+    flex-basis: 100%;
+    aspect-ratio: 4 / 5;
+  }
+
+  .home-gear-grid {
+    gap: 0.75rem;
+  }
+
+  .home-gear-body {
+    padding: 0.75rem 0.8rem 0.9rem;
+  }
+
+  .home-gear-card .home-gear-name {
+    font-size: 0.9rem;
+  }
+
+  .home-gear-view {
+    display: none;
+  }
+}
+
+/* ==========================================================
+   SITE FOOTER (footer.js) — shared by every page
+   Paste on each page, just before </body>:
+     <div id="site-footer-root"></div>
+     <script type="module" src="footer.js"></script>
+   Explicit fonts throughout, so page stylesheets that restyle
+   every element (login.css sets Roboto on *) don't leak in.
+   ========================================================== */
+
+.site-footer {
+  position: relative;
+  background-color: #23100a;
+  color: var(--base-100);
+}
+
+.site-footer,
+.site-footer * {
+  font-family: "Inter", sans-serif;
+}
+
+.site-footer-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(3.5rem, 7vw, 5.5rem) clamp(1.25rem, 4vw, 3.5rem) 2rem;
+}
+
+.site-footer-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(4, minmax(0, 1fr));
+  gap: 2.5rem 2rem;
+}
+
+.site-footer-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.1rem;
+  max-width: 320px;
+}
+
+/* The global img rule stretches every image to 100%; size the logo */
+.site-footer-logo img {
+  width: auto;
+  height: 76px;
+}
+
+/* Overrides the site-wide uppercase <p> style */
+.site-footer .site-footer-tagline {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.55;
+  text-transform: none;
+  color: rgba(220, 219, 213, 0.62);
+}
+
+.site-footer-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+  padding: 0.8rem 1.3rem;
+  border-radius: 999px;
+  background-color: var(--base-100);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--base-300);
+  transition: background-color 0.2s ease;
+}
+
+.site-footer-cta:hover {
+  background-color: #f5f0a8;
+  color: var(--base-300);
+}
+
+.site-footer-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.site-footer-label {
+  margin-bottom: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(220, 219, 213, 0.45);
+}
+
+/* Normal case (not all caps) and allowed to wrap, so a long email
+   can never run off the screen again */
+.site-footer-col a {
+  max-width: 100%;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  text-decoration: none;
+  color: var(--base-100);
+  overflow-wrap: anywhere;
+  transition: color 0.2s ease;
+}
+
+.site-footer-col a:hover,
+.site-footer-col a:focus-visible {
+  color: #f5f0a8;
+}
+
+.site-footer .site-footer-nowrap {
+  white-space: nowrap;
+}
+
+.site-footer-social {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.site-footer-social svg {
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.site-footer-note {
+  font-size: 0.85rem;
+  color: rgba(220, 219, 213, 0.5);
+}
+
+.site-footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(220, 219, 213, 0.14);
+  font-size: 0.8rem;
+  color: rgba(220, 219, 213, 0.5);
+}
+
+.site-footer-top-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0;
+  border: 0;
+  background: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(220, 219, 213, 0.7);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.site-footer-top-btn:hover {
+  color: #f5f0a8;
+}
+
+/* Tablets: brand across the top, four link columns under it */
+@media (max-width: 1024px) {
+  .site-footer-top {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .site-footer-brand {
+    grid-column: 1 / -1;
+    max-width: 420px;
+  }
+}
+
+/* Phones: link groups in two columns */
+@media (max-width: 640px) {
+  .site-footer-top {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2.25rem 1.25rem;
+  }
+
+  .site-footer-logo img {
+    height: 64px;
+  }
+
+  .site-footer-bottom {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+  }
+}

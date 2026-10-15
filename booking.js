@@ -23,8 +23,13 @@ import {
   collection,
   getDocs,
   addDoc,
+  doc,
+  updateDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { addBookingToCart } from "./cart-store.js";
+// ADDED: Step 03 accommodation — basecamp + partner hotels live in this
+// one file, so prices and hotels can be changed without touching here.
+import { BASECAMP, HOTELS } from "./accommodations.js";
 // ADDED: writes the booking through the shared data layer, which
 // stamps `uid` on it. That uid is what links the booking to the
 // customer — it's what makes it appear under My Bookings on their
@@ -75,6 +80,7 @@ function auditTrails(list) {
 
 const trailSelect = document.getElementById("trail-select");
 const guideSelect = document.getElementById("guide-select");
+const guideCardsEl = document.getElementById("guide-cards");
 const packageSelect = document.getElementById("package-select");
 const packageCardsEl = document.getElementById("package-cards");
 const activityGroup = document.getElementById("activity-group");
@@ -118,6 +124,23 @@ const summaryIncluded = document.getElementById("summary-included");
 const summaryPricePerPerson = document.getElementById("summary-price-per-person");
 const summarySubtotalLabel = document.getElementById("summary-subtotal-label");
 const summarySubtotal = document.getElementById("summary-subtotal");
+const summaryStay = document.getElementById("summary-stay");
+const summaryStayLine = document.getElementById("summary-stay-line");
+const summaryStayLabel = document.getElementById("summary-stay-label");
+const summaryStayCost = document.getElementById("summary-stay-cost");
+
+/* ---------- Accommodation (Step 03) DOM refs ---------- */
+
+const stayOptionsEl = document.getElementById("stay-options");
+const stayGoogleEl = document.getElementById("stay-google");
+const stayGoogleLink = document.getElementById("stay-google-link");
+const stayBasecampEl = document.getElementById("stay-basecamp");
+const stayHotelsEl = document.getElementById("stay-hotels");
+const stayHotelListEl = document.getElementById("stay-hotel-list");
+const stayMapEl = document.getElementById("stay-map");
+const stayNightsRow = document.getElementById("stay-nights-row");
+const stayNightsSelect = document.getElementById("stay-nights");
+const stayCheckinEl = document.getElementById("stay-checkin");
 
 /* ---------- Header show/hide on scroll ----------
    Hides the header while the page is actively being scrolled (either
@@ -171,6 +194,11 @@ let guides = [];
 let packages = [];
 let weatherRequestToken = 0; // guards against out-of-order responses if the user changes date/trail quickly
 
+// Accommodation choice: "none" (default), "basecamp", or "hotel"
+let stayType = "none";
+let stayHotelId = null;
+let lastStayMapQuery = null;
+
 /* ---------- Helpers ---------- */
 
 function formatPrice(value) {
@@ -209,6 +237,35 @@ function buildMetaLine(trail) {
 
 function getTrailById(id) {
   return trails.find((t) => t.trail_id === id);
+}
+
+/* Names and specialties go straight into card HTML, so escape them. */
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/* Guide photo: looks for guides/<guide_id>.jpg automatically, so adding
+   a photo is just dropping a file named after the guide's ID into the
+   guides/ folder — no Firestore editing needed. A `photo` field on the
+   guide document, if one exists, wins over the automatic path. If the
+   file isn't there, the card shows the guide's initials instead. */
+function getGuidePhotoSrc(guide) {
+  const fromFirestore = guide.photo || guide.image || guide.photo_url;
+  if (fromFirestore) return resolveImageSrc(fromFirestore);
+  return guide.guide_id ? `guides/${encodeURIComponent(guide.guide_id)}.jpg` : "";
+}
+
+function getInitials(name) {
+  return String(name || "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0].toUpperCase())
+    .join("");
 }
 
 function getGuideById(id) {
@@ -319,6 +376,378 @@ function syncPackageCardSelection() {
   });
 }
 
+/* ---------- Guide selection cards ----------
+   Same idea as the package cards: the real <select id="guide-select">
+   stays in the DOM (visually hidden) and is still what the submit code
+   reads. Each card shows the guide's photo, name, specialty and rating;
+   clicking one sets guideSelect.value and fires "change". */
+
+function renderGuideCards(availableGuides) {
+  if (!guideCardsEl) return;
+
+  guideCardsEl.classList.remove("guide-cards--disabled");
+
+  if (availableGuides.length === 0) {
+    guideCardsEl.innerHTML = `<p class="guide-cards-placeholder">No guides available for this trail yet.</p>`;
+    return;
+  }
+
+  guideCardsEl.innerHTML = availableGuides
+    .map((g) => {
+      const photo = getGuidePhotoSrc(g);
+      const hasRating = g.rating !== undefined && g.rating !== null && g.rating !== "";
+      return `
+        <button type="button" class="guide-card" data-id="${escapeHtml(g.guide_id)}" aria-pressed="false">
+          <span class="guide-card-photo">
+            <span class="guide-card-initials" aria-hidden="true">${escapeHtml(getInitials(g.full_name))}</span>
+            ${photo ? `<img src="${escapeHtml(photo)}" alt="" loading="lazy" />` : ""}
+            <span class="guide-card-check" aria-hidden="true"></span>
+          </span>
+          <span class="guide-card-name">${escapeHtml(g.full_name || "Guide")}</span>
+          ${g.specialty ? `<span class="guide-card-specialty">${escapeHtml(g.specialty)}</span>` : ""}
+          ${hasRating ? `<span class="guide-card-rating">★ ${escapeHtml(g.rating)}</span>` : ""}
+        </button>
+      `;
+    })
+    .join("");
+
+  guideCardsEl.querySelectorAll(".guide-card").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      guideSelect.value = btn.dataset.id;
+      guideSelect.dispatchEvent(new Event("change"));
+    });
+  });
+
+  // A photo that fails to load is removed, so the initials underneath show.
+  guideCardsEl.querySelectorAll(".guide-card-photo img").forEach((img) => {
+    img.addEventListener("error", () => img.remove());
+  });
+
+  syncGuideCardSelection();
+}
+
+function syncGuideCardSelection() {
+  if (!guideCardsEl) return;
+  guideCardsEl.querySelectorAll(".guide-card").forEach((btn) => {
+    const selected = btn.dataset.id === guideSelect.value;
+    btn.classList.toggle("guide-card--selected", selected);
+    btn.setAttribute("aria-pressed", String(selected));
+  });
+}
+
+/* ---------- Accommodation (Step 03) ----------
+   Three choices: no accommodation (default, free), Trailbound's own
+   basecamp (per person / night), or a partner hotel near the trail
+   (per room / night). Hotels come from accommodations.js and are
+   matched to the trail by area (e.g. every "Benguet" trail). Each
+   hotel shows its real address, a "View on Google Maps" link, and the
+   picked one is shown on an embedded Google map (free embed, no API
+   key — same approach as the checkout shipping map). */
+
+const ICONS = {
+  none:
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>',
+  basecamp:
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20 12 5l9 15z"/><path d="M12 20v-6l-3 6M12 14l3 6"/></svg>',
+  hotel:
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 21v-4h6v4M8 7h2M14 7h2M8 11h2M14 11h2"/></svg>',
+  pin:
+    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+  external:
+    '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+};
+
+function getGroupSize() {
+  return Math.max(1, parseInt(groupSizeInput.value, 10) || 1);
+}
+
+function getStayNights() {
+  return Math.max(1, parseInt(stayNightsSelect?.value, 10) || 1);
+}
+
+function getHotelById(id) {
+  return HOTELS.find((h) => h.id === id);
+}
+
+// Hotels whose `areas` appear in the trail's location or name, or that
+// list this trail in `trail_ids`
+function hotelsForTrail(trail) {
+  if (!trail) return [];
+  const haystack = `${trail.name || ""} ${trail.location || ""}`.toLowerCase();
+  return HOTELS.filter(
+    (h) =>
+      (h.trail_ids || []).includes(trail.trail_id) ||
+      (h.areas || []).some((a) => haystack.includes(String(a).toLowerCase())),
+  );
+}
+
+function roomsNeeded(hotel, groupSize) {
+  return Math.max(1, Math.ceil(groupSize / (Number(hotel.sleeps) || 2)));
+}
+
+function trailMapsQuery(trail) {
+  return [trail.name, trail.location, "Philippines"].filter(Boolean).join(", ");
+}
+
+function hotelMapsQuery(hotel) {
+  return `${hotel.name}, ${hotel.address}`;
+}
+
+// Opens Google Maps (website or app) searching for the place
+function mapsSearchUrl(query) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+// Free Google Maps embed for the in-page map
+function mapsEmbedUrl(query) {
+  return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=14&output=embed`;
+}
+
+function plural(n, word) {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
+/* Everything the price, summary and booking need to know about the stay */
+function getStayQuote() {
+  const groupSize = getGroupSize();
+  const nights = getStayNights();
+
+  if (stayType === "basecamp") {
+    const trail = getTrailById(trailSelect.value);
+    return {
+      type: "basecamp",
+      name: BASECAMP.name,
+      address: trail ? `Near the ${trail.name} jump-off, ${trail.location || ""}`.trim() : "",
+      nights,
+      rooms: null,
+      cost: (Number(BASECAMP.price_per_person) || 0) * groupSize * nights,
+    };
+  }
+
+  if (stayType === "hotel") {
+    const hotel = getHotelById(stayHotelId);
+    if (!hotel) return { type: "hotel", name: null, nights, cost: 0, incomplete: true };
+    const rooms = roomsNeeded(hotel, groupSize);
+    return {
+      type: "hotel",
+      id: hotel.id,
+      name: hotel.name,
+      address: hotel.address,
+      nights,
+      rooms,
+      cost: (Number(hotel.price_per_room) || 0) * rooms * nights,
+    };
+  }
+
+  return { type: "none", name: null, nights: 0, rooms: null, cost: 0 };
+}
+
+/* Check-in is the night before the hike */
+function getStayDates(nights) {
+  if (!dateInput.value) return null;
+  const [y, m, d] = dateInput.value.split("-").map(Number);
+  const checkIn = new Date(y, m - 1, d - 1);
+  const checkOut = new Date(y, m - 1, d - 1 + nights);
+  const iso = (x) =>
+    `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+  const nice = (x) => x.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return { checkIn: iso(checkIn), checkOut: iso(checkOut), label: `${nice(checkIn)} → ${nice(checkOut)}` };
+}
+
+function renderStayOptions(trail) {
+  if (!stayOptionsEl) return;
+  const hotels = hotelsForTrail(trail);
+
+  // Switching to a trail with no partner hotels drops a hotel choice
+  if (stayType === "hotel" && hotels.length === 0) stayType = "none";
+  if (stayHotelId && !hotels.some((h) => h.id === stayHotelId)) stayHotelId = null;
+
+  const cheapestRoom = hotels.length
+    ? Math.min(...hotels.map((h) => Number(h.price_per_room) || 0))
+    : 0;
+
+  const options = [
+    {
+      type: "none",
+      title: "No accommodation",
+      sub: "I'll arrange my own stay",
+      price: "Free",
+    },
+    {
+      type: "basecamp",
+      title: BASECAMP.name,
+      sub: BASECAMP.tagline || "Our own camp near the trail",
+      price: `${formatPrice(BASECAMP.price_per_person)} <small>/ person / night</small>`,
+    },
+    {
+      type: "hotel",
+      title: "Nearby hotel",
+      sub: hotels.length
+        ? `${plural(hotels.length, "partner hotel")} near this trail`
+        : "No partner hotels near this trail yet",
+      price: hotels.length ? `from ${formatPrice(cheapestRoom)} <small>/ room / night</small>` : "",
+      disabled: hotels.length === 0,
+    },
+  ];
+
+  stayOptionsEl.innerHTML = options
+    .map(
+      (o) => `
+        <label class="stay-option${o.disabled ? " is-disabled" : ""}${o.type === stayType ? " is-selected" : ""}">
+          <input type="radio" class="stay-radio" name="stay-type" value="${o.type}"
+                 ${o.type === stayType ? "checked" : ""} ${o.disabled ? "disabled" : ""} />
+          <span class="stay-option-icon" aria-hidden="true">${ICONS[o.type]}</span>
+          <span class="stay-option-title">${escapeHtml(o.title)}</span>
+          <span class="stay-option-sub">${escapeHtml(o.sub)}</span>
+          ${o.price ? `<span class="stay-option-price">${o.price}</span>` : ""}
+        </label>`,
+    )
+    .join("");
+
+  stayOptionsEl.querySelectorAll('input[name="stay-type"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      stayType = input.value;
+      renderStayDetails();
+      updatePrice();
+    });
+  });
+
+  // "Prefer somewhere else?" → Google Maps search for hotels near the trail
+  if (stayGoogleEl && stayGoogleLink && trail) {
+    stayGoogleLink.href = mapsSearchUrl(`hotels near ${trailMapsQuery(trail)}`);
+    stayGoogleLink.textContent = `Find hotels near ${trail.name} on Google Maps`;
+    stayGoogleEl.hidden = false;
+  }
+
+  renderStayDetails();
+}
+
+function renderHotelList() {
+  const trail = getTrailById(trailSelect.value);
+  const hotels = hotelsForTrail(trail);
+  const groupSize = getGroupSize();
+
+  stayHotelListEl.innerHTML = hotels
+    .map((h) => {
+      const rooms = roomsNeeded(h, groupSize);
+      return `
+        <label class="stay-hotel${h.id === stayHotelId ? " is-selected" : ""}">
+          <input type="radio" class="stay-radio" name="stay-hotel" value="${escapeHtml(h.id)}"
+                 ${h.id === stayHotelId ? "checked" : ""} />
+          <span class="stay-hotel-dot" aria-hidden="true"></span>
+          <span class="stay-hotel-body">
+            <span class="stay-hotel-name">${escapeHtml(h.name)}</span>
+            <span class="stay-hotel-address">${ICONS.pin}${escapeHtml(h.address)}</span>
+            <span class="stay-hotel-meta">${[h.distance, h.sleeps ? `Sleeps ${h.sleeps} per room` : ""]
+              .filter(Boolean)
+              .map(escapeHtml)
+              .join(" · ")}</span>
+            <a class="stay-hotel-map" href="${escapeHtml(mapsSearchUrl(hotelMapsQuery(h)))}"
+               target="_blank" rel="noopener">View on Google Maps ${ICONS.external}</a>
+          </span>
+          <span class="stay-hotel-price">
+            ${formatPrice(h.price_per_room)}
+            <small>/ room / night</small>
+            ${rooms > 1 ? `<small class="stay-hotel-rooms">${rooms} rooms for ${groupSize}</small>` : ""}
+          </span>
+        </label>`;
+    })
+    .join("");
+
+  stayHotelListEl.querySelectorAll('input[name="stay-hotel"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      stayHotelId = input.value;
+      syncStaySelection();
+      showStayMap();
+      updatePrice();
+    });
+  });
+}
+
+function syncStaySelection() {
+  stayOptionsEl?.querySelectorAll(".stay-option").forEach((label) => {
+    label.classList.toggle("is-selected", label.querySelector("input").checked);
+  });
+  stayHotelListEl?.querySelectorAll(".stay-hotel").forEach((label) => {
+    label.classList.toggle("is-selected", label.querySelector("input").checked);
+  });
+}
+
+function renderStayBasecamp() {
+  const trail = getTrailById(trailSelect.value);
+  if (!trail) return;
+  stayBasecampEl.innerHTML = `
+    <div class="stay-info-head">
+      <span class="stay-info-title">${escapeHtml(BASECAMP.name)}</span>
+      <span class="stay-info-where">${ICONS.pin}Near the ${escapeHtml(trail.name)} jump-off${
+        trail.location ? `, ${escapeHtml(trail.location)}` : ""
+      }</span>
+    </div>
+    <ul class="stay-info-list">
+      ${(BASECAMP.includes || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+    </ul>
+    <a class="stay-hotel-map" href="${escapeHtml(mapsSearchUrl(trailMapsQuery(trail)))}"
+       target="_blank" rel="noopener">View the area on Google Maps ${ICONS.external}</a>`;
+}
+
+/* Embedded map of the picked hotel (or the trail area for basecamp) */
+function showStayMap() {
+  const trail = getTrailById(trailSelect.value);
+  const hotel = getHotelById(stayHotelId);
+  let query = null;
+  if (stayType === "hotel" && hotel) query = hotelMapsQuery(hotel);
+  if (stayType === "basecamp" && trail) query = trailMapsQuery(trail);
+
+  if (!query) {
+    stayMapEl.hidden = true;
+    return;
+  }
+  stayMapEl.hidden = false;
+  if (query === lastStayMapQuery) return; // don't reload the same map
+  lastStayMapQuery = query;
+  stayMapEl.innerHTML = `
+    <iframe src="${escapeHtml(mapsEmbedUrl(query))}" loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="Map of ${escapeHtml(query)}"></iframe>`;
+}
+
+function updateStayCheckin() {
+  if (!stayCheckinEl) return;
+  const dates = getStayDates(getStayNights());
+  stayCheckinEl.textContent = dates ? dates.label : "Pick a hike date first";
+}
+
+function renderStayDetails() {
+  if (!stayOptionsEl) return;
+  syncStaySelection();
+
+  stayBasecampEl.hidden = stayType !== "basecamp";
+  if (stayType === "basecamp") renderStayBasecamp();
+
+  stayHotelsEl.hidden = stayType !== "hotel";
+  if (stayType === "hotel") renderHotelList();
+
+  showStayMap();
+  stayNightsRow.hidden = stayType === "none";
+  updateStayCheckin();
+}
+
+function resetStay() {
+  stayType = "none";
+  stayHotelId = null;
+  lastStayMapQuery = null;
+  if (!stayOptionsEl) return;
+  stayOptionsEl.innerHTML = `<span class="package-cards-placeholder">Select a trail to see places to stay.</span>`;
+  stayGoogleEl.hidden = true;
+  stayBasecampEl.hidden = true;
+  stayHotelsEl.hidden = true;
+  stayHotelListEl.innerHTML = "";
+  stayMapEl.hidden = true;
+  stayMapEl.innerHTML = "";
+  stayNightsRow.hidden = true;
+  stayNightsSelect.value = "1";
+}
+
 /* ---------- Trail change ---------- */
 
 function handleTrailChange() {
@@ -328,6 +757,7 @@ function handleTrailChange() {
     trailInfo.hidden = true;
     resetPackageSelect();
     resetGuideSelect();
+    resetStay();
     updatePrice();
     return;
   }
@@ -356,12 +786,18 @@ function handleTrailChange() {
     renderPackageCards();
   }
 
-  // A trail document that's missing `guide_ids` (or has it stored as
+  // A trail document that's missing its guide list (or has it stored as
   // something other than an array) used to throw here, which killed the
   // rest of this function — including updatePrice() → updateSummaryPanel().
-  // That's why the summary panel never appeared. Guard it so one
-  // incomplete document can't take down the whole page.
-  const availableGuides = (Array.isArray(trail.guide_id) ? trail.guide_id : [])
+  // Guard it so one incomplete document can't take down the whole page.
+  // Reads `guide_ids` (the name auditTrails() expects) and falls back to
+  // `guide_id`, so trails saved under either name work.
+  const guideIds = Array.isArray(trail.guide_ids)
+    ? trail.guide_ids
+    : Array.isArray(trail.guide_id)
+      ? trail.guide_id
+      : [];
+  const availableGuides = guideIds
     .map(getGuideById)
     .filter(Boolean)
     .filter((g) => g.status === "Active");
@@ -377,6 +813,11 @@ function handleTrailChange() {
           )
           .join("")
       : `<option value="" disabled selected>No guides available for this trail</option>`;
+
+  renderGuideCards(availableGuides);
+
+  // Step 03: stay options depend on where the trail is
+  renderStayOptions(trail);
 
   updatePrice();
 
@@ -402,6 +843,11 @@ function resetPackageSelect() {
 function resetGuideSelect() {
   guideSelect.disabled = true;
   guideSelect.innerHTML = `<option value="" disabled selected>Select a trail first...</option>`;
+
+  if (guideCardsEl) {
+    guideCardsEl.classList.add("guide-cards--disabled");
+    guideCardsEl.innerHTML = `<p class="guide-cards-placeholder">Select a trail to see available guides.</p>`;
+  }
 }
 
 /* ---------- Package change ---------- */
@@ -436,7 +882,9 @@ function handlePackageChange() {
 function updatePrice() {
   const pkg = getPackageById(packageSelect.value);
   const groupSize = Math.max(1, parseInt(groupSizeInput.value, 10) || 1);
-  const total = pkg ? (Number(pkg.price_per_pax) || 0) * groupSize : 0;
+  const packageTotal = pkg ? (Number(pkg.price_per_pax) || 0) * groupSize : 0;
+  // Total = package for the group + accommodation (0 when none)
+  const total = packageTotal + getStayQuote().cost;
   priceTotalEl.textContent = formatPrice(total);
   updateSummaryPanel();
 }
@@ -481,17 +929,52 @@ function updateSummaryPanel() {
   summaryPricePerPerson.textContent = formatPrice(perPerson);
   summarySubtotalLabel.textContent = `Subtotal (${groupSize} × ${formatPrice(perPerson)})`;
   summarySubtotal.textContent = formatPrice(subtotal);
+
+  // Accommodation line
+  const stay = getStayQuote();
+  if (summaryStay) {
+    summaryStay.textContent =
+      stay.type === "none"
+        ? "No accommodation"
+        : stay.incomplete
+          ? "Choose a hotel"
+          : [stay.name, plural(stay.nights, "night"), stay.rooms ? plural(stay.rooms, "room") : ""]
+              .filter(Boolean)
+              .join(" · ");
+  }
+  if (summaryStayLine) {
+    summaryStayLine.hidden = stay.cost <= 0;
+    summaryStayLabel.textContent = `Accommodation (${plural(stay.nights || 1, "night")})`;
+    summaryStayCost.textContent = formatPrice(stay.cost);
+  }
 }
 
 trailSelect.addEventListener("change", handleTrailChange);
 packageSelect.addEventListener("change", handlePackageChange);
-guideSelect.addEventListener("change", updateSummaryPanel);
+guideSelect.addEventListener("change", () => {
+  syncGuideCardSelection();
+  updateSummaryPanel();
+});
 // group-size is a <select> now (to match the redesigned UI) instead of a
 // number input — "change" is the reliable event for <select> across
 // browsers, "input" is kept too since modern browsers fire it as well.
 groupSizeInput.addEventListener("input", updatePrice);
 groupSizeInput.addEventListener("change", updatePrice);
 dateInput.addEventListener("input", updateSummaryPanel);
+
+// Accommodation: group size changes how many hotel rooms are needed,
+// nights and the hike date change the check-in dates and the price
+function refreshStayForGroup() {
+  if (stayType === "hotel") renderHotelList();
+  updatePrice();
+}
+groupSizeInput.addEventListener("change", refreshStayForGroup);
+stayNightsSelect?.addEventListener("change", () => {
+  updateStayCheckin();
+  updatePrice();
+});
+dateInput.addEventListener("input", updateStayCheckin);
+dateInput.addEventListener("change", updateStayCheckin);
 
 /* ---------- Weather forecast popup ---------- */
 
@@ -644,8 +1127,23 @@ form.addEventListener("submit", async (e) => {
     return;
   }
 
+  const stay = getStayQuote();
+  if (stay.incomplete) {
+    showFeedback("Please choose a hotel, or pick another accommodation option.", true);
+    stayHotelsEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+  const stayDates = stay.type === "none" ? null : getStayDates(stay.nights);
+
   submitBtn.disabled = true;
   submitBtn.textContent = "Booking...";
+
+  // The "Your details" step was removed from this page: name, phone and
+  // emergency contact are collected in the payment section instead.
+  // Name and email are pre-filled from the signed-in account so the
+  // booking still shows who it belongs to; the other three stay empty
+  // here and are filled in at checkout.
+  const currentUser = auth.currentUser;
 
   const booking = {
     trail_id: trail.trail_id,
@@ -657,12 +1155,13 @@ form.addEventListener("submit", async (e) => {
     guide_name: guide.full_name,
     date: dateInput.value,
     group_size: groupSize,
-    full_name: document.getElementById("full-name").value.trim(),
-    email: document.getElementById("email").value.trim(),
-    contact_number: document.getElementById("contact-number").value.trim(),
-    emergency_name: document.getElementById("emergency-name").value.trim(),
-    emergency_number: document.getElementById("emergency-number").value.trim(),
-    total_price: (Number(pkg.price_per_pax) || 0) * groupSize,
+    full_name: currentUser?.displayName || "",
+    email: currentUser?.email || "",
+    contact_number: "",
+    emergency_name: "",
+    emergency_number: "",
+    // Package for the whole group + accommodation (0 when none)
+    total_price: (Number(pkg.price_per_pax) || 0) * groupSize + stay.cost,
     status: "Pending",
     payment_status: "Unpaid",
     created_at: new Date().toISOString(),
@@ -692,24 +1191,55 @@ form.addEventListener("submit", async (e) => {
       amount:          booking.total_price
     });
 
+    // ADDED: the accommodation choice, saved on the booking so Admin
+    // (and the customer's My Bookings) can see where they're staying.
+    // Saved separately so createBooking() itself doesn't need to change;
+    // if this extra write is refused, the booking and its total
+    // (which already includes the stay) are still fine.
+    const accommodation =
+      stay.type === "none"
+        ? { type: "none" }
+        : {
+            type: stay.type,                 // "basecamp" | "hotel"
+            name: stay.name,
+            address: stay.address || null,
+            nights: stay.nights,
+            rooms: stay.rooms ?? null,
+            check_in: stayDates?.checkIn ?? null,
+            check_out: stayDates?.checkOut ?? null,
+            price: stay.cost,
+          };
+    try {
+      await updateDoc(doc(db, "bookings", newBookingId), { accommodation });
+    } catch (stayErr) {
+      console.warn("Could not save accommodation details on the booking:", stayErr);
+    }
+
     // Stage this reservation in the cart so it can be paid for at
     // checkout, alongside anything the person adds from the shop.
+    // The stay is added to the package name so it shows in the cart
+    // and at checkout, e.g. "Basic Trek + Evercrest Golf Club Resort (1 night)".
     addBookingToCart({
       bookingId: newBookingId,
       trailName: trail.name,
-      packageName: pkg.name,
+      packageName:
+        stay.type === "none"
+          ? pkg.name
+          : `${pkg.name} + ${stay.name} (${plural(stay.nights, "night")})`,
       date: booking.date,
       guideName: guide.full_name,
       groupSize,
       activity: booking.activity,
       price: booking.total_price,
       image: trail.image,
+      accommodation,
     });
 
     form.reset();
     trailInfo.hidden = true;
     resetPackageSelect();
     resetGuideSelect();
+    resetStay();
     updatePrice();
     openPostBookingModal(trail.name, booking.date);
   } catch (err) {

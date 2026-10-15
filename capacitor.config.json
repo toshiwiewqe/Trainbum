@@ -1,0 +1,7 @@
+{
+  "appId": "com.trailbound.app",
+  "appName": "Trailbound",
+  "webDir": "dist",
+  "server": { "url": "https://trailbound-app.web.app", 
+  "cleartext": false }
+}

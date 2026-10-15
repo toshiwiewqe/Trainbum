@@ -84,6 +84,9 @@ let contact = null;        // saved contact details (null = not yet)
 let emergency = null;      // saved emergency contact (null = not yet)
 let shipping = null;       // saved shipping address (null = not yet)
 let checkedAddress = null; // address that passed the map lookup
+let payTask = null;        // the Pay Now run in progress, if any
+let pendingOrderId = null; // order saved by Pay Now before going to Maya
+let payCancelled = false;  // set by "Cancel payment": stops the Maya redirect
 
 document.addEventListener("DOMContentLoaded", init);
 
@@ -99,6 +102,7 @@ function init() {
     "emergency-dialog", "emergency-form", "emg-code",
     "shipping-dialog", "shipping-form", "shipping-save",
     "ship-region-group", "address-msg", "dialog-map",
+    "cancel-btn", "cancel-dialog", "cancel-confirm",
   ].forEach((id) => (els[toKey(id)] = document.getElementById(id)));
 
   updateCartBadge(els.cartCount);
@@ -118,13 +122,17 @@ function init() {
 
   bindDialogs();
   bindRegionCards();
+  bindCancel();
   loadRemembered();
 
   els.rememberMe.addEventListener("change", () => {
     if (els.rememberMe.checked) remember();
     else safeStorage("remove");
   });
-  els.payBtn.addEventListener("click", handlePay);
+  // Kept in payTask so "Cancel payment" can wait for it (see cancelPayment)
+  els.payBtn.addEventListener("click", () => {
+    payTask = handlePay();
+  });
 
   render();
   openNextMissing(); // first visit: start them on whatever is still blank
@@ -323,6 +331,50 @@ function resetAddressCheck() {
   els.addressMsg.hidden = true;
   els.dialogMap.hidden = true;
   els.shippingSave.textContent = "Check address";
+}
+
+/* ================= Cancel payment =================
+   Before: the "Cancel payment" button had no click handler at all,
+   so clicking it did nothing.
+   Now it asks first ("Keep paying" / "Yes, cancel"), then sends the
+   customer back to the cart. The cart itself is left alone, so they
+   can check out again later — same as a cancelled Maya payment. */
+
+function bindCancel() {
+  els.cancelBtn.addEventListener("click", () => els.cancelDialog.showModal());
+
+  els.cancelDialog.querySelectorAll("[data-close]").forEach((btn) =>
+    btn.addEventListener("click", () => els.cancelDialog.close())
+  );
+  els.cancelDialog.addEventListener("click", (e) => {
+    if (e.target === els.cancelDialog) els.cancelDialog.close();
+  });
+
+  els.cancelConfirm.addEventListener("click", cancelPayment);
+}
+
+async function cancelPayment() {
+  payCancelled = true;
+  els.cancelConfirm.disabled = true;
+  els.cancelConfirm.textContent = "Cancelling…";
+
+  // If Pay Now was already pressed, let it finish saving the order
+  // first (handlePay sees payCancelled and won't go to Maya), so that
+  // order can be marked Cancelled instead of staying "Pending Payment".
+  if (payTask) await payTask.catch(() => {});
+
+  if (pendingOrderId) {
+    try {
+      await updateDoc(doc(db, "orders", pendingOrderId), {
+        status: "Cancelled",
+        "payment.status": "Cancelled",
+      });
+    } catch (err) {
+      console.warn("Could not mark the order as cancelled:", err);
+    }
+  }
+
+  window.location.href = "cart.html";
 }
 
 /* ================= Region cards ================= */
@@ -574,6 +626,7 @@ function buildMayaItems(items, shippingFee) {
 /* ================= Pay with Maya ================= */
 
 async function handlePay() {
+  if (payCancelled) return;
   // Safety net: never pay without confirmed details
   if (!contact || !emergency || (needsAddress && !shipping)) return openNextMissing();
 
@@ -636,21 +689,26 @@ async function handlePay() {
 
   try {
     const orderRef = await addDoc(collection(db, "orders"), order);
+    pendingOrderId = orderRef.id;
+    if (payCancelled) return; // cancelled while saving: cancelPayment marks it
 
     const { checkoutId, redirectUrl } = await createMayaCheckout(
       orderRef.id,
       total,
       buildMayaItems(items, shippingFee)
     );
+    if (payCancelled) return; // cancelled while Maya was loading: don't go there
 
     try {
       await updateDoc(doc(db, "orders", orderRef.id), { "payment.checkout_id": checkoutId });
     } catch (saveErr) {
       console.warn("Could not save Maya checkout id (check Firestore rules):", saveErr);
     }
+    if (payCancelled) return;
 
     window.location.href = redirectUrl;
   } catch (err) {
+    if (payCancelled) return; // they're leaving anyway; no error to show
     console.error("Failed to start Maya payment:", err);
     els.checkoutError.textContent =
       "We couldn't connect to Maya. Please try again. (Details are in the browser console.)";

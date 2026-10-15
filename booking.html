@@ -23,7 +23,9 @@
   <script type="module" src="bootstrap-init.js"></script>
   <script type="module" src="cart-badge.js"></script>
 
-    <main class="booking-page" style="background-image: url('trail-hero-bg.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed;">
+    <!-- The background photo now lives in booking.css (.booking-page),
+         so phones can get a version that doesn't blow the photo up. -->
+    <main class="booking-page">
       <div class="booking-page-header">
         <span class="booking-eyebrow">Plan your trip</span>
         <h1>Book your hike</h1>
@@ -100,10 +102,19 @@
             </div>
 
             <div class="form-group">
-              <label for="guide-select">Certified guide</label>
-              <select id="guide-select" required disabled>
-                  <option value="" disabled selected>Select a trail first...</option>
-                </select>
+              <label id="guide-label">Certified guide</label>
+              <!-- Real <select>, kept so booking.js can read the chosen guide
+                   the same way as before. Visually hidden; the guide cards
+                   below drive it and stay in sync (same pattern as packages).
+                   No `required` here: the browser can't point at a hidden
+                   field, so booking.js checks for a guide itself on submit. -->
+              <select id="guide-select" disabled class="visually-hidden-select" tabindex="-1" aria-hidden="true">
+                <option value="" disabled selected>Select a trail first...</option>
+              </select>
+
+              <div id="guide-cards" class="guide-cards guide-cards--disabled" role="group" aria-labelledby="guide-label">
+                <p class="guide-cards-placeholder">Select a trail to see available guides.</p>
+              </div>
             </div>
 
             <div class="form-row">
@@ -136,39 +147,53 @@
 
           <div class="trail-divider" aria-hidden="true"></div>
 
-          <div class="form-step">
+          <!-- Step 03: where they stay the night before the climb.
+               Options, hotels and prices come from accommodations.js;
+               booking.js fills this in once a trail is picked. -->
+          <div class="form-step" id="stay-step">
             <div class="form-step-label">
               <span class="form-step-number">03</span>
               <span class="form-step-heading">
-                <span class="form-step-title">Your details</span>
-                <span class="form-step-desc">We'll use this to send your booking confirmation.</span>
+                <span class="form-step-title">Accommodation</span>
+                <span class="form-step-desc">Stay near the trail the night before your climb, or arrange your own.</span>
               </span>
             </div>
 
             <div class="form-group">
-              <label for="full-name">Full name</label>
-              <input type="text" id="full-name" placeholder="Juan Dela Cruz" required />
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="email">Email address</label>
-                <input type="email" id="email" placeholder="you@email.com" required />
+              <label id="stay-label">Where will you stay?</label>
+              <div id="stay-options" class="stay-options" role="radiogroup" aria-labelledby="stay-label">
+                <span class="package-cards-placeholder">Select a trail to see places to stay.</span>
               </div>
-              <div class="form-group">
-                <label for="contact-number">Phone number</label>
-                <input type="tel" id="contact-number" placeholder="09XX XXX XXXX" required />
+              <div class="stay-google" id="stay-google" hidden>
+                Prefer somewhere else?
+                <a id="stay-google-link" href="#" target="_blank" rel="noopener">Find hotels near this trail on Google Maps</a>
               </div>
             </div>
 
-            <div class="form-row">
+            <!-- Basecamp details (shown when "Trailbound Basecamp" is picked) -->
+            <div id="stay-basecamp" class="stay-info" hidden></div>
+
+            <!-- Partner hotels near the chosen trail -->
+            <div class="form-group" id="stay-hotels" hidden>
+              <label id="stay-hotels-label">Choose a hotel near the trail</label>
+              <div id="stay-hotel-list" class="stay-hotel-list" role="radiogroup" aria-labelledby="stay-hotels-label"></div>
+            </div>
+
+            <!-- Google map of the picked hotel / basecamp area -->
+            <div id="stay-map" class="stay-map" hidden></div>
+
+            <div class="form-row" id="stay-nights-row" hidden>
               <div class="form-group">
-                <label for="emergency-name">Emergency contact name</label>
-                <input type="text" id="emergency-name" placeholder="Maria Dela Cruz" required />
+                <label for="stay-nights">Nights</label>
+                <select id="stay-nights">
+                  <option value="1" selected>1 night</option>
+                  <option value="2">2 nights</option>
+                  <option value="3">3 nights</option>
+                </select>
               </div>
               <div class="form-group">
-                <label for="emergency-number">Emergency contact number</label>
-                <input type="tel" id="emergency-number" placeholder="09XX XXX XXXX" required />
+                <label>Check-in → check-out</label>
+                <span class="stay-checkin" id="stay-checkin">Pick a hike date first</span>
               </div>
             </div>
           </div>
@@ -221,6 +246,10 @@
                 <dt>What's included</dt>
                 <dd id="summary-included">—</dd>
               </div>
+              <div class="summary-details-full">
+                <dt>Stay</dt>
+                <dd id="summary-stay">No accommodation</dd>
+              </div>
             </dl>
 
             <div class="trail-divider" aria-hidden="true"></div>
@@ -233,6 +262,10 @@
               <div>
                 <span id="summary-subtotal-label">Subtotal</span>
                 <span id="summary-subtotal">₱0</span>
+              </div>
+              <div id="summary-stay-line" hidden>
+                <span id="summary-stay-label">Accommodation</span>
+                <span id="summary-stay-cost">₱0</span>
               </div>
             </div>
           </div>
@@ -354,12 +387,10 @@
       </div>
     </div>
 
-    <footer class="booking-footer">
-      <span>© 2024 TrailBound Adventures. All rights reserved.</span>
-      <span>Adventure. Nature. You.</span>
-    </footer>
 
     <script type="module" src="booking.js"></script>
     <script type="module" src="auth-nav.js"></script>
+    <div id="site-footer-root"></div>
+    <script type="module" src="footer.js"></script>
   </body>
 </html>

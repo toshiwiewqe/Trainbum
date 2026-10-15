@@ -24,6 +24,8 @@
       <section class="co-main">
         <h1 class="co-title">Checkout</h1>
         <nav class="co-crumbs" aria-label="Checkout steps">
+          <a href="cart.html">Cart</a>
+          <span class="co-crumbs-sep">›</span>
           <span id="crumb-info">Information</span>
           <span class="co-crumbs-sep">›</span>
           <span id="crumb-pay" class="is-muted">Payment</span>
@@ -88,20 +90,31 @@
       </section>
 
       <!-- ================= RIGHT: order summary ================= -->
-      <aside class="co-summary">
-        <div class="co-summary-list" id="summary-list"></div>
-        <div class="co-summary-rows">
-          <div class="co-summary-row">
-            <span>Subtotal <span class="is-muted" id="summary-count"></span></span>
-            <span id="summary-subtotal">₱0</span>
-          </div>
-          <div class="co-summary-row" id="summary-shipping-row">
-            <span>Shipping cost</span>
-            <span id="summary-shipping">—</span>
-          </div>
-          <div class="co-summary-row co-summary-row--total">
-            <span>Total</span>
-            <span><span class="is-muted co-currency">PHP</span> <span id="summary-total">₱0</span></span>
+      <aside class="co-summary" aria-label="Order summary">
+        <!-- Phones only: folds the summary into one line at the top
+             of the page. Hidden on desktop by checkout.css. -->
+        <button type="button" class="co-summary-toggle" id="summary-toggle"
+                aria-expanded="false" aria-controls="summary-details">
+          <span class="co-summary-toggle-label">Show order summary</span>
+          <span class="co-summary-toggle-total" id="summary-toggle-total"></span>
+        </button>
+
+        <div class="co-summary-details" id="summary-details">
+          <h2 class="co-heading co-summary-heading">Order summary</h2>
+          <div class="co-summary-list" id="summary-list"></div>
+          <div class="co-summary-rows">
+            <div class="co-summary-row">
+              <span>Subtotal <span class="is-muted" id="summary-count"></span></span>
+              <span id="summary-subtotal">₱0</span>
+            </div>
+            <div class="co-summary-row" id="summary-shipping-row">
+              <span>Shipping cost</span>
+              <span id="summary-shipping">—</span>
+            </div>
+            <div class="co-summary-row co-summary-row--total">
+              <span>Total</span>
+              <span><span class="is-muted co-currency">PHP</span> <span id="summary-total">₱0</span></span>
+            </div>
           </div>
         </div>
       </aside>
@@ -283,6 +296,59 @@
       </div>
     </form>
   </dialog>
+
+  <!-- ================= MODAL 4: cancel payment ================= -->
+  <dialog class="co-dialog co-dialog--narrow" id="cancel-dialog" aria-labelledby="cancel-dialog-title">
+    <div class="co-dialog-inner">
+      <div class="co-dialog-head">
+        <h3 id="cancel-dialog-title">Cancel payment?</h3>
+        <button type="button" class="co-dialog-close" data-close aria-label="Close">×</button>
+      </div>
+
+      <div class="co-dialog-body">
+        <p class="co-dialog-note">
+          Nothing will be charged. Your cart stays saved, so you can come
+          back and check out any time.
+        </p>
+      </div>
+
+      <div class="co-dialog-foot">
+        <button type="button" class="co-btn-ghost" data-close>Keep paying</button>
+        <button type="button" class="co-btn-primary" id="cancel-confirm">Yes, cancel</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Phones: open/close the folded order summary, and keep the total
+       shown on the fold button in step with #summary-total (which
+       checkout.js fills in). Separate from checkout.js on purpose. -->
+  <script>
+    (function () {
+      var summary = document.querySelector(".co-summary");
+      var toggle = document.getElementById("summary-toggle");
+      var mirror = document.getElementById("summary-toggle-total");
+      var total = document.getElementById("summary-total");
+      if (!summary || !toggle || !mirror || !total) return;
+
+      var label = toggle.querySelector(".co-summary-toggle-label");
+
+      toggle.addEventListener("click", function () {
+        var open = summary.classList.toggle("is-open");
+        toggle.setAttribute("aria-expanded", String(open));
+        label.textContent = open ? "Hide order summary" : "Show order summary";
+      });
+
+      function syncTotal() {
+        mirror.textContent = total.textContent;
+      }
+      syncTotal();
+      new MutationObserver(syncTotal).observe(total, {
+        childList: true,
+        characterData: true,
+        subtree: true
+      });
+    })();
+  </script>
 
   <script type="module" src="checkout.js"></script>
 </body>

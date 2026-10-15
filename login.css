@@ -337,3 +337,24 @@
 .otp-link-btn:hover {
     color: #ffffff;
 }
+/* ==========================================================
+   Leave room for the fixed site header
+   ========================================================== */
+.login-page {
+    min-height: 100svh;
+    /* 80px is the fixed header's height, plus 1rem of breathing room,
+       so the card can never slide up under the logo and menu button */
+    padding: calc(80px + 1rem) 0 2rem;
+}
+
+@media (max-width: 480px) {
+    /* A little less padding so the card fits a phone screen better */
+    .login-box {
+        padding: 1.75rem 1.5rem;
+    }
+
+    /* Under 16px, iPhones zoom the page in when you tap a field */
+    .input-field {
+        font-size: 16px;
+    }
+}
