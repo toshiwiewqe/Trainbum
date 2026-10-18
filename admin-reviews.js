@@ -95,7 +95,7 @@ requireAdmin((user) => {
         render();
         renderAggregate();
       },
-      /* includeArchived, because archiving gear does not delete its
+      /* includeArchived, because archiving Products does not delete its
          reviews. Without this an archived product's reviews would all
          render as "product not found" — which reads like data loss
          rather than what it is. */

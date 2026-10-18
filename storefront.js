@@ -6,12 +6,12 @@
 
    Two kinds of container, because the site has two catalogs:
 
-     <div data-trailbound-products></div>   gear from `products`
+     <div data-trailbound-products></div>   Products from `products`
      <div data-trailbound-trails></div>     trails from `trails`
 
    Trails are what booking.js offers on the booking form, so a
-   trail card links straight into it with ?trail=<trail_id>. Gear
-   links to the product page. Only published items render: gear
+   trail card links straight into it with ?trail=<trail_id>. Products
+   links to the product page. Only published items render: Products
    with status "active", and trails that aren't Closed.
 
    Deliberately markup-agnostic, because it has to drop into pages
@@ -70,7 +70,7 @@ if (productContainers.length) {
         renderAll();
       },
       {
-        // Customers only ever see published gear.
+        // Customers only ever see published Products.
         activeOnly: true,
         onError: () => productContainers.forEach(showError)
       }
@@ -83,7 +83,7 @@ if (trailContainers.length) {
   track(
     watchTrails(
       (items) => {
-        // Map trails onto the same card shape as gear. `id` is the
+        // Map trails onto the same card shape as Products. `id` is the
         // trail_id, because that's what booking.js matches on.
         trails = items.map((t) => ({
           id: t.id,
@@ -157,7 +157,7 @@ function renderInto(container) {
       container.dataset.empty ||
         (isTrails
           ? "No trails are open for booking just yet — check back soon."
-          : "No gear is available just yet — check back soon.")
+          : "No Products is available just yet — check back soon.")
     )}</p>`;
     return;
   }

@@ -22,6 +22,7 @@
    ========================================================== */
 
 import {
+  storageUnavailableReason,
   uploadImage,
   archiveGuide,
   archivePackage,
@@ -374,8 +375,7 @@ const imageField = (label, id, placeholder) => `
       <span class="admin-dropzone-text">
         <strong>Drop an image here, or click to choose</strong>
         <small>PNG, JPG or WebP &middot; up to 5&nbsp;MB</small>
-        <small class="admin-dropzone-note">Goes to Firebase Storage. If that isn't set up on this
-          project yet, paste a URL instead &mdash; it works either way.</small>
+        <small class="admin-dropzone-note">Shrunk to 1600px before sending. Destination is set in image-upload-config.js &mdash; pasting a URL works either way.</small>
       </span>
     </label>
     <p class="admin-upload-error" data-upload-error-for="${id}" hidden></p>
@@ -556,12 +556,30 @@ function wireImageUploads(item) {
       } catch (err) {
         console.error("Image upload failed:", err);
         fail(err.message || "The upload failed.");
+        paintAvailability();
       } finally {
         input.disabled = false;
         button.disabled = false;
         button.textContent = previous;
       }
     }
+
+    /* A bucket-level failure is not about this file, so the drop zone
+       stops inviting a second attempt. The URL box beside it keeps
+       working — that is the route with no Storage in it. */
+    function paintAvailability() {
+      const reason = storageUnavailableReason();
+      if (!reason || !dropzone) return;
+      dropzone.classList.add("is-unavailable");
+      if (fileInput) fileInput.disabled = true;
+      if (button) { button.disabled = true; button.title = reason; }
+      const strong = dropzone.querySelector(".admin-dropzone-text strong");
+      if (strong) strong.textContent = "Image upload is unavailable on this project";
+      const notes = dropzone.querySelectorAll(".admin-dropzone-text small");
+      if (notes[0]) notes[0].textContent = "Paste an image URL in the box above instead.";
+      if (notes[1]) notes[1].remove();
+    }
+    paintAvailability();
 
     button?.addEventListener("click", () => fileInput?.click());
     fileInput?.addEventListener("change", (event) => {
@@ -778,4 +796,4 @@ el.body?.addEventListener("click", async (event) => {
     console.error("Catalog action failed:", err);
     showFeedback("That could not be saved. Check your Firestore rules.");
   }
-});   
+});

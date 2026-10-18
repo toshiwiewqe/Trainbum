@@ -25,6 +25,8 @@
    ========================================================== */
 
 import { auth, db } from "./firebase-init.js";
+import { salePricing, buildSalePayload, summariseSale } from "./sale-pricing.js";
+import { IMAGE_UPLOAD } from "./image-upload-config.js";
 import {
   onAuthStateChanged,
   signOut
@@ -35,6 +37,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  runTransaction,
   getDocs,
   limit,
   onSnapshot,
@@ -142,9 +145,21 @@ export function timeAgo(value) {
 const PRODUCT_KNOWN_KEYS = new Set([
   "name", "title", "category", "subcategory", "description", "price", "amount",
   "status", "image", "imageUrl", "photo", "images", "attributes", "specs",
-  "inStock", "in_stock", "popularity", "location", "difficulty", "bookingCount",
-  "dateAdded", "createdAt", "updatedAt", "archived", "archivedBy", "archivedAt"
+  "inStock", "in_stock", "quantity", "stock", "stockQuantity",
+  "popularity", "location", "difficulty", "bookingCount",
+  "dateAdded", "createdAt", "updatedAt", "archived", "archivedBy", "archivedAt",
+  "sale"
 ]);
+
+/* The sale price, and the shape it is stored in, live in
+   sale-pricing.js — a module with no imports, so the shop pages
+   (which build Firestore from firebase-config.js) can use exactly the
+   same function as the admin pages (which use firebase-init.js via
+   this file) without two Firebase apps ending up in one page.
+
+   Re-exported so every admin page keeps importing salePricing from
+   trailbound-data.js, as it always has. */
+export { salePricing, summariseSale };
 
 /**
  * REBUILT. This returned thirteen scalar fields and none of the three
@@ -207,6 +222,27 @@ export function normalizeProduct(id, raw = {}) {
       ? null
       : Number(raw.popularity);
 
+  /* STOCK COUNT — and the single most important rule about it:
+     an ABSENT quantity is not zero.
+
+     None of your 63 products carries this field yet. If a missing
+     value were read as 0, the first time anything saved them they
+     would all be "out of stock" and vanish from the shop. So quantity
+     is null until somebody actually sets one, `hasQuantity` says which
+     is which, and availability keeps coming from inStock on records
+     that are not tracked yet. Exactly the reasoning behind
+     hasStatusField. */
+  const saleInfo = salePricing(raw);
+
+  const rawQuantity =
+    raw.quantity ?? raw.stock ?? raw.stockQuantity ?? null;
+  const parsedQuantity = Number(rawQuantity);
+  const hasQuantity =
+    rawQuantity !== null &&
+    rawQuantity !== undefined &&
+    rawQuantity !== "" &&
+    Number.isFinite(parsedQuantity);
+
   return {
     id,
     name: raw.name || raw.title || "Untitled",
@@ -239,6 +275,27 @@ export function normalizeProduct(id, raw = {}) {
         ? String(raw.status).toLowerCase() === "active"
         : true,
     hasInStockField: storedInStock !== undefined,
+
+    // Whole units, never negative — a stored -3 is a data error, not a
+    // debt, and showing it as -3 would put it below the low-stock line
+    // and read as if it were nearly sold out.
+    quantity: hasQuantity ? Math.max(0, Math.trunc(parsedQuantity)) : null,
+    hasQuantity,
+
+    /* SALE. `sale` is what is stored and what the form edits; the four
+       fields under it are what every surface renders, worked out once
+       by salePricing() so nothing downstream does its own arithmetic.
+
+       onSale is deliberately not the same as sale.on: the switch can
+       be on with a value of 0, or with a discount that rounds away to
+       nothing, and neither is a sale the customer can see. */
+    sale: { on: saleInfo.on, type: saleInfo.type, value: saleInfo.value, cap: saleInfo.cap },
+    hasSaleField: Boolean(raw.sale && typeof raw.sale === "object" && !Array.isArray(raw.sale)),
+    onSale: saleInfo.active,
+    salePrice: saleInfo.salePrice,
+    saleDiscount: saleInfo.discount,
+    salePercentOff: saleInfo.percentOff,
+    saleBadge: saleInfo.badge,
 
     location: raw.location || "",
     difficulty: raw.difficulty || "",
@@ -399,6 +456,10 @@ export function normalizeOrder(id, raw = {}) {
     shippingFee: Number(raw.shipping_fee || 0),
     total: Number(raw.total || 0),
     status: raw.status || "Pending Payment",
+    // Set once stock has been taken off the shelf for this order, so it
+    // can never be deducted twice.
+    stockDeductedAt: raw.stockDeductedAt ?? null,
+    stockZeroed: Array.isArray(raw.stockZeroed) ? raw.stockZeroed : [],
     createdAt: raw.created_at ?? raw.createdAt ?? null,
     updatedAt: raw.updatedAt ?? null,
     _raw: raw
@@ -1059,22 +1120,217 @@ export function watchUserProfile(uid, callback) {
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
+/* How long the SDK may spend retrying before it gives up. The default
+   is 10 minutes, which is what turned a missing bucket into an upload
+   that sat at 0% and never came back. */
+const UPLOAD_RETRY_MS = 20000;
+
+/* And how long we wait for the FIRST byte before deciding nothing is
+   listening. Slightly longer than the retry window, so a failure the
+   SDK can report arrives as a real error code rather than as this
+   catch-all. */
+const UPLOAD_STALL_MS = 25000;
+
+/* Set once a failure is clearly about the bucket rather than the file,
+   so the other four images in a drop fail instantly instead of waiting
+   their turn. A page reload clears it — which is also when someone
+   would have gone and enabled Storage. */
+let STORAGE_BLOCKED = "";
+
 /**
  * @param {File} file
  * @param {{ productId?: string, onProgress?: (percent:number)=>void }} options
  * @returns {Promise<string>} the public download URL to store on the product
  */
-export async function uploadImage(file, { folder = "products", id = "new", onProgress = null } = {}) {
-  if (!file) throw new Error("No file selected.");
-  if (!String(file.type || "").startsWith("image/")) {
-    throw new Error(`"${file.name}" is not an image.`);
+/* ==========================================================
+   IMAGE UPLOAD
+   ----------------------------------------------------------
+   One entry point, uploadImage(), and three possible
+   destinations behind it. Which one is used comes from
+   image-upload-config.js; every caller just gets a URL back
+   and stores it in the same field a pasted URL goes in, so
+   nothing downstream knows or cares where the bytes live.
+
+   Switching hosts is a one-line edit in that file.
+   ========================================================== */
+
+/**
+ * Shrink an image in the browser before sending it.
+ *
+ * A phone photo is routinely 4000px and 6 MB, and is displayed
+ * at about 600px. Uploading the original wastes the admin's data
+ * once and every shop visitor's data forever after.
+ *
+ * Returns the original file untouched if it is already small, if
+ * resizing is switched off, or if anything at all goes wrong —
+ * a failed optimisation must never become a failed upload.
+ */
+async function shrinkImage(file) {
+  const cfg = IMAGE_UPLOAD.resize || {};
+  if (!cfg.enabled) return file;
+  if (file.size < (cfg.minBytes ?? 0)) return file;
+  if (typeof document === "undefined" || typeof createImageBitmap !== "function") return file;
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const maxWidth = cfg.maxWidth || 1600;
+    const scale = Math.min(1, maxWidth / Math.max(bitmap.width, bitmap.height));
+
+    /* Transparency check, before deciding on a format. Re-encoding a
+       logo with a transparent background as JPEG fills that
+       background with black, which is a worse outcome than a slightly
+       larger file. Sampled rather than scanned: every 16th pixel is
+       plenty to notice a transparent region, and a full scan of a
+       12-megapixel image is not free. */
+    let hasAlpha = false;
+    if (/png|webp|gif/i.test(file.type)) {
+      const probe = document.createElement("canvas");
+      probe.width = Math.min(bitmap.width, 400);
+      probe.height = Math.max(1, Math.round((probe.width / bitmap.width) * bitmap.height));
+      const pctx = probe.getContext("2d");
+      pctx.drawImage(bitmap, 0, 0, probe.width, probe.height);
+      const data = pctx.getImageData(0, 0, probe.width, probe.height).data;
+      /* The threshold is 200, not 254, and that matters. A screenshot
+         or an editor export routinely carries stray pixels at alpha
+         249 along an anti-aliased edge — invisible, but enough to make
+         a "> 0 transparent pixels" test fire on every image, which
+         then skips both the resize and the JPEG conversion for
+         everything. A genuinely transparent background is alpha 0 over
+         a large area, so it clears 200 easily. */
+      for (let i = 3; i < data.length; i += 4 * 16) {
+        if (data[i] < 200) { hasAlpha = true; break; }
+      }
+    }
+
+    // Nothing to gain: already small enough and must stay PNG.
+    if (scale === 1 && hasAlpha) return file;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+
+    const type = hasAlpha ? "image/png" : "image/jpeg";
+    const blob = await new Promise((res) =>
+      canvas.toBlob(res, type, hasAlpha ? undefined : cfg.quality ?? 0.82)
+    );
+    if (!blob) return file;
+    // Re-encoding made it bigger. Happens with small or already
+    // well-compressed images; keep whichever is smaller.
+    if (blob.size >= file.size) return file;
+
+    const name = String(file.name || "image").replace(/\.[^.]+$/, "") + (hasAlpha ? ".png" : ".jpg");
+    return new File([blob], name, { type });
+  } catch (err) {
+    console.warn("Could not resize the image; sending the original.", err);
+    return file;
   }
-  if (file.size > MAX_IMAGE_BYTES) {
+}
+
+/**
+ * POST with real upload progress.
+ *
+ * XMLHttpRequest rather than fetch(), for one reason: fetch has no
+ * upload progress event. The percentage in the admin panel would be
+ * stuck at 0 until the whole file had gone, which is the exact thing
+ * that made the Firebase failure so confusing.
+ */
+function postWithProgress(url, body, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url, true);
+    xhr.timeout = 60000;
+
+    xhr.upload.onprogress = (e) => {
+      if (onProgress && e.lengthComputable) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+    xhr.onload = () => {
+      let parsed = null;
+      try { parsed = JSON.parse(xhr.responseText); } catch { /* handled below */ }
+      if (xhr.status >= 200 && xhr.status < 300 && parsed) return resolve(parsed);
+      reject(
+        new Error(
+          parsed?.error?.message ||
+            parsed?.error ||
+            `The image host answered ${xhr.status || "nothing"}.`
+        )
+      );
+    };
+    xhr.onerror = () =>
+      reject(new Error("Could not reach the image host. Check your internet connection."));
+    xhr.ontimeout = () => reject(new Error("The upload timed out after 60 seconds."));
+    xhr.send(body);
+  });
+}
+
+/* ---------- imgbb ---------- */
+
+async function uploadToImgbb(file, { onProgress }) {
+  const key = String(IMAGE_UPLOAD.imgbb?.apiKey || "").trim();
+  if (!key) {
     throw new Error(
-      `"${file.name}" is ${(file.size / 1048576).toFixed(1)} MB. The limit is 5 MB — resize it first.`
+      "No imgbb API key yet. Get one free at https://api.imgbb.com and paste it into " +
+        "image-upload-config.js, or paste an image URL instead."
     );
   }
 
+  const body = new FormData();
+  body.append("image", file);
+  body.append("name", String(file.name || "image").replace(/\.[^.]+$/, ""));
+
+  const json = await postWithProgress(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(key)}`, body, onProgress);
+
+  // imgbb answers 200 with success:false for a bad key, so the status
+  // code alone is not the test.
+  const url = json?.data?.url || json?.data?.display_url;
+  if (!json?.success || !url) {
+    throw new Error(
+      json?.error?.message || "imgbb rejected the upload. Check the API key in image-upload-config.js."
+    );
+  }
+  return url;
+}
+
+/* ---------- Cloudinary ----------
+   NOT VERIFIED against Cloudinary's own docs: their documentation
+   pages would not render for me when this was written, so the request
+   shape below is from knowledge rather than from the reference. imgbb
+   above WAS checked against api.imgbb.com. If this path misbehaves,
+   the thing to re-check is the preset name and that its signing mode
+   is set to Unsigned. */
+
+async function uploadToCloudinary(file, { folder, onProgress }) {
+  const cloud = String(IMAGE_UPLOAD.cloudinary?.cloudName || "").trim();
+  const preset = String(IMAGE_UPLOAD.cloudinary?.uploadPreset || "").trim();
+  if (!cloud || !preset) {
+    throw new Error(
+      "Cloudinary is selected but its cloud name or upload preset is missing from " +
+        "image-upload-config.js. The preset must be an UNSIGNED one."
+    );
+  }
+
+  const body = new FormData();
+  body.append("file", file);
+  body.append("upload_preset", preset);
+  if (folder) body.append("folder", folder);
+
+  const json = await postWithProgress(
+    `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloud)}/image/upload`,
+    body,
+    onProgress
+  );
+  const url = json?.secure_url || json?.url;
+  if (!url) throw new Error(json?.error?.message || "Cloudinary did not return an image URL.");
+  return url;
+}
+
+/* ---------- firebase ---------- */
+
+async function uploadToFirebase(file, { folder, id, onProgress }) {
   let storage, storageRef, uploadBytesResumable, getDownloadURL;
   try {
     ({ getStorage: storage, ref: storageRef, uploadBytesResumable, getDownloadURL } = await import(
@@ -1084,15 +1340,35 @@ export async function uploadImage(file, { folder = "products", id = "new", onPro
     throw new Error("Could not load the Firebase Storage library. Check your connection.");
   }
 
+  // A bucket-level problem is the same for every file. Dropping five
+  // images should cost one failure, not five waits.
+  if (STORAGE_BLOCKED) throw new Error(STORAGE_BLOCKED);
+
   let bucket;
   try {
     bucket = storage();
   } catch {
-    throw new Error(
-      "Firebase Storage is not set up for this project. Enable it in the Firebase console " +
-        "(Build -> Storage -> Get started), or paste an image URL instead."
-    );
+    /* getStorage() only throws when the config has no storageBucket at
+       all. It does NOT check that the bucket exists — that is why the
+       old version of this function could not catch the real problem
+       here, and left the upload hanging instead. */
+    STORAGE_BLOCKED =
+      "This project's Firebase config has no storageBucket, so there is nowhere to upload to. " +
+      "Paste an image URL instead.";
+    throw new Error(STORAGE_BLOCKED);
   }
+
+  /* FAIL FAST.
+
+     The default is 10 MINUTES. When a bucket does not exist the upload
+     request 404s, the SDK treats that as retryable, and it quietly
+     backs off and retries for the whole window before calling the
+     error handler — which is exactly "it sits at 0% forever and
+     nothing happens". Twenty seconds is long enough for a slow phone
+     connection to get a 5 MB file moving and short enough to be an
+     answer rather than a hang. */
+  bucket.maxUploadRetryTime = UPLOAD_RETRY_MS;
+  bucket.maxOperationRetryTime = UPLOAD_RETRY_MS;
 
   /* A predictable, collision-proof path. The timestamp keeps two
      uploads of the same filename apart, and the sanitised name keeps
@@ -1111,29 +1387,158 @@ export async function uploadImage(file, { folder = "products", id = "new", onPro
   });
 
   await new Promise((resolve, reject) => {
+    let settled = false;
+    let movedBytes = false;
+
+    const finish = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(watchdog);
+      fn(value);
+    };
+
+    /* The backstop. maxUploadRetryTime covers the case where the SDK
+       reports a failure; this covers the case where it never reports
+       anything at all — a request that is neither answered nor
+       rejected leaves `state_changed` silent and the promise pending
+       forever, which no amount of retry configuration fixes. */
+    const watchdog = setTimeout(() => {
+      if (movedBytes) return; // slow but alive — let it finish
+
+      STORAGE_BLOCKED = storageUnreachableMessage(bucketName(bucket));
+
+      /* Reject BEFORE cancelling, not after. task.cancel() fires the
+         error handler synchronously with storage/canceled, so doing it
+         the other way round settles the promise with "The upload was
+         cancelled" — technically true, and useless: it describes what
+         this code did, not why the upload was going nowhere. */
+      finish(reject, new Error(STORAGE_BLOCKED));
+      try { task.cancel(); } catch { /* already gone */ }
+    }, UPLOAD_STALL_MS);
+
     task.on(
       "state_changed",
       (snap) => {
+        if (snap.bytesTransferred > 0) movedBytes = true;
         if (onProgress && snap.totalBytes) {
           onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
         }
       },
-      (err) => {
-        // storage/unauthorized is by far the likeliest, and the message
-        // Firebase gives for it says nothing about rules.
-        reject(
-          new Error(
-            err?.code === "storage/unauthorized"
-              ? "Storage rejected the upload. Your Storage rules need to allow signed-in writes under products/."
-              : err?.message || "The upload failed."
-          )
-        );
-      },
-      resolve
+      (err) => finish(reject, new Error(describeUploadError(err, bucketName(bucket)))),
+      () => finish(resolve)
     );
   });
 
   return getDownloadURL(task.snapshot.ref);
+}
+
+/** The bucket this Storage instance points at, for error messages. */
+function bucketName(bucket) {
+  // Not part of the public API, so every access is guarded — a missing
+  // name must not turn an error message into a second error.
+  try {
+    return bucket?.app?.options?.storageBucket || bucket?._bucket?.bucket || "(unknown bucket)";
+  } catch {
+    return "(unknown bucket)";
+  }
+}
+
+function storageUnreachableMessage(name) {
+  return (
+    `Could not reach the storage bucket "${name}". The most likely reason is that ` +
+    "Cloud Storage has never been set up on this Firebase project — it has to be turned on in the " +
+    "Firebase console under Build → Storage, and that now requires the project to be on the Blaze " +
+    "plan. Until then, paste an image URL instead; it is saved on the record exactly the same way."
+  );
+}
+
+/* Firebase's own messages for these are things like "An unknown error
+   occurred", which tells nobody what to do next. */
+function describeUploadError(err, name) {
+  switch (String(err?.code || "")) {
+    case "storage/unauthorized":
+      return (
+        "Storage rejected the upload. The bucket exists, so this is the rules: they need to allow " +
+        "signed-in writes under products/ and trails/."
+      );
+    case "storage/unauthenticated":
+      return "You are signed out. Sign in again and retry the upload.";
+    case "storage/quota-exceeded":
+      return `The storage bucket "${name}" is over its quota.`;
+    case "storage/retry-limit-exceeded":
+    case "storage/unknown":
+      STORAGE_BLOCKED = storageUnreachableMessage(name);
+      return STORAGE_BLOCKED;
+    case "storage/canceled":
+      return "The upload was cancelled.";
+    default:
+      return err?.message || "The upload failed.";
+  }
+}
+
+/**
+ * Why uploads are unavailable, or "" while they look fine.
+ *
+ * The admin pages call this after a failed upload so the drop zone can
+ * stop inviting something that cannot work, rather than letting
+ * someone try the same thing with every image they have.
+ */
+export function storageUnavailableReason() {
+  return STORAGE_BLOCKED || "";
+}
+
+
+/* ---------- the entry point ---------- */
+
+/**
+ * Upload an image and get back a URL to store on the record.
+ *
+ * The signature has not changed, so every existing caller works
+ * untouched — only the destination behind it is now configurable.
+ */
+export async function uploadImage(file, { folder = "products", id = "new", onProgress = null } = {}) {
+  if (!file) throw new Error("No file selected.");
+  if (!String(file.type || "").startsWith("image/")) {
+    throw new Error(`"${file.name}" is not an image.`);
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    throw new Error(
+      `"${file.name}" is ${(file.size / 1048576).toFixed(1)} MB. The limit is 5 MB — resize it first.`
+    );
+  }
+
+  // A problem with the destination itself is the same for every file,
+  // so the rest of a dropped batch fails immediately rather than each
+  // one waiting its own turn.
+  if (STORAGE_BLOCKED) throw new Error(STORAGE_BLOCKED);
+
+  const provider = String(IMAGE_UPLOAD.provider || "off").toLowerCase();
+  if (provider === "off") {
+    STORAGE_BLOCKED =
+      "Image upload is switched off in image-upload-config.js. Paste an image URL instead.";
+    throw new Error(STORAGE_BLOCKED);
+  }
+
+  /* Resized BEFORE the provider sees it, so every destination gets the
+     same treatment and none of them has to know about it. */
+  const payload = await shrinkImage(file);
+
+  try {
+    if (provider === "imgbb") return await uploadToImgbb(payload, { onProgress });
+    if (provider === "cloudinary") return await uploadToCloudinary(payload, { folder, onProgress });
+    if (provider === "firebase") return await uploadToFirebase(payload, { folder, id, onProgress });
+  } catch (err) {
+    /* A missing key is configuration, not a transient failure — every
+       other file in the batch will hit it too, and the drop zone
+       should stand down rather than invite another attempt. */
+    if (/API key|upload preset|switched off/i.test(err?.message || "")) {
+      STORAGE_BLOCKED = err.message;
+    }
+    throw err;
+  }
+
+  STORAGE_BLOCKED = `"${provider}" is not a known upload provider. Check image-upload-config.js.`;
+  throw new Error(STORAGE_BLOCKED);
 }
 
 /** Kept so admin-products.js needs no change. */
@@ -1170,13 +1575,29 @@ export async function saveProduct(data, id = null, previous = null) {
     if (name) specs[name] = String(value ?? "").trim();
   }
 
+  /* QUANTITY, and how it relates to inStock.
+
+     An empty box means "not tracking a count for this product" and
+     writes nothing — it does NOT mean zero. That is what lets you add
+     counts to a few products without implying the other 60 have none.
+
+     Where a count IS given, zero wins: a product with nothing left
+     cannot be on sale, whatever the switch says. Allowing both to be
+     set independently would hand you two competing availability flags,
+     which is the exact bug that took a day to find between `status`
+     and `inStock`. The switch still decides when quantity is above
+     zero — having stock you choose not to sell is a real situation. */
+  const quantityGiven =
+    data.quantity !== undefined && data.quantity !== null && String(data.quantity).trim() !== "";
+  const quantity = quantityGiven ? Math.max(0, Math.trunc(Number(data.quantity) || 0)) : null;
+
   const payload = {
     name: String(data.name || "").trim(),
     category: String(data.category || "").trim(),
     subcategory: String(data.subcategory || "").trim(),
     description: String(data.description || "").trim(),
     price: Number(data.price) || 0,
-    inStock: data.inStock !== false,
+    inStock: quantity === 0 ? false : data.inStock !== false,
     images,
     /* Kept in step with images[0]. The shop falls back to this field
        for records written before the gallery existed, and leaving a
@@ -1187,6 +1608,17 @@ export async function saveProduct(data, id = null, previous = null) {
     specs,
     updatedAt: serverTimestamp()
   };
+
+  if (quantityGiven) payload.quantity = quantity;
+
+  /* SALE — written EVERY time, unlike quantity.
+
+     Firestore replaces a map wholesale on updateDoc, which is exactly
+     what is wanted here: turning a sale off has to persist `on: false`
+     rather than leaving yesterday's map in place. Omitting the field
+     when the switch is off would do the opposite — the old sale would
+     survive the save that was meant to end it. */
+  payload.sale = buildSalePayload(data.sale);
 
   const popularity = Number(data.popularity);
   if (Number.isFinite(popularity)) payload.popularity = popularity;
@@ -1204,9 +1636,9 @@ export async function saveProduct(data, id = null, previous = null) {
   const LABELS = {
     name: "Name", category: "Category", subcategory: "Subcategory",
     price: "Price", status: "Status", image: "Image",
-    description: "Description", inStock: "In stock",
+    description: "Description", inStock: "In stock", quantity: "Quantity",
     images: "Images", attributes: "Attributes", specs: "Specs",
-    popularity: "Popularity"
+    popularity: "Popularity", sale: "Sale"
   };
 
   if (id) {
@@ -1223,7 +1655,10 @@ export async function saveProduct(data, id = null, previous = null) {
               inStock: previous.inStock ? "yes" : "no",
               images: (previous.images || []).join(", "),
               attributes: summariseMap(previous.attributes),
-              specs: summariseMap(previous.specs)
+              specs: summariseMap(previous.specs),
+              // Flattened on both sides, or the log reads
+              // "[object Object] -> [object Object]" for every sale edit.
+              sale: summariseSale(previous)
             }
           : null,
         {
@@ -1231,7 +1666,8 @@ export async function saveProduct(data, id = null, previous = null) {
           inStock: payload.inStock ? "yes" : "no",
           images: images.join(", "),
           attributes: summariseMap(attributes),
-          specs: summariseMap(specs)
+          specs: summariseMap(specs),
+          sale: summariseSale(payload)
         },
         LABELS
       )
@@ -1259,6 +1695,55 @@ function summariseMap(map) {
   return Object.entries(map)
     .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
     .join(" · ");
+}
+
+/**
+ * ADDED — set a product's stock count on its own.
+ *
+ * Receiving a delivery or counting the shelf is a different job from
+ * editing a product, and making you open the whole form to change one
+ * number is how counts stop being kept up to date.
+ *
+ * Writes inStock alongside, for the same reason saveProduct does: a
+ * count of zero means the shop must stop selling it, and letting the
+ * two disagree is what creates a product that reads "in stock" with
+ * nothing behind it. Going from zero back up does NOT silently put it
+ * on sale — `resume` says whether to, so restocking something you had
+ * deliberately delisted cannot relist it behind your back.
+ */
+export async function setProductQuantity(product, nextQuantity, { resume = true } = {}) {
+  const quantity = Math.max(0, Math.trunc(Number(nextQuantity) || 0));
+  const previous = product.hasQuantity ? product.quantity : null;
+  if (previous === quantity) return false;
+
+  const inStock = quantity === 0 ? false : resume ? true : product.inStock;
+
+  await updateDoc(doc(db, COL.products, product.id), {
+    quantity,
+    inStock,
+    updatedAt: serverTimestamp()
+  });
+
+  const changes = [
+    { field: "Quantity", from: previous === null ? "not tracked" : String(previous), to: String(quantity) }
+  ];
+  if (inStock !== product.inStock) {
+    changes.push({ field: "In stock", from: product.inStock ? "yes" : "no", to: inStock ? "yes" : "no" });
+  }
+
+  await logAudit({
+    action: "update",
+    entity: "product",
+    entityId: product.id,
+    entityLabel: product.name,
+    summary: `Set stock of "${product.name}" to ${quantity}${
+      quantity === 0 ? " — now out of stock" : ""
+    }`,
+    changes,
+    status: quantity === 0 ? "pending" : "completed"
+  });
+
+  return true;
 }
 
 /**
@@ -1503,11 +1988,195 @@ export const deletePackage = (docId, label = "") => hardDelete(COL.packages, doc
    6c. WRITES — ORDERS + SUPPORT (admin)
    ========================================================== */
 
+/* ==========================================================
+   STOCK MOVEMENT ON FULFILMENT
+   ----------------------------------------------------------
+   Why here and not at checkout:
+
+   A customer's browser cannot write to `products` — the rule is
+   `allow write: if isAdmin()`. And payment-result.js takes the
+   word "success" straight from the URL, so anything hung off
+   payment could be triggered by typing a different query string.
+   Fulfilment is admin-authenticated and matches how stock really
+   behaves: units leave when the goods leave.
+
+   Why a transaction: two admins working the order queue, or one
+   double-click, would otherwise read the same count and both
+   write it back minus their own line. runTransaction re-reads and
+   retries instead.
+
+   Firestore requires EVERY read in a transaction before ANY
+   write, which is why the product documents are all fetched into
+   `entries` first rather than updated as the loop goes.
+   ========================================================== */
+
+const DEDUCT_AT = ["shipped", "completed"];
+const RESTORE_AT = ["cancelled", "refunded"];
+
+/**
+ * @returns {Promise<null | {
+ *   direction: "deduct"|"restore", applied: Array, shortfalls: Array,
+ *   untracked: Array, missing: Array, alreadyDone: boolean
+ * }>}
+ */
+export async function applyOrderStock(order, direction = "deduct") {
+  /* One product can appear on several lines — the same tent in two
+     sizes is two lines and one count. Merge before touching stock, or
+     the second write overwrites the first inside the same transaction. */
+  const wanted = new Map();
+  for (const line of order.items || []) {
+    const id = line?.productId;
+    const qty = Math.max(0, Math.trunc(Number(line?.qty) || 0));
+    if (!id || !qty) continue;
+    wanted.set(id, (wanted.get(id) || 0) + qty);
+  }
+  if (!wanted.size) return null;
+
+  let result = null;
+
+  await runTransaction(db, async (tx) => {
+    // A transaction body can be retried, so everything it reports is
+    // rebuilt from scratch on each attempt.
+    const applied = [];
+    const shortfalls = [];
+    const untracked = [];
+    const missing = [];
+    const zeroed = [];
+
+    const orderRef = doc(db, COL.orders, order.id);
+    const orderSnap = await tx.get(orderRef);
+    if (!orderSnap.exists()) throw new Error("That order no longer exists.");
+
+    const orderData = orderSnap.data();
+    const alreadyDeducted = Boolean(orderData.stockDeductedAt);
+
+    // The idempotency gate. Shipped -> Completed must not subtract a
+    // second time, and cancelling an order whose stock never left must
+    // not hand back units that were never taken.
+    if (direction === "deduct" && alreadyDeducted) {
+      result = { direction, applied: [], shortfalls: [], untracked: [], missing: [], alreadyDone: true };
+      return;
+    }
+    if (direction === "restore" && !alreadyDeducted) {
+      result = { direction, applied: [], shortfalls: [], untracked: [], missing: [], alreadyDone: true };
+      return;
+    }
+
+    // Products this order previously forced to zero. Only those get put
+    // back on sale by a restore — anything you had deliberately
+    // delisted stays delisted.
+    const previouslyZeroed = new Set(
+      Array.isArray(orderData.stockZeroed) ? orderData.stockZeroed : []
+    );
+
+    // ---- every read first ----
+    const entries = [];
+    for (const [productId, qty] of wanted) {
+      const ref = doc(db, COL.products, productId);
+      entries.push({ ref, productId, qty, snap: await tx.get(ref) });
+    }
+
+    // ---- then every write ----
+    for (const entry of entries) {
+      if (!entry.snap.exists()) {
+        missing.push({ productId: entry.productId, qty: entry.qty });
+        continue;
+      }
+
+      const data = entry.snap.data();
+      const stored = data.quantity ?? data.stock ?? data.stockQuantity;
+      const tracked = typeof stored === "number" && Number.isFinite(stored);
+
+      // No count on this product means there is nothing to subtract
+      // from. Writing one here would start tracking it at a number
+      // nobody chose.
+      if (!tracked) {
+        untracked.push({ productId: entry.productId, name: data.name || entry.productId, qty: entry.qty });
+        continue;
+      }
+
+      const current = Math.max(0, Math.trunc(stored));
+      const patch = { updatedAt: serverTimestamp() };
+      let next;
+
+      if (direction === "deduct") {
+        next = current - entry.qty;
+        if (next < 0) {
+          // Sold more than were on the shelf. Clamp and report it — a
+          // negative count would read as a stock level below the
+          // low-stock line and silently distort every total.
+          shortfalls.push({
+            productId: entry.productId, name: data.name || entry.productId,
+            asked: entry.qty, had: current
+          });
+          next = 0;
+        }
+        if (next === 0) {
+          patch.inStock = false;
+          zeroed.push(entry.productId);
+        }
+      } else {
+        next = current + entry.qty;
+        if (previouslyZeroed.has(entry.productId)) patch.inStock = true;
+      }
+
+      patch.quantity = next;
+      tx.update(entry.ref, patch);
+      applied.push({
+        productId: entry.productId, name: data.name || entry.productId,
+        from: current, to: next
+      });
+    }
+
+    tx.update(orderRef, {
+      stockDeductedAt: direction === "deduct" ? serverTimestamp() : null,
+      stockZeroed: direction === "deduct" ? zeroed : []
+    });
+
+    result = { direction, applied, shortfalls, untracked, missing, alreadyDone: false };
+  });
+
+  if (result && !result.alreadyDone && result.applied.length) {
+    await logAudit({
+      action: "update",
+      entity: "order",
+      entityId: order.id,
+      entityLabel: `#${order.orderId}`,
+      summary:
+        direction === "deduct"
+          ? `Took ${result.applied.length} product(s) off stock for order #${order.orderId}`
+          : `Returned ${result.applied.length} product(s) to stock from order #${order.orderId}`,
+      changes: result.applied.map((a) => ({
+        field: a.name, from: String(a.from), to: String(a.to)
+      })),
+      status: direction === "deduct" ? "completed" : "cancelled"
+    });
+  }
+
+  return result;
+}
+
 export async function updateOrderStatus(order, status, adminUser = null) {
   await updateDoc(doc(db, COL.orders, order.id), {
     status,
     updatedAt: serverTimestamp()
   });
+
+  /* Stock moves with fulfilment, and comes back if the order is
+     reversed. Deliberately AFTER the status write and in its own
+     try: a stock problem must not leave the order stuck on its old
+     status, because the admin would press the button again and the
+     idempotency stamp is the only thing standing between that and a
+     double deduction. */
+  let stock = null;
+  const lower = String(status).toLowerCase();
+  try {
+    if (DEDUCT_AT.includes(lower)) stock = await applyOrderStock(order, "deduct");
+    else if (RESTORE_AT.includes(lower)) stock = await applyOrderStock(order, "restore");
+  } catch (err) {
+    console.error("Stock movement failed:", err);
+    stock = { direction: DEDUCT_AT.includes(lower) ? "deduct" : "restore", error: err.message };
+  }
 
   const uid = order.uid || (order.email ? await findUidByEmail(order.email) : null);
   if (uid) {
@@ -1525,6 +2194,10 @@ export async function updateOrderStatus(order, status, adminUser = null) {
     status: String(status).toLowerCase(),
     adminUser
   });
+
+  // Handed back so the page can say what happened to stock rather than
+  // leaving it to be discovered on the Products table later.
+  return stock;
 }
 
 export async function updateMessageStatus(messageId, status, label = "") {

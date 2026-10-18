@@ -18,7 +18,7 @@ nothing needs refreshing.
    ADMIN                      trailbound-data.js                   CUSTOMER
    ─────                      ──────────────────                   ────────
    Catalog      ──┐         ┌──────────────────┐         ┌──  trail.html
-   Gear         ──┤         │                  │         ├──  products.html
+   Products         ──┤         │                  │         ├──  products.html
    Bookings     ──┼────────▶│    Firestore     │◀────────┼──  booking.html
    Orders       ──┤         │   (live streams) │         ├──  checkout.html
    Users        ──┤         │                  │         ├──  account.html
@@ -33,7 +33,7 @@ nothing needs refreshing.
 | Adds a trail in Catalog | It appears on trail.html and in booking.html's dropdown |
 | Sets a trail to Closed | It disappears from both |
 | Sets a guide to Inactive | It stops being offered on their trails |
-| Disables gear in Gear | It vanishes from products.html |
+| Disables Products in Products | It vanishes from products.html |
 | Confirms a booking | Their booking status flips **and** their bell badge ticks up |
 | Marks an order Paid | The trail bookings on it are confirmed automatically |
 | Saves Settings | The public site name updates, no redeploy |
@@ -119,7 +119,7 @@ true of every trail.
 2. Set it Closed → the card greys out without you refreshing.
 3. Book it as a customer → it appears in Admin → Bookings.
 4. Confirm it in admin → the customer's account page updates live.
-5. Admin → Gear → disable a product → it leaves `products.html`.
+5. Admin → Products → disable a product → it leaves `products.html`.
 
 If all five work, you're done.
 
@@ -201,12 +201,12 @@ the service worker told to skip `admin-*`
   read `b.total_price`. One normaliser now, accepting every variant in your data.
 - **Saving a user's role did nothing** — the old handler only changed a local
   variable, so it vanished on refresh.
-- **Admin "Disable" on gear did nothing** — `products.js` listed every document
+- **Admin "Disable" on Products did nothing** — `products.js` listed every document
   regardless of status.
 - **Admin-created products crashed the shop** — `products.js` assumes
   `p.images[0]`, `p.attributes.size` and `p.specs` exist. True of seeded
   products, false of anything added in admin. The grid would hang on
-  "Loading gear…".
+  "Loading Products…".
 - **Trails showed ₱0/person** — `trail.js` renders `base_price` and nothing could
   set it. It's a Catalog field now.
 - **The dashboard chart plotted zeros**, and "Top Trails" queried a collection
@@ -219,7 +219,7 @@ the service worker told to skip `admin-*`
 
 ## 7. Optional — live cards on any public page
 
-Not required for anything above. If you want a trails or gear strip on
+Not required for anything above. If you want a trails or Products strip on
 `index.html` or anywhere else:
 
 ```html
@@ -233,7 +233,7 @@ Not required for anything above. If you want a trails or gear strip on
 
 Trail cards link to `booking.html?trail=<trail_id>`, which
 `preselectTrailFromURL()` already handles — so a click lands on a pre-filled
-form. Only open trails and active gear ever render.
+form. Only open trails and active Products ever render.
 
 For live site settings, add `<script type="module" src="site-settings.js">` and
 tag elements with `data-site="name"` or `data-site="year"`.

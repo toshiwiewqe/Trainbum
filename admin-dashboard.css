@@ -6,7 +6,7 @@
    a stat card that carries a breakdown under its headline.
 
    Total Revenue is two businesses added together — trail
-   bookings and gear orders — and putting that on the delta line
+   bookings and Products orders — and putting that on the delta line
    made it run to two wrapped lines of green text, which is what
    made the card look messy next to its neighbours. The split is
    its own small labelled pair instead.
@@ -73,6 +73,19 @@
     letter-spacing: 0.04em;
 }
 
+.admin-dashboard-page #export-modal {
+    width: min(700px, calc(100vw - 2rem));
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+}
+
+.admin-dashboard-page #admin-export-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 @media (max-width: 640px) {
     .admin-stat-split { gap: 0.3rem; }
+    .admin-dashboard-page #admin-export-options {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }

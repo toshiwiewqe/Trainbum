@@ -365,8 +365,10 @@ function openOrder(order) {
       <p class="admin-table-subtext" id="order-status-note" style="margin-top:.5rem">
         ${
           linked.length
-            ? "Setting this to Paid also confirms the trail bookings above."
-            : "The customer is notified when this changes."
+            ? "Setting this to Paid also confirms the trail bookings above. "
+            : "The customer is notified when this changes. "
+        }Shipped or Completed takes the gear off stock; Cancelled or Refunded puts it back.${
+          order.stockDeductedAt ? " Stock has already been deducted for this order." : ""
         }
       </p>
     </div>`;
@@ -384,7 +386,7 @@ function openOrder(order) {
       if (note) note.textContent = "Saving...";
 
       try {
-        await updateOrderStatus(order, newStatus, adminUser);
+        const stock = await updateOrderStatus(order, newStatus, adminUser);
 
         // Paying for an order is what confirms the trail slots that
         // were staged in the same cart.
@@ -396,10 +398,54 @@ function openOrder(order) {
           }
         }
         if (note) {
-          note.textContent =
+          const bits = [
             lower(newStatus) === "paid" && linked.length
               ? `Saved — ${linked.length} booking(s) confirmed and the customer notified.`
-              : "Saved and the customer notified.";
+              : "Saved and the customer notified."
+          ];
+
+          /* Say what happened to stock here, rather than leaving it to
+             be noticed on the Products table days later. The awkward
+             cases are the ones worth naming: a line that could not be
+             fully covered, and a product with no count to subtract. */
+          if (stock?.error) {
+            bits.push(`Stock could NOT be updated: ${stock.error}`);
+          } else if (stock?.alreadyDone) {
+            bits.push(
+              stock.direction === "deduct"
+                ? "Stock was already deducted for this order, so nothing was taken twice."
+                : "No stock had been deducted for this order, so nothing was returned."
+            );
+          } else if (stock?.applied?.length) {
+            bits.push(
+              stock.direction === "deduct"
+                ? `${stock.applied.length} product(s) taken off stock.`
+                : `${stock.applied.length} product(s) returned to stock.`
+            );
+            if (stock.shortfalls?.length) {
+              bits.push(
+                "Short on: " +
+                  stock.shortfalls
+                    .map((f) => `${f.name} (needed ${f.asked}, had ${f.had})`)
+                    .join(", ") +
+                  ". Those are now at zero — check what you actually shipped."
+              );
+            }
+            if (stock.untracked?.length) {
+              bits.push(
+                `${stock.untracked.length} product(s) have no stock count, so nothing was subtracted for them.`
+              );
+            }
+            if (stock.missing?.length) {
+              bits.push(`${stock.missing.length} product(s) on this order no longer exist.`);
+            }
+          }
+
+          note.textContent = bits.join(" ");
+          const needsAttention = Boolean(
+            stock?.error || stock?.shortfalls?.length || stock?.missing?.length
+          );
+          note.style.color = needsAttention ? "#facc15" : "";
         }
       } catch (err) {
         console.error("Order status update failed:", err);

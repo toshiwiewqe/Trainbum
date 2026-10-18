@@ -28,7 +28,7 @@ const track = collectUnsubscribers();
 
 const TOPICS = {
   booking: "Trail booking",
-  order: "Order / gear",
+  order: "Order / Products",
   account: "Account",
   other: "Something else"
 };

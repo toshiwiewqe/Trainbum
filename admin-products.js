@@ -31,8 +31,11 @@ import {
   renderAdminSidebarProfile,
   requireAdmin,
   restoreProduct,
+  salePricing,
   saveProduct,
   setProductStatus,
+  setProductQuantity,
+  storageUnavailableReason,
   uploadProductImage,
   toDate,
   watchProducts
@@ -55,9 +58,37 @@ const el = {
   stockInput: document.getElementById("product-instock"),
   stockCard: document.getElementById("product-stock-card"),
   stockState: document.getElementById("product-stock-state"),
+  quantity: document.getElementById("product-quantity"),
+  qtyNote: document.getElementById("product-qty-note"),
   dropzone: document.getElementById("product-dropzone"),
   fileInput: document.getElementById("product-image-file"),
   uploadError: document.getElementById("product-upload-error"),
+
+  /* ADDED — the sale card in the product form */
+  saleCard: document.getElementById("product-sale-card"),
+  saleOn: document.getElementById("product-sale-on"),
+  saleBody: document.getElementById("product-sale-body"),
+  saleState: document.getElementById("product-sale-state"),
+  saleValue: document.getElementById("product-sale-value"),
+  saleValueLabel: document.getElementById("product-sale-value-label"),
+  saleCap: document.getElementById("product-sale-cap"),
+  saleCapField: document.getElementById("product-sale-cap-field"),
+  salePreview: document.getElementById("product-sale-preview"),
+
+  /* ADDED — the stock dialog that replaced window.prompt() */
+  stockModal: document.getElementById("stock-modal"),
+  stockBackdrop: document.getElementById("stock-modal-backdrop"),
+  stockForm: document.getElementById("stock-form"),
+  stockQty: document.getElementById("stock-quantity"),
+  stockThumb: document.getElementById("stock-thumb"),
+  stockThumbEmpty: document.getElementById("stock-thumb-empty"),
+  stockName: document.getElementById("stock-product-name"),
+  stockMeta: document.getElementById("stock-product-meta"),
+  stockWas: document.getElementById("stock-was"),
+  stockOutcome: document.getElementById("stock-outcome"),
+  stockResumeRow: document.getElementById("stock-resume-row"),
+  stockResume: document.getElementById("stock-resume"),
+  stockSave: document.getElementById("stock-modal-save"),
   panelHeader: document.querySelector(".admin-products-panel .admin-panel-header"),
   avatarImg: document.getElementById("admin-avatar"),
   avatarFallback: document.getElementById("admin-avatar-fallback"),
@@ -68,6 +99,11 @@ const el = {
 let products = [];
 let editing = null;
 let showArchived = false;
+
+/* Shared threshold rather than a per-product field. One number is one
+   thing to reason about; if different products need different floors
+   later, this becomes a `lowStockAt` on the document. */
+const LOW_STOCK_AT = 5;
 
 attachLogoutConfirm(el.logoutBtn);
 
@@ -146,16 +182,16 @@ function renderArchiveToggle(archivedCount) {
   bar.innerHTML = `
     <button id="product-archive-toggle" type="button" class="admin-archive-toggle${
       showArchived ? " is-on" : ""
-    }">${showArchived ? "← Back to active gear" : `Archived (${archivedCount})`}</button>
+    }">${showArchived ? "← Back to active Products" : `Archived (${archivedCount})`}</button>
     ${
       showArchived
-        ? '<span class="admin-archive-hint">Archived gear is hidden from the shop but nothing has been lost. Restore puts it back; delete is permanent.</span>'
+        ? '<span class="admin-archive-hint">Archived Products is hidden from the shop but nothing has been lost. Restore puts it back; delete is permanent.</span>'
         : ""
     }`;
 }
 
 function render() {
-  // Stats describe the live catalogue only — archived gear is not
+  // Stats describe the live catalogue only — archived Products is not
   // inventory you can sell, so counting it inflates every card.
   const live = products.filter((p) => !p.archived);
   const archivedCount = products.length - live.length;
@@ -164,15 +200,59 @@ function render() {
 
   setText("product-total", live.length.toLocaleString());
   setText("product-active", active.length.toLocaleString());
-  setText("product-value", peso(live.reduce((sum, p) => sum + p.price, 0)));
+
+  /* FIXED. This summed unit prices — the cost of buying one of each,
+     which is not inventory value and never was. Value is price times
+     the number of units held, so it needs the count. Products with no
+     count are excluded and said so, rather than being treated as one
+     unit each and quietly inflating the figure. */
+  const tracked = live.filter((p) => p.hasQuantity);
+  const stockValue = tracked.reduce((sum, p) => sum + p.price * p.quantity, 0);
+  setText("product-value", peso(stockValue));
+
+  const valueCard = document.getElementById("product-value")?.parentElement;
+  let valueNote = document.getElementById("product-value-note");
+  if (valueCard && !valueNote) {
+    valueNote = document.createElement("p");
+    valueNote.id = "product-value-note";
+    valueNote.className = "admin-stat-delta";
+    valueCard.appendChild(valueNote);
+  }
+  if (valueNote) {
+    const untracked = live.length - tracked.length;
+    valueNote.textContent = tracked.length
+      ? `${tracked.length} tracked${untracked ? ` \u00b7 ${untracked} without a count` : ""}`
+      : "No products have a stock count yet";
+  }
+
   setText("product-categories", categories.size.toLocaleString());
+
+  // Low stock belongs next to Active Products — it is the number that
+  // tells you to do something today.
+  const low = live.filter((p) => p.hasQuantity && p.quantity > 0 && p.quantity <= LOW_STOCK_AT).length;
+  const zero = live.filter((p) => p.hasQuantity && p.quantity === 0).length;
+  const activeCard = document.getElementById("product-active")?.parentElement;
+  let activeNote = document.getElementById("product-active-note");
+  if (activeCard && !activeNote) {
+    activeNote = document.createElement("p");
+    activeNote.id = "product-active-note";
+    activeNote.className = "admin-stat-delta";
+    activeCard.appendChild(activeNote);
+  }
+  if (activeNote) {
+    const bits = [];
+    if (low) bits.push(`${low} low (\u2264${LOW_STOCK_AT})`);
+    if (zero) bits.push(`${zero} at zero`);
+    activeNote.textContent = bits.join(" \u00b7 ") || "Nothing running low";
+    activeNote.classList.toggle("admin-stat-delta--negative", low > 0 || zero > 0);
+  }
 
   renderArchiveToggle(archivedCount);
 
   const rows = visibleProducts();
   if (!rows.length) {
     const message = showArchived
-      ? "Nothing archived. Archived gear is kept here so it can be restored."
+      ? "Nothing archived. Archived Products is kept here so it can be restored."
       : products.length
       ? "No products match this filter."
       : "No products yet. Add one to publish it to the shop.";
@@ -188,6 +268,7 @@ function rowHtml(product) {
     ? `<button type="button" data-action="restore" data-id="${product.id}">Restore</button>
        <button type="button" class="is-danger" data-action="delete" data-id="${product.id}">Delete forever</button>`
     : `<button type="button" data-action="edit" data-id="${product.id}">Edit</button>
+       <button type="button" data-action="stock" data-id="${product.id}">Stock</button>
        <button type="button" data-action="toggle" data-id="${product.id}">${
         product.inStock ? "Mark out" : "Mark in"
       }</button>
@@ -208,11 +289,39 @@ function rowHtml(product) {
     .join("");
   const specCount = Object.keys(product.specs).length;
 
-  const stock = product.archived
+  /* The badge says whether it is on sale; the line under it says how
+     many are left. A product can legitimately be on sale with a low
+     count, or off sale with plenty — so both have to be visible. */
+  const badge = product.archived
     ? '<span class="admin-product-status admin-product-status--inactive">archived</span>'
     : product.inStock
     ? '<span class="admin-product-status admin-product-status--active">in stock</span>'
     : '<span class="admin-product-status admin-product-status--inactive">out of stock</span>';
+
+  let count;
+  if (!product.hasQuantity) {
+    // Not "0". Nothing has been counted for this product yet, and
+    // saying zero would read as sold out.
+    count = '<span class="admin-qty-pill is-untracked">not tracked</span>';
+  } else if (product.quantity === 0) {
+    count = '<span class="admin-qty-pill is-zero">0 left</span>';
+  } else if (product.quantity <= LOW_STOCK_AT) {
+    count = `<span class="admin-qty-pill is-low">${product.quantity} left</span>`;
+  } else {
+    count = `<span class="admin-qty-pill">${product.quantity} in stock</span>`;
+  }
+
+  const stock = `${badge}<div class="admin-qty-cell">${count}</div>`;
+
+  /* The price cell shows what a customer is charged today, with the
+     normal price struck through beside it — the same shape the shop
+     uses, so the two can be compared at a glance. A sale the table
+     cannot show is one you have to open 63 products to audit. */
+  const priceCell = product.onSale
+    ? `<span class="admin-price-sale">${peso(product.salePrice)}</span>
+       <span class="admin-price-was">${peso(product.price)}</span>
+       <span class="admin-sale-pill">${escapeHtml(product.saleBadge)}</span>`
+    : peso(product.price);
 
   return `<tr${product.archived ? ' class="is-archived"' : ""}>
       <td>${
@@ -225,7 +334,7 @@ function rowHtml(product) {
     product.description || "No description"
   )}</small>${meta ? `<small class="admin-product-meta">${meta}</small>` : ""}</td>
       <td>${escapeHtml(product.category)}</td>
-      <td>${peso(product.price)}</td>
+      <td>${priceCell}</td>
       <td>${stock}</td>
       <td><div class="admin-chip-row">${attrSummary || '<span class="admin-chip is-empty">none</span>'}${
         specCount ? `<span class="admin-chip">specs ${specCount}</span>` : ""
@@ -403,10 +512,27 @@ function openModal(product = null) {
   document.getElementById("product-popularity").value = product ? product.popularity : "";
   // A new product is in stock unless you say otherwise.
   document.getElementById("product-instock").checked = product ? product.inStock : true;
+  // Empty means untracked, so an untracked product gets an empty box —
+  // not a 0, which would turn tracking on and sell-out the product on
+  // the next save.
+  el.quantity.value = product?.hasQuantity ? product.quantity : "";
   paintStock();
+
+  /* The sale, read from the stored map rather than the computed
+     salePrice: the form edits the rule, not its result. */
+  const sale = product?.sale || {};
+  setSaleType(sale.type === "amount" ? "amount" : "percent");
+  el.saleOn.checked = sale.on === true;
+  el.saleValue.value = sale.value ? String(sale.value) : "";
+  el.saleCap.value = sale.cap ? String(sale.cap) : "";
+  paintSale();
+
   clearUploadError();
 
   fillRows(el.images, rowTemplates.images, (product?.images || []).map((url) => [url]));
+  // Re-rendered rows lose the disabled state, so re-apply it. No-ops
+  // unless an upload has already been found not to work.
+  paintUploadAvailability();
 
   // A blank new product gets the two attribute keys this catalogue
   // already uses, so the common case is one less thing to type.
@@ -482,7 +608,11 @@ document.getElementById("product-modal-close")?.addEventListener("click", closeM
 document.getElementById("product-modal-cancel")?.addEventListener("click", closeModal);
 el.backdrop?.addEventListener("click", closeModal);
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !el.modal.hidden) closeModal();
+  if (e.key !== "Escape") return;
+  // Stock first: it is the one on top when both exist, and closing the
+  // form underneath it would be the wrong dialog to dismiss.
+  if (el.stockModal && !el.stockModal.hidden) closeStockModal();
+  else if (el.modal && !el.modal.hidden) closeModal();
 });
 
 el.form?.addEventListener("submit", async (event) => {
@@ -500,6 +630,8 @@ el.form?.addEventListener("submit", async (event) => {
         price: document.getElementById("product-price").value,
         popularity: document.getElementById("product-popularity").value,
         inStock: document.getElementById("product-instock").checked,
+        quantity: el.quantity.value,
+        sale: readSaleForm(),
         images: readList(el.images),
         attributes: readMap(el.attributes, { split: true, keepEmpty: true }),
         specs: readMap(el.specs)
@@ -563,6 +695,18 @@ el.list?.addEventListener("click", async (event) => {
       return;
     }
 
+    if (act === "stock") {
+      openStockModal(product);
+      return;
+    }
+
+    // Marking something back in stock when nothing is left would put a
+    // product on the shop that cannot be fulfilled.
+    if (!product.inStock && product.hasQuantity && product.quantity === 0) {
+      showFeedback(`"${label}" has 0 units. Set a quantity with the Stock button before putting it on sale.`);
+      return;
+    }
+
     // hasStatusField tells the data layer whether this document carries
     // a `status` field at all. Yours do not — availability is inStock —
     // so passing it stops the panel bolting a second, competing flag
@@ -577,6 +721,314 @@ el.list?.addEventListener("click", async (event) => {
 });
 
 /* ==========================================================
+   STOCK DIALOG
+   ----------------------------------------------------------
+   Was window.prompt() + a stacked window.confirm(). Both are drawn
+   by the browser, not the page: unstyleable, unable to show the
+   product being edited, and unable to say what the number will do
+   before it is committed.
+
+   The dialog keeps the same two decisions the prompts made —
+   how many, and whether to relist — and nothing more. It does not
+   reach for openModal(): that is a twelve-section form, and this
+   is one field.
+   ========================================================== */
+
+/* The product whose count is being edited. null when the dialog is
+   shut, which is also what stops a stale save firing after close. */
+let stockTarget = null;
+
+function openStockModal(product) {
+  if (!el.stockModal || !product) return;
+  stockTarget = product;
+
+  el.stockName.textContent = product.name || "Untitled product";
+  el.stockMeta.textContent = [
+    product.category || product.subcategory || "Uncategorised",
+    peso(product.price)
+  ].join(" · ");
+
+  /* A broken URL must not leave an alt-text stub sitting in the card,
+     so the placeholder takes over on error rather than on load. */
+  const src = product.images?.[0] || "";
+  el.stockThumb.hidden = !src;
+  el.stockThumbEmpty.hidden = Boolean(src);
+  if (src) {
+    el.stockThumb.src = src;
+    el.stockThumb.alt = product.name || "";
+    el.stockThumb.onerror = () => {
+      el.stockThumb.hidden = true;
+      el.stockThumbEmpty.hidden = false;
+    };
+  }
+
+  el.stockWas.textContent = product.hasQuantity
+    ? `currently ${product.quantity}`
+    : "no count kept yet";
+
+  // Untracked products open empty rather than at 0: 0 is a real count
+  // that takes the product off sale, and pre-filling it would make
+  // that the default answer to a question nobody asked.
+  el.stockQty.value = product.hasQuantity ? String(product.quantity) : "";
+
+  el.stockResume.checked = true;
+  paintStockModal();
+
+  el.stockModal.hidden = false;
+  el.stockBackdrop.hidden = false;
+  el.stockQty.focus();
+  el.stockQty.select();
+}
+
+function closeStockModal() {
+  if (!el.stockModal) return;
+  el.stockModal.hidden = true;
+  el.stockBackdrop.hidden = true;
+  el.stockThumb.onerror = null;
+  stockTarget = null;
+}
+
+/* Reads the box and reports, in order: is this a usable number, what
+   will the shop do with it, and does the relist question apply. */
+function paintStockModal() {
+  if (!stockTarget) return;
+
+  const raw = String(el.stockQty.value).trim();
+  const parsed = Number(raw);
+  const blank = raw === "";
+  const valid = !blank && Number.isFinite(parsed) && parsed >= 0;
+  const qty = valid ? Math.max(0, Math.trunc(parsed)) : null;
+
+  // The floor is 0, so the minus buttons stop there instead of
+  // bouncing off a value the field would reject on save. A blank box
+  // counts as the floor too: pressing −1 on an untracked product would
+  // otherwise land on 0, which takes it off sale.
+  const atFloor = qty === null || qty <= 0;
+  el.stockForm.querySelectorAll("[data-stock-step]").forEach((btn) => {
+    btn.disabled = atFloor && Number(btn.dataset.stockStep) < 0;
+  });
+
+  const name = stockTarget.name || "this product";
+  let text;
+  let tone;
+
+  if (blank) {
+    text = stockTarget.hasQuantity
+      ? `Enter a whole number. The count stays at ${stockTarget.quantity} until you do.`
+      : "Enter a whole number. 0 is a real count and takes the product off sale.";
+    tone = "";
+  } else if (!valid) {
+    text = `“${raw}” is not a whole number of 0 or more.`;
+    tone = "is-bad";
+  } else if (qty === stockTarget.quantity && stockTarget.hasQuantity) {
+    text = `Already ${qty}. Nothing to save.`;
+    tone = "";
+  } else if (qty === 0) {
+    text = `Saving 0 takes ${name} off sale — the shop shows “Sold Out” and Add to Cart is disabled.`;
+    tone = "is-zero";
+  } else if (qty <= LOW_STOCK_AT) {
+    text = `${name} stays on sale with ${qty} left, and the shop shows a low-stock badge.`;
+    tone = "is-low";
+  } else {
+    text = `${name} stays on sale with ${qty} in stock.`;
+    tone = "is-ok";
+  }
+
+  el.stockOutcome.textContent = text;
+  el.stockOutcome.className = "admin-stock-outcome" + (tone ? " " + tone : "");
+
+  const unchanged = valid && stockTarget.hasQuantity && qty === stockTarget.quantity;
+
+  /* The relist question. It only arises when the product has units but
+     has been deliberately marked out of stock — restocking should not
+     quietly undo that, and guessing either way is wrong.
+
+     `!unchanged` matters: without it the question appears the moment
+     such a product is opened, before anything has been typed, asking
+     about a save that is not on the table. */
+  const needsResume =
+    valid &&
+    !unchanged &&
+    qty > 0 &&
+    !stockTarget.inStock &&
+    stockTarget.hasQuantity &&
+    stockTarget.quantity > 0;
+  el.stockResumeRow.hidden = !needsResume;
+
+  el.stockSave.disabled = !valid || unchanged;
+}
+
+el.stockQty?.addEventListener("input", paintStockModal);
+
+el.stockForm?.addEventListener("click", (event) => {
+  const btn = event.target.closest("[data-stock-step], [data-stock-set]");
+  if (!btn) return;
+
+  const current = Math.max(0, Math.trunc(Number(el.stockQty.value) || 0));
+  el.stockQty.value = String(
+    btn.dataset.stockSet !== undefined
+      ? Math.max(0, Math.trunc(Number(btn.dataset.stockSet)))
+      : Math.max(0, current + Number(btn.dataset.stockStep))
+  );
+  paintStockModal();
+});
+
+el.stockForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!stockTarget) return;
+
+  const next = Number(String(el.stockQty.value).trim());
+  if (!Number.isFinite(next) || next < 0) return;
+
+  // Captured before the dialog closes, because closeStockModal clears
+  // stockTarget and the await below outlives it.
+  const product = stockTarget;
+  const resume = el.stockResumeRow.hidden ? true : el.stockResume.checked;
+  const quantity = Math.max(0, Math.trunc(next));
+
+  el.stockSave.disabled = true;
+  try {
+    const changed = await setProductQuantity(product, quantity, { resume });
+    closeStockModal();
+    if (changed) {
+      hideFeedback();
+    } else {
+      showFeedback(`"${product.name}" was already at ${quantity}. Nothing changed.`);
+    }
+  } catch (err) {
+    console.error("Stock update failed:", err);
+    // Left open, so the number typed is not lost to a transient failure.
+    el.stockOutcome.textContent = describeError(err);
+    el.stockOutcome.className = "admin-stock-outcome is-bad";
+    el.stockSave.disabled = false;
+  }
+});
+
+document.getElementById("stock-modal-close")?.addEventListener("click", closeStockModal);
+document.getElementById("stock-modal-cancel")?.addEventListener("click", closeStockModal);
+el.stockBackdrop?.addEventListener("click", closeStockModal);
+
+/* ==========================================================
+   SALE
+   ----------------------------------------------------------
+   The form edits the RULE — on/off, percent or pesos, how much,
+   and the cap — never the resulting price. salePricing() in
+   trailbound-data.js turns that rule into a number, and it is the
+   only thing in the project that does: the shop, the cart and
+   checkout all call the same function on the same stored map, so
+   they cannot drift apart.
+
+   That is also why the preview below runs the real function rather
+   than its own copy of the arithmetic. A preview that agrees with
+   the code by coincidence is worse than none.
+   ========================================================== */
+
+/** The whole form's sale rule, in the shape saveProduct expects. */
+function readSaleForm() {
+  return {
+    on: el.saleOn?.checked === true,
+    type: el.saleCard?.dataset.saleMode === "amount" ? "amount" : "percent",
+    value: el.saleValue?.value ?? "",
+    // Sent whatever the type; saveProduct drops it on a flat amount.
+    cap: el.saleCap?.value ?? ""
+  };
+}
+
+function setSaleType(type) {
+  if (!el.saleCard) return;
+  const wanted = type === "amount" ? "amount" : "percent";
+  el.saleCard.dataset.saleMode = wanted;
+  el.saleCard.querySelectorAll("[data-sale-type]").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.saleType === wanted);
+    btn.setAttribute("aria-pressed", String(btn.dataset.saleType === wanted));
+  });
+  if (el.saleValueLabel) el.saleValueLabel.textContent = wanted === "amount" ? "Pesos off" : "Percent off";
+  if (el.saleValue) el.saleValue.placeholder = wanted === "amount" ? "500" : "25";
+  // Hidden rather than disabled: a cap that cannot apply should not be
+  // sitting there holding a number you might think is in effect.
+  if (el.saleCapField) el.saleCapField.hidden = wanted === "amount";
+}
+
+function paintSale() {
+  if (!el.saleCard) return;
+
+  const form = readSaleForm();
+  const price = Number(document.getElementById("product-price")?.value) || 0;
+  const info = salePricing({ price, sale: form });
+
+  el.saleCard.classList.toggle("is-on", form.on);
+  el.saleBody.hidden = !form.on;
+
+  let state;
+  let tone = "";
+
+  if (!form.on) {
+    state = "Not on sale";
+  } else if (!price) {
+    state = "Set a price first";
+    tone = "is-warn";
+  } else if (!info.active) {
+    state = "No discount yet";
+    tone = "is-warn";
+  } else {
+    state = info.badge;
+    tone = "is-live";
+  }
+
+  el.saleState.textContent = state;
+  el.saleState.className = "admin-sale-state" + (tone ? " " + tone : "");
+
+  if (!form.on) {
+    el.salePreview.textContent = "";
+    el.salePreview.className = "admin-sale-preview";
+    return;
+  }
+
+  let preview;
+  let previewTone = "";
+
+  if (!price) {
+    preview = "Enter the product's normal price above and this will work out the sale price.";
+    previewTone = "is-warn";
+  } else if (!info.active) {
+    preview = el.saleCard.dataset.saleMode === "amount"
+      ? "Enter how many pesos to take off."
+      : "Enter a percentage to take off.";
+    previewTone = "is-warn";
+  } else if (info.salePrice === 0) {
+    // Almost always a typo — ₱500 off a ₱300 item, or 150%.
+    preview = `${peso(price)} → free. The discount is at least the price, so this product would cost nothing.`;
+    previewTone = "is-bad";
+  } else {
+    preview = `${peso(price)} → ${peso(info.salePrice)} · ${peso(info.discount)} off`;
+    if (info.capApplied) {
+      /* The case worth spelling out. "25% off, cap ₱50" on a ₱1,399
+         item is ₱50 off, not ₱350 — the cap silently redefines the
+         headline number, and the shop will badge the real one. */
+      preview += ` — the cap holds it to ${peso(info.cap)}, so this is ${info.percentOff}% off, not ${info.value}%.`;
+      previewTone = "is-warn";
+    }
+  }
+
+  el.salePreview.textContent = preview;
+  el.salePreview.className = "admin-sale-preview" + (previewTone ? " " + previewTone : "");
+}
+
+el.saleOn?.addEventListener("change", paintSale);
+el.saleValue?.addEventListener("input", paintSale);
+el.saleCap?.addEventListener("input", paintSale);
+// The sale price depends on the product's price, so the preview has to
+// follow edits to the field above it.
+document.getElementById("product-price")?.addEventListener("input", paintSale);
+
+el.saleCard?.addEventListener("click", (event) => {
+  const btn = event.target.closest("[data-sale-type]");
+  if (!btn) return;
+  setSaleType(btn.dataset.saleType);
+  paintSale();
+});
+
+/* ==========================================================
    STOCK SWITCH
    ========================================================== */
 
@@ -585,16 +1037,54 @@ el.list?.addEventListener("click", async (event) => {
    from a tick. */
 function paintStock() {
   if (!el.stockInput) return;
+
+  const raw = String(el.quantity?.value ?? "").trim();
+  const tracked = raw !== "";
+  const qty = tracked ? Math.max(0, Math.trunc(Number(raw) || 0)) : null;
+
+  /* Zero units forces the switch off and holds it there. Doing this on
+     screen rather than only in the writer is the point: the form shows
+     the state it is about to save, instead of you ticking "in stock",
+     pressing Save, and finding it off afterwards. */
+  if (qty === 0) el.stockInput.checked = false;
+  el.stockInput.disabled = qty === 0;
+  el.stockCard?.classList.toggle("is-locked", qty === 0);
+
   const inStock = el.stockInput.checked;
   el.stockCard?.classList.toggle("is-out", !inStock);
   if (el.stockState) {
     el.stockState.textContent = inStock
       ? "In stock — on sale"
+      : qty === 0
+      ? "Out of stock — nothing left to sell"
       : "Out of stock — listed, but cannot be bought";
+  }
+
+  if (el.qtyNote) {
+    el.qtyNote.textContent = !tracked
+      ? "No count kept for this product. The switch alone decides whether the shop sells it."
+      : qty === 0
+      ? "At zero, so the shop cannot sell it. Add units to put it back on sale."
+      : qty <= LOW_STOCK_AT
+      ? `Only ${qty} left — at or below the ${LOW_STOCK_AT}-unit low-stock mark.`
+      : `${qty} units counted.`;
+    el.qtyNote.classList.toggle("is-warn", tracked && qty <= LOW_STOCK_AT);
   }
 }
 
 el.stockInput?.addEventListener("change", paintStock);
+el.quantity?.addEventListener("input", paintStock);
+
+/* The +/- buttons. An untracked product starts from 0 the first time
+   you nudge it, which is how tracking gets turned on deliberately. */
+document.querySelectorAll("[data-qty-step]").forEach((button) =>
+  button.addEventListener("click", () => {
+    const step = Number(button.dataset.qtyStep) || 0;
+    const current = Math.max(0, Math.trunc(Number(el.quantity.value) || 0));
+    el.quantity.value = String(Math.max(0, current + step));
+    paintStock();
+  })
+);
 
 /* ==========================================================
    IMAGE UPLOAD
@@ -612,6 +1102,30 @@ function showUploadError(message) {
 
 function clearUploadError() {
   if (el.uploadError) el.uploadError.hidden = true;
+}
+
+/* Once uploading is known not to work, the drop zone says so instead
+   of going on looking like a button. The URL fields keep working —
+   they are the route that does not depend on Storage at all. */
+function paintUploadAvailability() {
+  const reason = storageUnavailableReason();
+  if (!reason || !el.dropzone) return;
+
+  el.dropzone.classList.add("is-unavailable");
+  if (el.fileInput) el.fileInput.disabled = true;
+
+  const strong = el.dropzone.querySelector(".admin-dropzone-text strong");
+  if (strong) strong.textContent = "Image upload is unavailable on this project";
+
+  const notes = el.dropzone.querySelectorAll(".admin-dropzone-text small");
+  if (notes[0]) notes[0].textContent = "Paste an image URL in a row below instead — it works exactly the same.";
+  if (notes[1]) notes[1].remove();
+
+  // Per-row Upload buttons go with it, for the same reason.
+  el.images?.querySelectorAll("[data-row-upload]").forEach((btn) => {
+    btn.disabled = true;
+    btn.title = reason;
+  });
 }
 
 /** A row mid-upload: the input shows progress and cannot be edited. */
@@ -656,6 +1170,10 @@ async function uploadInto(row, file) {
     showUploadError(err.message || "The upload failed.");
     // A row added for a failed upload and left empty is just noise.
     if (!row.querySelector('[data-field="value"]')?.value) row.remove();
+    // If the problem is the bucket rather than this file, stop offering
+    // uploads — otherwise the next four images fail the same way and it
+    // reads as the page being broken rather than a setting being off.
+    paintUploadAvailability();
   } finally {
     setRowBusy(row, null);
     refreshCounts();
@@ -665,6 +1183,9 @@ async function uploadInto(row, file) {
 /** Adds an empty row and returns it, so an upload has somewhere to land. */
 function appendImageRow() {
   el.images.insertAdjacentHTML("beforeend", rowTemplates.images(""));
+  // A row created after the verdict is in needs the same treatment as
+  // the ones that were already on screen.
+  paintUploadAvailability();
   return el.images.lastElementChild;
 }
 
