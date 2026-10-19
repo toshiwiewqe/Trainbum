@@ -315,7 +315,11 @@ function guideRows() {
     .filter((g) => matches(`${g.fullName} ${g.specialty} ${g.guideId}`))
     .map(
       (g) => `<tr>
-      <td><strong>${escapeHtml(g.fullName)}</strong></td>
+      <td><strong>${escapeHtml(g.fullName)}</strong><small>${
+        g.contact
+          ? escapeHtml(g.contact)
+          : '<span class="admin-product-status admin-product-status--inactive">no contact email</span>'
+      }</small></td>
       <td>${escapeHtml(g.specialty || "—")}</td>
       <td>${g.rating ? `★ ${g.rating}` : "—"}</td>
       <td><small>${escapeHtml(g.guideId || "—")}</small></td>
@@ -449,6 +453,30 @@ function formHtml(item) {
            ${field("Rating", "f-rating", 'type="number" min="0" max="5" step="0.1" placeholder="4.8"')}
            <label>Status<select id="f-status"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></label>
          </div>`
+      ) +
+      /* ADDED — three fields saveGuide() has always written but this
+         form never collected. Because the payload sets them
+         unconditionally, every edit made here was sending
+         contact: "", Photo: "" and years_experience: 0 — so opening a
+         guide, changing their rating and pressing Save silently wiped
+         their email address.
+
+         The contact address is the one that matters most now: it is
+         where the weekly schedule email goes, and what a guide signing
+         up is matched against. */
+      section(
+        "Contact &amp; profile",
+        `${field(
+          "Contact email",
+          "f-contact",
+          'type="email" placeholder="juan.delacruz@trailbound.ph"'
+        )}
+         <p class="admin-form-hint">Where this guide's weekly schedule is emailed. A guide with no address here can't be sent one.</p>
+         <div class="admin-product-form-row">
+           ${field("Years of experience", "f-years", 'type="number" min="0" max="60" step="1" placeholder="6"')}
+           <span></span>
+         </div>
+         ${imageField("Photo URL or path", "f-photo", "guides/G001.jpg")}`
       ) +
       section(
         "Advanced",
@@ -623,6 +651,11 @@ function fillForm(item) {
     set("f-rating", item.rating || "");
     set("f-status", item.status);
     set("f-id", item.guideId);
+    // ADDED — normalizeGuide() already returns these; the form just
+    // never showed them, which is how they came to be wiped on save.
+    set("f-contact", item.contact);
+    set("f-photo", item.photo);
+    set("f-years", item.yearsExperience || "");
     return;
   }
 
@@ -688,6 +721,11 @@ el.form?.addEventListener("submit", async (event) => {
           specialty: value("f-specialty"),
           rating: value("f-rating"),
           status: value("f-status"),
+          // ADDED — saveGuide() writes all three whether or not they
+          // arrive, so not sending them was an erase, not a no-op.
+          contact: value("f-contact"),
+          photo: value("f-photo"),
+          yearsExperience: value("f-years"),
           guideId: value("f-id") || slugify(value("f-name"))
         },
         editing?.docId || null,

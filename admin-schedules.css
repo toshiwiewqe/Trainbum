@@ -1,0 +1,280 @@
+/* ==========================================================
+   Admin — Guide Schedules (admin-schedules.html)
+
+   Only the bits this page adds. Layout, sidebar, topbar, panels
+   and stat cards all come from admin.css / admin-dashboard.css,
+   so this page looks like the rest of the panel without any of
+   those files being edited.
+   ========================================================== */
+
+.sched-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.sched-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.sched-field label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(245, 239, 233, 0.5);
+}
+
+.sched-field input {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.04);
+  font: inherit;
+  font-size: 0.86rem;
+  color: #f5efe9;
+  color-scheme: dark; /* so the native date picker isn't a white block */
+}
+
+.sched-range {
+  font-size: 0.82rem;
+  color: rgba(245, 239, 233, 0.6);
+  padding-bottom: 0.65rem;
+}
+
+.sched-spacer {
+  flex: 1;
+}
+
+.sched-btn {
+  padding: 0.7rem 1.2rem;
+  border: none;
+  border-radius: 999px;
+  background-color: #ff5a45;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  cursor: pointer;
+}
+
+.sched-btn:hover:not(:disabled) {
+  background-color: #e8432f;
+}
+
+.sched-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sched-btn--ghost {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(245, 239, 233, 0.8);
+}
+
+.sched-btn--ghost:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ---------- one guide ---------- */
+
+.sched-guide {
+  margin-bottom: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background-color: rgba(255, 255, 255, 0.025);
+  overflow: hidden;
+}
+
+.sched-guide-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.95rem 1.15rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.sched-guide-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f5efe9;
+}
+
+.sched-guide-mail {
+  font-size: 0.78rem;
+  color: rgba(245, 239, 233, 0.55);
+}
+
+.sched-guide-mail--missing {
+  color: #ff9d9d;
+  font-weight: 600;
+}
+
+.sched-count {
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  background-color: rgba(255, 90, 69, 0.18);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #ffb3a6;
+  white-space: nowrap;
+}
+
+/* ---------- their climbs ---------- */
+
+.sched-climbs {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sched-climbs th {
+  text-align: left;
+  padding: 0.5rem 1.15rem;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(245, 239, 233, 0.4);
+}
+
+.sched-climbs td {
+  padding: 0.55rem 1.15rem;
+  font-size: 0.82rem;
+  color: rgba(245, 239, 233, 0.85);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: top;
+}
+
+.sched-climbs .sched-when {
+  white-space: nowrap;
+  font-weight: 600;
+  color: #f5efe9;
+}
+
+.sched-time {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background-color: rgba(245, 240, 168, 0.15);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #f5f0a8;
+}
+
+.sched-time--none {
+  background-color: rgba(255, 255, 255, 0.07);
+  color: rgba(245, 239, 233, 0.5);
+}
+
+.sched-missing {
+  color: #ff9d9d;
+}
+
+/* ---------- quiet guides ---------- */
+
+.sched-quiet {
+  padding: 0.9rem 1.15rem;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: rgba(245, 239, 233, 0.55);
+}
+
+/* ---------- send log ---------- */
+
+.sched-log {
+  margin-top: 1rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.25);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.74rem;
+  line-height: 1.6;
+  color: rgba(245, 239, 233, 0.7);
+  white-space: pre-wrap;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.sched-log .ok { color: #7ee19a; }
+.sched-log .bad { color: #ff9d9d; }
+
+/* ---------- preview dialog ---------- */
+
+.sched-preview {
+  width: min(640px, calc(100vw - 2rem));
+  max-height: 80vh;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background-color: #241410;
+  color: #f5efe9;
+}
+
+.sched-preview::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.sched-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sched-preview-head h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.sched-preview-body {
+  padding: 1.1rem 1.25rem;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow: auto;
+  max-height: 55vh;
+  color: rgba(245, 239, 233, 0.85);
+}
+
+.sched-preview-close {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.08);
+  font-size: 1rem;
+  line-height: 1;
+  color: #f5efe9;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .sched-bar {
+    gap: 0.5rem;
+  }
+
+  .sched-spacer {
+    flex-basis: 100%;
+  }
+
+  .sched-climbs th:nth-child(4),
+  .sched-climbs td:nth-child(4) {
+    display: none; /* emergency contact — it's still in the email */
+  }
+}

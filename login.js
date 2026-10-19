@@ -11,6 +11,22 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase
 // person happens to open account.html. Also seeds their welcome
 // notification and logs the sign-up to the dashboard activity feed.
 import { ensureUserDoc, touchUser } from "./trailbound-data.js";
+// ADDED: works out whether this account belongs to a guide, and links
+// it on first sign-in. See guide-account.js.
+import { resolveGuide } from "./guide-account.js";
+
+/* Never allowed to throw into the sign-in flow — being a guide is a
+   secondary fact, and failing to work it out should land someone on
+   the homepage, not back on the login page. */
+async function isGuideAccount(user) {
+  try {
+    const guide = await resolveGuide(user);
+    return Boolean(guide && !guide.linkFailed);
+  } catch (err) {
+    console.warn('Guide check failed (continuing as a customer):', err);
+    return false;
+  }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   const emailInput      = document.getElementById('email');
@@ -139,15 +155,27 @@ document.addEventListener('DOMContentLoaded', () => {
         console.warn('Admin check failed (continuing as non-admin):', adminCheckErr);
       }
 
+      // If the person got sent here from a page that required login
+      // (e.g. booking.html?trail=T003), send them right back to it
+      // instead of always landing on index.html.
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get('redirect');
+
       if (isUserAdmin) {
         window.location.href = 'admin-dashboard.html';
+      } else if (redirectTo) {
+        // An explicit redirect wins over the guide check — they were
+        // going somewhere specific, and a guide can also be a customer.
+        window.location.href = decodeURIComponent(redirectTo);
+      } else if (await isGuideAccount(user)) {
+        // ADDED: a guide lands on their own schedule, the same way an
+        // admin lands on the dashboard. Wrapped in its own try/catch
+        // inside isGuideAccount() for the same reason as the admin
+        // check above — a secondary "who are you?" lookup must never
+        // be able to block the primary "let them in".
+        window.location.href = 'guide.html';
       } else {
-        // If the person got sent here from a page that required login
-        // (e.g. booking.html?trail=T003), send them right back to it
-        // instead of always landing on index.html.
-        const params = new URLSearchParams(window.location.search);
-        const redirectTo = params.get('redirect');
-        window.location.href = redirectTo ? decodeURIComponent(redirectTo) : 'index.html';
+        window.location.href = 'index.html';
       }
     } catch (err) {
       // Which field the message lands under matters: "no account" is an

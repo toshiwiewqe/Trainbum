@@ -56,8 +56,16 @@
         <div class="framescene-overlay">
           <div class="framescene-panel framescene-panel--one" data-panel="1">
             <div>
-              <h1 class="fs-rise" style="transition-delay: 0ms">Trailbound</h1>
-              <p class="fs-rise" style="transition-delay: 150ms">
+              <!-- greeting.js fills this in once Firebase knows who's
+                   signed in: "Welcome back, Nikko" or "Welcome, Guest".
+                   It starts empty rather than hidden so the line's space
+                   is already reserved and nothing shifts when it lands.
+                   .fs-rise makes it arrive with the rest of the panel;
+                   the delays below were shifted to keep the sequence
+                   greeting -> wordmark -> tagline. -->
+              <span class="framescene-greeting fs-rise" id="hero-greeting" style="transition-delay: 0ms"></span>
+              <h1 class="fs-rise" style="transition-delay: 140ms">Trailbound</h1>
+              <p class="fs-rise" style="transition-delay: 280ms">
                 Luzon's peaks, one trail at a time
               </p>
             </div>
@@ -130,6 +138,7 @@
 
     <script type="module" src="script.js"></script>
     <script type="module" src="auth-nav.js"></script>
+    <script type="module" src="greeting.js"></script>
     <script type="module" src="home-featured.js"></script>
 
     <!-- Shared footer: these two lines go at the bottom of every page -->

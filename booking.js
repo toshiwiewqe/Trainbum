@@ -36,6 +36,26 @@ import { BASECAMP, HOTELS } from "./accommodations.js";
 // account page, and what lets the Firestore rules scope it to them.
 // Same document shape and same "Pending"/"Unpaid" casing as before.
 import { createBooking } from "./trailbound-data.js";
+// ADDED: start times per trail, and the "is this guide packed?" check.
+// Both live in their own files so this one only has to render them.
+import { getTimeSlots, formatSlot, slotNote } from "./trail-time-slots.js";
+import {
+  loadGuideDayCounts,
+  isGuideFree,
+  slotsLeftLabel,
+  bumpGuideDay,
+} from "./guide-availability.js";
+// ADDED (Pass 3): Step 04, the per-climber cards. All the DOM work
+// lives in that file; this one calls five functions.
+import {
+  initClimbers,
+  syncClimberCards,
+  filledCardsBeyond,
+  validateClimbers,
+  readClimbers,
+  resetClimbers,
+  fillFirstFromUser,
+} from "./booking-climbers.js";
 import { fetchHourlyForecast, buildHikerTip, buildAlertMessage } from "./Weather-api.js";
 import { auth } from "./firebase-init.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -97,6 +117,10 @@ const packageInfoIncludes = document.getElementById("package-info-includes");
 
 const dateInput = document.getElementById("booking-date");
 const groupSizeInput = document.getElementById("group-size");
+
+/* ---------- Start time (Step 02) DOM refs ---------- */
+const timeSelect = document.getElementById("departure-time");
+const timeSlotsEl = document.getElementById("time-slots");
 const priceTotalEl = document.getElementById("price-total");
 const form = document.getElementById("booking-form");
 const feedbackEl = document.getElementById("booking-feedback");
@@ -117,6 +141,7 @@ const summaryTrailName = document.getElementById("summary-trail-name");
 const summaryTrailLocation = document.getElementById("summary-trail-location");
 const summaryTrailDifficulty = document.getElementById("summary-trail-difficulty");
 const summaryDate = document.getElementById("summary-date");
+const summaryTime = document.getElementById("summary-time");
 const summaryGroupSize = document.getElementById("summary-group-size");
 const summaryGuide = document.getElementById("summary-guide");
 const summaryPackageName = document.getElementById("summary-package-name");
@@ -134,13 +159,18 @@ const summaryStayCost = document.getElementById("summary-stay-cost");
 const stayOptionsEl = document.getElementById("stay-options");
 const stayGoogleEl = document.getElementById("stay-google");
 const stayGoogleLink = document.getElementById("stay-google-link");
-const stayBasecampEl = document.getElementById("stay-basecamp");
-const stayHotelsEl = document.getElementById("stay-hotels");
-const stayHotelListEl = document.getElementById("stay-hotel-list");
+const stayDetailEl = document.getElementById("stay-detail");
 const stayMapEl = document.getElementById("stay-map");
 const stayNightsRow = document.getElementById("stay-nights-row");
 const stayNightsSelect = document.getElementById("stay-nights");
-const stayCheckinEl = document.getElementById("stay-checkin");
+const stayDatesEl = document.getElementById("stay-dates");
+const stayIncludedBanner = document.getElementById("stay-included-banner");
+
+/* ---------- Trail search (Step 01) DOM refs ---------- */
+
+const trailSearchWrap = document.getElementById("trail-search");
+const trailSearchInput = document.getElementById("trail-search-input");
+const trailSearchList = document.getElementById("trail-search-list");
 
 /* ---------- Header show/hide on scroll ----------
    Hides the header while the page is actively being scrolled (either
@@ -193,6 +223,12 @@ let trails = [];
 let guides = [];
 let packages = [];
 let weatherRequestToken = 0; // guards against out-of-order responses if the user changes date/trail quickly
+
+// ADDED: how many groups each guide already has on the chosen date.
+// Refilled by refreshGuideAvailability() whenever the date changes;
+// empty means "nothing booked", which is also the fail-open state.
+let guideDayCounts = new Map();
+let availabilityToken = 0; // drops an out-of-order response if the date changes fast
 
 // Accommodation choice: "none" (default), "basecamp", or "hotel"
 let stayType = "none";
@@ -292,6 +328,7 @@ async function loadData() {
   auditTrails(trails); // TEMPORARY — see diagnostics block at the top
 
   populateTrailSelect();
+  initTrailSearch();
   populatePackageSelectOptions();
   preselectTrailFromURL();
   updateSummaryPanel();
@@ -307,6 +344,142 @@ function populateTrailSelect() {
     openTrails
       .map((t) => `<option value="${t.trail_id}">${t.name}</option>`)
       .join("");
+}
+
+/* ---------- Trail search (Step 01) ----------
+   A type-to-search box in front of the real <select id="trail-select">,
+   which stays in the page and is still what every other handler reads.
+   Picking a result sets trailSelect.value and fires "change", so
+   handleTrailChange() runs exactly as it did with the plain dropdown.
+
+   Matching is on name AND location, because people look for "Benguet"
+   as often as "Pulag". */
+
+let searchResults = [];   // trails currently listed
+let searchActive = -1;    // which one the arrow keys are on
+
+function openTrails() {
+  return trails.filter(isTrailOpen);
+}
+
+// Wraps the typed letters in <mark> so it's clear why a result matched
+function highlight(text, query) {
+  const safe = escapeHtml(text);
+  if (!query) return safe;
+  const i = safe.toLowerCase().indexOf(query.toLowerCase());
+  if (i === -1) return safe;
+  return (
+    safe.slice(0, i) + `<mark>` + safe.slice(i, i + query.length) + `</mark>` + safe.slice(i + query.length)
+  );
+}
+
+function matchTrails(query) {
+  const q = query.trim().toLowerCase();
+  const list = openTrails();
+  if (!q) return list;
+  return list.filter((t) =>
+    `${t.name || ""} ${t.location || ""} ${t.difficulty || ""}`.toLowerCase().includes(q),
+  );
+}
+
+function renderSearchList(query) {
+  if (!trailSearchList) return;
+  searchResults = matchTrails(query);
+  searchActive = -1;
+
+  if (searchResults.length === 0) {
+    trailSearchList.innerHTML = `<li class="trail-search-empty">No trails match “${escapeHtml(query)}”.</li>`;
+  } else {
+    trailSearchList.innerHTML = searchResults
+      .map((t, i) => {
+        const meta = [t.location, t.difficulty, t.duration].filter(Boolean).join(" · ");
+        return `
+          <li class="trail-search-option" role="option" id="trail-opt-${i}"
+              aria-selected="${t.trail_id === trailSelect.value}" data-id="${escapeHtml(t.trail_id)}">
+            <span class="trail-search-name">${highlight(t.name || "", query)}</span>
+            ${meta ? `<span class="trail-search-meta">${highlight(meta, query)}</span>` : ""}
+          </li>`;
+      })
+      .join("");
+  }
+
+  trailSearchList.querySelectorAll("[data-id]").forEach((li) => {
+    // mousedown, not click: it fires before the input's blur, which
+    // would otherwise close the list out from under the pointer
+    li.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      chooseTrail(li.dataset.id);
+    });
+  });
+}
+
+function openSearchList(query = "") {
+  if (!trailSearchList) return;
+  renderSearchList(query);
+  trailSearchList.hidden = false;
+  trailSearchInput.setAttribute("aria-expanded", "true");
+}
+
+function closeSearchList() {
+  if (!trailSearchList) return;
+  trailSearchList.hidden = true;
+  trailSearchInput.setAttribute("aria-expanded", "false");
+  trailSearchInput.removeAttribute("aria-activedescendant");
+  searchActive = -1;
+}
+
+function setSearchActive(index) {
+  const items = [...trailSearchList.querySelectorAll("[data-id]")];
+  if (items.length === 0) return;
+  searchActive = (index + items.length) % items.length;
+  items.forEach((el, i) => el.classList.toggle("is-active", i === searchActive));
+  items[searchActive].scrollIntoView({ block: "nearest" });
+  trailSearchInput.setAttribute("aria-activedescendant", items[searchActive].id);
+}
+
+function chooseTrail(trailId) {
+  const trail = getTrailById(trailId);
+  if (!trail) return;
+  trailSelect.value = trailId;
+  trailSearchInput.value = trail.name || "";
+  closeSearchList();
+  trailSelect.dispatchEvent(new Event("change"));
+}
+
+function initTrailSearch() {
+  if (!trailSearchInput) return;
+
+  trailSearchInput.addEventListener("input", () => openSearchList(trailSearchInput.value));
+  trailSearchInput.addEventListener("focus", () => {
+    trailSearchInput.select(); // typing replaces the chosen trail
+    openSearchList(trailSearchInput.value);
+  });
+
+  trailSearchInput.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (trailSearchList.hidden) return openSearchList(trailSearchInput.value);
+      setSearchActive(searchActive + (e.key === "ArrowDown" ? 1 : -1));
+      return;
+    }
+    if (e.key === "Enter") {
+      // Only swallow Enter when a result is highlighted, so Enter
+      // can still submit the form the rest of the time
+      if (!trailSearchList.hidden && searchActive >= 0) {
+        e.preventDefault();
+        chooseTrail(searchResults[searchActive]?.trail_id);
+      }
+      return;
+    }
+    if (e.key === "Escape") closeSearchList();
+  });
+
+  // Delay so a mousedown on a result still registers
+  trailSearchInput.addEventListener("blur", () => setTimeout(closeSearchList, 120));
+
+  document.addEventListener("click", (e) => {
+    if (!trailSearchWrap.contains(e.target)) closeSearchList();
+  });
 }
 
 // Package list doesn't depend on which trail was picked, but we keep
@@ -327,6 +500,8 @@ function preselectTrailFromURL() {
   const trailId = params.get("trail");
   if (trailId && getTrailById(trailId)) {
     trailSelect.value = trailId;
+    // Keep the search box showing the trail that arrived in the URL
+    if (trailSearchInput) trailSearchInput.value = getTrailById(trailId).name || "";
     handleTrailChange();
   }
 }
@@ -392,12 +567,21 @@ function renderGuideCards(availableGuides) {
     return;
   }
 
+  // ADDED: a guide who already has their maximum for the chosen date
+  // is shown, but can't be picked. Hiding them instead would make the
+  // list change length as the date moves, which reads like a bug.
+  const dateChosen = Boolean(dateInput.value);
+
   guideCardsEl.innerHTML = availableGuides
     .map((g) => {
       const photo = getGuidePhotoSrc(g);
       const hasRating = g.rating !== undefined && g.rating !== null && g.rating !== "";
+      const free = !dateChosen || isGuideFree(g, guideDayCounts);
+      const availability = dateChosen ? slotsLeftLabel(g, guideDayCounts) : "";
       return `
-        <button type="button" class="guide-card" data-id="${escapeHtml(g.guide_id)}" aria-pressed="false">
+        <button type="button" class="guide-card${free ? "" : " guide-card--full"}"
+                data-id="${escapeHtml(g.guide_id)}" aria-pressed="false"
+                ${free ? "" : "disabled aria-disabled=\"true\""}>
           <span class="guide-card-photo">
             <span class="guide-card-initials" aria-hidden="true">${escapeHtml(getInitials(g.full_name))}</span>
             ${photo ? `<img src="${escapeHtml(photo)}" alt="" loading="lazy" />` : ""}
@@ -406,6 +590,11 @@ function renderGuideCards(availableGuides) {
           <span class="guide-card-name">${escapeHtml(g.full_name || "Guide")}</span>
           ${g.specialty ? `<span class="guide-card-specialty">${escapeHtml(g.specialty)}</span>` : ""}
           ${hasRating ? `<span class="guide-card-rating">★ ${escapeHtml(g.rating)}</span>` : ""}
+          ${
+            availability
+              ? `<span class="guide-card-availability${free ? "" : " guide-card-availability--full"}">${escapeHtml(availability)}</span>`
+              : ""
+          }
         </button>
       `;
     })
@@ -413,6 +602,7 @@ function renderGuideCards(availableGuides) {
 
   guideCardsEl.querySelectorAll(".guide-card").forEach((btn) => {
     btn.addEventListener("click", () => {
+      if (btn.disabled) return;
       guideSelect.value = btn.dataset.id;
       guideSelect.dispatchEvent(new Event("change"));
     });
@@ -435,22 +625,153 @@ function syncGuideCardSelection() {
   });
 }
 
+/* ---------- Guide availability ----------
+   Which guides this trail offers, regardless of the date. Pulled out
+   of handleTrailChange() so the date handler can rebuild the same
+   list without repeating the field-name juggling. */
+function guidesForCurrentTrail() {
+  const trail = getTrailById(trailSelect.value);
+  if (!trail) return [];
+
+  // Reads `guide_ids` and falls back to `guide_id` — both spellings
+  // exist in this database (see normalizeTrail in trailbound-data.js).
+  const guideIds = Array.isArray(trail.guide_ids)
+    ? trail.guide_ids
+    : Array.isArray(trail.guide_id)
+      ? trail.guide_id
+      : [];
+
+  return guideIds
+    .map(getGuideById)
+    .filter(Boolean)
+    .filter((g) => g.status === "Active");
+}
+
+/* Reloads the day counts and repaints the guide cards. Called
+   whenever the date changes — a guide who's free on the 20th may be
+   packed on the 21st, so the cards can't be drawn once and left. */
+async function refreshGuideAvailability() {
+  const date = dateInput.value;
+  const myToken = ++availabilityToken;
+
+  guideDayCounts = date ? await loadGuideDayCounts(date) : new Map();
+
+  // The date changed again while that read was in flight — this
+  // result is already stale, so drop it rather than repaint with it.
+  if (myToken !== availabilityToken) return;
+
+  const availableGuides = guidesForCurrentTrail();
+  if (availableGuides.length) renderGuideCards(availableGuides);
+
+  // If the guide they'd already picked is now full, clear the choice
+  // rather than letting them reach Confirm and be refused there.
+  const chosen = getGuideById(guideSelect.value);
+  if (date && chosen && !isGuideFree(chosen, guideDayCounts)) {
+    guideSelect.value = "";
+    syncGuideCardSelection();
+    updateSummaryPanel();
+    showFeedback(
+      `${chosen.full_name} is fully booked on that date. Please pick another guide.`,
+      true,
+    );
+  }
+}
+
+/* ---------- Start time (Step 02) ----------
+   Same hidden-<select>-plus-buttons pattern as the package and guide
+   cards: #departure-time stays in the DOM and is what the submit code
+   reads, the buttons just set its value. */
+
+function renderTimeSlots(trail) {
+  if (!timeSlotsEl || !timeSelect) return;
+
+  if (!trail) {
+    resetTimeSlots();
+    return;
+  }
+
+  /* Which list to show depends on the PACKAGE, not just the trail:
+     an overnight hike doesn't leave at 4 AM, it treks in after lunch
+     and summits at dawn the next day. packageIncludesStay() is the
+     same test Step 03 already uses to give the free basecamp night,
+     so the two steps can never disagree about what "overnight" means. */
+  const overnight = packageIncludesStay(currentPackage());
+  const slots = getTimeSlots(trail, { overnight });
+
+  // Keep their choice when it's still on offer — switching package
+  // shouldn't silently wipe a time that's still valid.
+  const previous = timeSelect.value;
+  const keep = slots.includes(previous) ? previous : "";
+
+  timeSelect.disabled = false;
+  timeSelect.innerHTML =
+    `<option value="" disabled ${keep ? "" : "selected"}>Select a start time...</option>` +
+    slots.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(formatSlot(s))}</option>`).join("");
+  timeSelect.value = keep;
+
+  timeSlotsEl.classList.remove("time-slots--disabled");
+  timeSlotsEl.innerHTML = slots
+    .map(
+      (s) => `
+        <button type="button" class="time-slot" role="radio" aria-checked="false" data-time="${escapeHtml(s)}">
+          <span class="time-slot-time">${escapeHtml(formatSlot(s))}</span>
+          <span class="time-slot-note">${escapeHtml(slotNote(s, { overnight }))}</span>
+        </button>`,
+    )
+    .join("");
+
+  timeSlotsEl.querySelectorAll("[data-time]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      timeSelect.value = btn.dataset.time;
+      syncTimeSlotSelection();
+      updateSummaryPanel();
+    });
+  });
+
+  syncTimeSlotSelection();
+}
+
+function syncTimeSlotSelection() {
+  if (!timeSlotsEl) return;
+  timeSlotsEl.querySelectorAll("[data-time]").forEach((btn) => {
+    const selected = btn.dataset.time === timeSelect.value;
+    btn.classList.toggle("time-slot--selected", selected);
+    btn.setAttribute("aria-checked", String(selected));
+  });
+}
+
+function resetTimeSlots() {
+  if (!timeSelect || !timeSlotsEl) return;
+  timeSelect.disabled = true;
+  timeSelect.innerHTML = `<option value="" disabled selected>Select a trail first...</option>`;
+  timeSlotsEl.classList.add("time-slots--disabled");
+  timeSlotsEl.innerHTML = `<p class="time-slots-placeholder">Select a trail to see start times.</p>`;
+}
+
 /* ---------- Accommodation (Step 03) ----------
-   Three choices: no accommodation (default, free), Trailbound's own
-   basecamp (per person / night), or a partner hotel near the trail
-   (per room / night). Hotels come from accommodations.js and are
-   matched to the trail by area (e.g. every "Benguet" trail). Each
-   hotel shows its real address, a "View on Google Maps" link, and the
-   picked one is shown on an embedded Google map (free embed, no API
-   key — same approach as the checkout shipping map). */
+   Three choices, shown as one stacked list so the prices line up
+   and can actually be compared: Trailbound's own basecamp (priced
+   per person, per night), a partner hotel near the trail (per room,
+   per night), or nothing at all.
+
+   WHAT EACH ROW SHOWS: the big number is what this booking would
+   cost at the current group size and nights — not the unit rate.
+   Comparing "₱650 / person" against "₱1,500 / room" is what made
+   this step hard to read; the unit rate is still there, small,
+   underneath.
+
+   FREE NIGHT: a package that covers accommodation (Overnight Hike)
+   preselects the basecamp at ₱0 and marks it "Included". Extra
+   nights beyond the first are charged normally. Switching to a
+   hotel charges that hotel's usual rate — the included night isn't
+   refunded or credited.
+
+   Hotels come from accommodations.js and are matched to a trail by
+   area or by an explicit trail_ids list. The picked place is shown
+   on an embedded Google map (free embed, no API key).
+   ========================================================== */
 
 const ICONS = {
-  none:
-    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>',
-  basecamp:
-    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20 12 5l9 15z"/><path d="M12 20v-6l-3 6M12 14l3 6"/></svg>',
-  hotel:
-    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 21v-4h6v4M8 7h2M14 7h2M8 11h2M14 11h2"/></svg>',
   pin:
     '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
   external:
@@ -485,6 +806,27 @@ function roomsNeeded(hotel, groupSize) {
   return Math.max(1, Math.ceil(groupSize / (Number(hotel.sleeps) || 2)));
 }
 
+/* Does the chosen package already cover a night?
+   A boolean `includes_accommodation` on the package document wins.
+   Without one, the package's own name and `includes` text is read —
+   so "Overnight Hike" with "1-Night Accommodation" works today with
+   nothing added in Firestore. */
+function packageIncludesStay(pkg) {
+  if (!pkg) return false;
+  if (typeof pkg.includes_accommodation === "boolean") return pkg.includes_accommodation;
+  const text = `${pkg.name || ""} ${(pkg.includes || []).join(" ")}`.toLowerCase();
+  return /overnight|accommodation|\bnight\b/.test(text);
+}
+
+function currentPackage() {
+  return getPackageById(packageSelect.value);
+}
+
+// Nights the package covers for free (currently always 1 when it covers any)
+function freeNights() {
+  return packageIncludesStay(currentPackage()) ? 1 : 0;
+}
+
 function trailMapsQuery(trail) {
   return [trail.name, trail.location, "Philippines"].filter(Boolean).join(", ");
 }
@@ -493,18 +835,26 @@ function hotelMapsQuery(hotel) {
   return `${hotel.name}, ${hotel.address}`;
 }
 
-// Opens Google Maps (website or app) searching for the place
 function mapsSearchUrl(query) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
-// Free Google Maps embed for the in-page map
 function mapsEmbedUrl(query) {
   return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=14&output=embed`;
 }
 
 function plural(n, word) {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
+/* Cost of a basecamp stay, with any package-included nights free */
+function basecampCost(groupSize, nights) {
+  const billable = Math.max(0, nights - freeNights());
+  return (Number(BASECAMP.price_per_person) || 0) * groupSize * billable;
+}
+
+function hotelCost(hotel, groupSize, nights) {
+  return (Number(hotel.price_per_room) || 0) * roomsNeeded(hotel, groupSize) * nights;
 }
 
 /* Everything the price, summary and booking need to know about the stay */
@@ -520,26 +870,27 @@ function getStayQuote() {
       address: trail ? `Near the ${trail.name} jump-off, ${trail.location || ""}`.trim() : "",
       nights,
       rooms: null,
-      cost: (Number(BASECAMP.price_per_person) || 0) * groupSize * nights,
+      included: freeNights() > 0,
+      cost: basecampCost(groupSize, nights),
     };
   }
 
   if (stayType === "hotel") {
     const hotel = getHotelById(stayHotelId);
     if (!hotel) return { type: "hotel", name: null, nights, cost: 0, incomplete: true };
-    const rooms = roomsNeeded(hotel, groupSize);
     return {
       type: "hotel",
       id: hotel.id,
       name: hotel.name,
       address: hotel.address,
       nights,
-      rooms,
-      cost: (Number(hotel.price_per_room) || 0) * rooms * nights,
+      rooms: roomsNeeded(hotel, groupSize),
+      included: false,
+      cost: hotelCost(hotel, groupSize, nights),
     };
   }
 
-  return { type: "none", name: null, nights: 0, rooms: null, cost: 0 };
+  return { type: "none", name: null, nights: 0, rooms: null, included: false, cost: 0 };
 }
 
 /* Check-in is the night before the hike */
@@ -554,59 +905,90 @@ function getStayDates(nights) {
   return { checkIn: iso(checkIn), checkOut: iso(checkOut), label: `${nice(checkIn)} → ${nice(checkOut)}` };
 }
 
+/* One option row: dot | title + note | total + unit rate */
+function stayOptionHTML({ type, title, sub, total, rate, tag, disabled }) {
+  const free = total === 0;
+  return `
+    <button type="button" class="stay-option" role="radio"
+            aria-checked="${type === stayType}" data-stay="${type}" ${disabled ? "disabled" : ""}>
+      <span class="stay-option-dot" aria-hidden="true"></span>
+      <span class="stay-option-title">
+        ${escapeHtml(title)}
+        ${tag ? `<span class="stay-tag">${escapeHtml(tag)}</span>` : ""}
+      </span>
+      <span class="stay-option-sub">${escapeHtml(sub)}</span>
+      <span class="stay-option-cost">
+        <span class="stay-option-total${free ? " stay-option-total--free" : ""}">${free ? "Free" : formatPrice(total)}</span>
+        ${rate ? `<span class="stay-option-rate">${escapeHtml(rate)}</span>` : ""}
+      </span>
+    </button>`;
+}
+
 function renderStayOptions(trail) {
   if (!stayOptionsEl) return;
   const hotels = hotelsForTrail(trail);
+  const groupSize = getGroupSize();
+  const nights = getStayNights();
 
   // Switching to a trail with no partner hotels drops a hotel choice
   if (stayType === "hotel" && hotels.length === 0) stayType = "none";
   if (stayHotelId && !hotels.some((h) => h.id === stayHotelId)) stayHotelId = null;
 
-  const cheapestRoom = hotels.length
-    ? Math.min(...hotels.map((h) => Number(h.price_per_room) || 0))
-    : 0;
+  const includedNights = freeNights();
+  const campTotal = basecampCost(groupSize, nights);
+  const campRate = `${formatPrice(BASECAMP.price_per_person)} per person, per night`;
 
-  const options = [
-    {
-      type: "none",
-      title: "No accommodation",
-      sub: "I'll arrange my own stay",
-      price: "Free",
-    },
-    {
+  // The hotel row shows the chosen hotel once there is one, otherwise
+  // the cheapest, so the number always means something concrete.
+  const chosenHotel = getHotelById(stayHotelId);
+  const cheapest = hotels.length
+    ? hotels.reduce((a, b) => (hotelCost(a, groupSize, nights) <= hotelCost(b, groupSize, nights) ? a : b))
+    : null;
+  const shownHotel = chosenHotel || cheapest;
+  const hotelTotal = shownHotel ? hotelCost(shownHotel, groupSize, nights) : 0;
+  const hotelRooms = shownHotel ? roomsNeeded(shownHotel, groupSize) : 0;
+
+  stayOptionsEl.innerHTML = [
+    stayOptionHTML({
       type: "basecamp",
       title: BASECAMP.name,
       sub: BASECAMP.tagline || "Our own camp near the trail",
-      price: `${formatPrice(BASECAMP.price_per_person)} <small>/ person / night</small>`,
-    },
-    {
+      total: campTotal,
+      rate:
+        includedNights > 0 && nights <= includedNights
+          ? `${plural(includedNights, "night")} covered by your package`
+          : `${campRate} · ${plural(groupSize, "person").replace("persons", "people")}, ${plural(nights, "night")}`,
+      tag: includedNights > 0 ? "Included" : "",
+    }),
+    stayOptionHTML({
       type: "hotel",
       title: "Nearby hotel",
       sub: hotels.length
         ? `${plural(hotels.length, "partner hotel")} near this trail`
         : "No partner hotels near this trail yet",
-      price: hotels.length ? `from ${formatPrice(cheapestRoom)} <small>/ room / night</small>` : "",
+      total: hotelTotal,
+      rate: shownHotel
+        ? `${chosenHotel ? "" : "from "}${formatPrice(shownHotel.price_per_room)} per room, per night · ${plural(hotelRooms, "room")}, ${plural(nights, "night")}`
+        : "",
       disabled: hotels.length === 0,
-    },
-  ];
+    }),
+    stayOptionHTML({
+      type: "none",
+      title: "No accommodation",
+      sub: "I'll arrange my own stay",
+      total: 0,
+      rate: "",
+    }),
+  ].join("");
 
-  stayOptionsEl.innerHTML = options
-    .map(
-      (o) => `
-        <label class="stay-option${o.disabled ? " is-disabled" : ""}${o.type === stayType ? " is-selected" : ""}">
-          <input type="radio" class="stay-radio" name="stay-type" value="${o.type}"
-                 ${o.type === stayType ? "checked" : ""} ${o.disabled ? "disabled" : ""} />
-          <span class="stay-option-icon" aria-hidden="true">${ICONS[o.type]}</span>
-          <span class="stay-option-title">${escapeHtml(o.title)}</span>
-          <span class="stay-option-sub">${escapeHtml(o.sub)}</span>
-          ${o.price ? `<span class="stay-option-price">${o.price}</span>` : ""}
-        </label>`,
-    )
-    .join("");
-
-  stayOptionsEl.querySelectorAll('input[name="stay-type"]').forEach((input) => {
-    input.addEventListener("change", () => {
-      stayType = input.value;
+  stayOptionsEl.querySelectorAll("[data-stay]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      stayType = btn.dataset.stay;
+      // Jumping to hotels with only one nearby saves a pointless click
+      if (stayType === "hotel" && !stayHotelId && hotels.length === 1) {
+        stayHotelId = hotels[0].id;
+      }
+      renderStayOptions(getTrailById(trailSelect.value));
       renderStayDetails();
       updatePrice();
     });
@@ -618,76 +1000,94 @@ function renderStayOptions(trail) {
     stayGoogleLink.textContent = `Find hotels near ${trail.name} on Google Maps`;
     stayGoogleEl.hidden = false;
   }
-
-  renderStayDetails();
 }
 
-function renderHotelList() {
+/* The basecamp's inclusions, or the list of hotels — never both */
+function renderStayDetails() {
+  if (!stayDetailEl) return;
+
   const trail = getTrailById(trailSelect.value);
-  const hotels = hotelsForTrail(trail);
   const groupSize = getGroupSize();
+  const nights = getStayNights();
 
-  stayHotelListEl.innerHTML = hotels
-    .map((h) => {
-      const rooms = roomsNeeded(h, groupSize);
-      return `
-        <label class="stay-hotel${h.id === stayHotelId ? " is-selected" : ""}">
-          <input type="radio" class="stay-radio" name="stay-hotel" value="${escapeHtml(h.id)}"
-                 ${h.id === stayHotelId ? "checked" : ""} />
-          <span class="stay-hotel-dot" aria-hidden="true"></span>
-          <span class="stay-hotel-body">
-            <span class="stay-hotel-name">${escapeHtml(h.name)}</span>
-            <span class="stay-hotel-address">${ICONS.pin}${escapeHtml(h.address)}</span>
-            <span class="stay-hotel-meta">${[h.distance, h.sleeps ? `Sleeps ${h.sleeps} per room` : ""]
-              .filter(Boolean)
-              .map(escapeHtml)
-              .join(" · ")}</span>
-            <a class="stay-hotel-map" href="${escapeHtml(mapsSearchUrl(hotelMapsQuery(h)))}"
-               target="_blank" rel="noopener">View on Google Maps ${ICONS.external}</a>
-          </span>
-          <span class="stay-hotel-price">
-            ${formatPrice(h.price_per_room)}
-            <small>/ room / night</small>
-            ${rooms > 1 ? `<small class="stay-hotel-rooms">${rooms} rooms for ${groupSize}</small>` : ""}
-          </span>
-        </label>`;
-    })
-    .join("");
-
-  stayHotelListEl.querySelectorAll('input[name="stay-hotel"]').forEach((input) => {
-    input.addEventListener("change", () => {
-      stayHotelId = input.value;
-      syncStaySelection();
-      showStayMap();
-      updatePrice();
-    });
-  });
-}
-
-function syncStaySelection() {
-  stayOptionsEl?.querySelectorAll(".stay-option").forEach((label) => {
-    label.classList.toggle("is-selected", label.querySelector("input").checked);
-  });
-  stayHotelListEl?.querySelectorAll(".stay-hotel").forEach((label) => {
-    label.classList.toggle("is-selected", label.querySelector("input").checked);
-  });
-}
-
-function renderStayBasecamp() {
-  const trail = getTrailById(trailSelect.value);
-  if (!trail) return;
-  stayBasecampEl.innerHTML = `
-    <div class="stay-info-head">
-      <span class="stay-info-title">${escapeHtml(BASECAMP.name)}</span>
-      <span class="stay-info-where">${ICONS.pin}Near the ${escapeHtml(trail.name)} jump-off${
+  if (stayType === "basecamp" && trail) {
+    stayDetailEl.hidden = false;
+    stayDetailEl.innerHTML = `
+      <span class="stay-detail-title">What's at ${escapeHtml(BASECAMP.name)}</span>
+      <span class="stay-detail-where">${ICONS.pin}Near the ${escapeHtml(trail.name)} jump-off${
         trail.location ? `, ${escapeHtml(trail.location)}` : ""
       }</span>
-    </div>
-    <ul class="stay-info-list">
-      ${(BASECAMP.includes || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
-    </ul>
-    <a class="stay-hotel-map" href="${escapeHtml(mapsSearchUrl(trailMapsQuery(trail)))}"
-       target="_blank" rel="noopener">View the area on Google Maps ${ICONS.external}</a>`;
+      <ul class="stay-info-list">
+        ${(BASECAMP.includes || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+      </ul>
+      <a class="stay-map-link" href="${escapeHtml(mapsSearchUrl(trailMapsQuery(trail)))}"
+         target="_blank" rel="noopener">View the area on Google Maps ${ICONS.external}</a>`;
+  } else if (stayType === "hotel") {
+    const hotels = hotelsForTrail(trail);
+    stayDetailEl.hidden = false;
+    stayDetailEl.innerHTML = `
+      <span class="stay-detail-title">Choose a hotel near the trail</span>
+      <div class="stay-hotel-list" role="radiogroup" aria-label="Partner hotels">
+        ${hotels
+          .map((h) => {
+            const rooms = roomsNeeded(h, groupSize);
+            return `
+              <button type="button" class="stay-hotel" role="radio"
+                      aria-checked="${h.id === stayHotelId}" data-hotel="${escapeHtml(h.id)}">
+                <span class="stay-hotel-dot" aria-hidden="true"></span>
+                <span class="stay-hotel-name">${escapeHtml(h.name)}</span>
+                <span class="stay-hotel-address">${ICONS.pin}${escapeHtml(h.address)}</span>
+                <span class="stay-hotel-meta">${[h.distance, h.sleeps ? `Sleeps ${h.sleeps} per room` : ""]
+                  .filter(Boolean)
+                  .map(escapeHtml)
+                  .join(" · ")}</span>
+                <span class="stay-hotel-cost">
+                  <span class="stay-option-total">${formatPrice(hotelCost(h, groupSize, nights))}</span>
+                  <span class="stay-option-rate">${formatPrice(h.price_per_room)} per room · ${plural(rooms, "room")}, ${plural(nights, "night")}</span>
+                </span>
+              </button>`;
+          })
+          .join("")}
+      </div>
+      ${
+        getHotelById(stayHotelId)
+          ? `<a class="stay-map-link" href="${escapeHtml(mapsSearchUrl(hotelMapsQuery(getHotelById(stayHotelId))))}"
+                target="_blank" rel="noopener">View ${escapeHtml(getHotelById(stayHotelId).name)} on Google Maps ${ICONS.external}</a>`
+          : ""
+      }`;
+
+    stayDetailEl.querySelectorAll("[data-hotel]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        stayHotelId = btn.dataset.hotel;
+        renderStayOptions(getTrailById(trailSelect.value));
+        renderStayDetails();
+        showStayMap();
+        updatePrice();
+      });
+    });
+  } else {
+    stayDetailEl.hidden = true;
+    stayDetailEl.innerHTML = "";
+  }
+
+  showStayMap();
+  stayNightsRow.hidden = stayType === "none";
+  updateStayDates();
+  updateIncludedBanner();
+}
+
+/* Banner above the options when the package already covers a night */
+function updateIncludedBanner() {
+  if (!stayIncludedBanner) return;
+  const pkg = currentPackage();
+  if (!packageIncludesStay(pkg)) {
+    stayIncludedBanner.hidden = true;
+    return;
+  }
+  stayIncludedBanner.hidden = false;
+  stayIncludedBanner.innerHTML =
+    `<span aria-hidden="true">🏕️</span><span>Your <strong>${escapeHtml(pkg.name)}</strong> package covers ` +
+    `${plural(freeNights(), "night")} at ${escapeHtml(BASECAMP.name)}. Pick a hotel instead and it's charged at the hotel's own rate.</span>`;
 }
 
 /* Embedded map of the picked hotel (or the trail area for basecamp) */
@@ -711,25 +1111,21 @@ function showStayMap() {
             title="Map of ${escapeHtml(query)}"></iframe>`;
 }
 
-function updateStayCheckin() {
-  if (!stayCheckinEl) return;
+function updateStayDates() {
+  if (!stayDatesEl) return;
   const dates = getStayDates(getStayNights());
-  stayCheckinEl.textContent = dates ? dates.label : "Pick a hike date first";
+  stayDatesEl.innerHTML = dates
+    ? `Check in <strong>${escapeHtml(dates.label.split(" → ")[0])}</strong>, check out <strong>${escapeHtml(dates.label.split(" → ")[1])}</strong> — the night before your hike`
+    : "Pick a hike date to see your check-in";
 }
 
-function renderStayDetails() {
-  if (!stayOptionsEl) return;
-  syncStaySelection();
-
-  stayBasecampEl.hidden = stayType !== "basecamp";
-  if (stayType === "basecamp") renderStayBasecamp();
-
-  stayHotelsEl.hidden = stayType !== "hotel";
-  if (stayType === "hotel") renderHotelList();
-
-  showStayMap();
-  stayNightsRow.hidden = stayType === "none";
-  updateStayCheckin();
+/* Called when the package changes: an overnight package preselects
+   the basecamp, since that's the night they've already paid for. */
+function syncStayWithPackage() {
+  const includesStay = packageIncludesStay(currentPackage());
+  if (includesStay && stayType === "none") stayType = "basecamp";
+  renderStayOptions(getTrailById(trailSelect.value));
+  renderStayDetails();
 }
 
 function resetStay() {
@@ -739,13 +1135,13 @@ function resetStay() {
   if (!stayOptionsEl) return;
   stayOptionsEl.innerHTML = `<span class="package-cards-placeholder">Select a trail to see places to stay.</span>`;
   stayGoogleEl.hidden = true;
-  stayBasecampEl.hidden = true;
-  stayHotelsEl.hidden = true;
-  stayHotelListEl.innerHTML = "";
+  stayDetailEl.hidden = true;
+  stayDetailEl.innerHTML = "";
   stayMapEl.hidden = true;
   stayMapEl.innerHTML = "";
   stayNightsRow.hidden = true;
   stayNightsSelect.value = "1";
+  if (stayIncludedBanner) stayIncludedBanner.hidden = true;
 }
 
 /* ---------- Trail change ---------- */
@@ -757,6 +1153,7 @@ function handleTrailChange() {
     trailInfo.hidden = true;
     resetPackageSelect();
     resetGuideSelect();
+    resetTimeSlots();
     resetStay();
     updatePrice();
     return;
@@ -792,15 +1189,9 @@ function handleTrailChange() {
   // Guard it so one incomplete document can't take down the whole page.
   // Reads `guide_ids` (the name auditTrails() expects) and falls back to
   // `guide_id`, so trails saved under either name work.
-  const guideIds = Array.isArray(trail.guide_ids)
-    ? trail.guide_ids
-    : Array.isArray(trail.guide_id)
-      ? trail.guide_id
-      : [];
-  const availableGuides = guideIds
-    .map(getGuideById)
-    .filter(Boolean)
-    .filter((g) => g.status === "Active");
+  // Same list as before, moved into guidesForCurrentTrail() so the
+  // date handler can rebuild it without duplicating this.
+  const availableGuides = guidesForCurrentTrail();
 
   guideSelect.disabled = false;
   guideSelect.innerHTML =
@@ -816,8 +1207,12 @@ function handleTrailChange() {
 
   renderGuideCards(availableGuides);
 
+  // ADDED: start times belong to the trail, so they're rebuilt here.
+  renderTimeSlots(trail);
+
   // Step 03: stay options depend on where the trail is
   renderStayOptions(trail);
+  renderStayDetails();
 
   updatePrice();
 
@@ -825,6 +1220,8 @@ function handleTrailChange() {
   // refresh the forecast so it still matches the current trail.
   if (dateInput.value) {
     openWeatherModalForCurrentSelection();
+    // ADDED: this trail's guides may already be busy on that date
+    refreshGuideAvailability();
   }
 }
 
@@ -874,6 +1271,15 @@ function handlePackageChange() {
     activitySelect.value = "";
   }
 
+  // An overnight package covers a night at the basecamp, so Step 03
+  // preselects it and prices it at ₱0 — see syncStayWithPackage().
+  syncStayWithPackage();
+
+  // ADDED: the start times change with the package too — an overnight
+  // uses the trail's afternoon list instead of its dawn one.
+  renderTimeSlots(getTrailById(trailSelect.value));
+  updateSummaryPanel();
+
   updatePrice();
 }
 
@@ -919,6 +1325,10 @@ function updateSummaryPanel() {
   summaryTrailDifficulty.hidden = !trail.difficulty;
 
   summaryDate.textContent = dateInput.value ? formatDateForDisplay(dateInput.value).dateLabel : "Not selected yet";
+  // ADDED
+  if (summaryTime) {
+    summaryTime.textContent = timeSelect?.value ? formatSlot(timeSelect.value) : "Not selected yet";
+  }
   summaryGroupSize.textContent = `${groupSize} ${groupSize === 1 ? "person" : "people"}`;
   summaryGuide.textContent = guide ? guide.full_name : "Not selected yet";
   summaryPackageName.textContent = pkg ? pkg.name : "Not selected yet";
@@ -965,16 +1375,61 @@ dateInput.addEventListener("input", updateSummaryPanel);
 // Accommodation: group size changes how many hotel rooms are needed,
 // nights and the hike date change the check-in dates and the price
 function refreshStayForGroup() {
-  if (stayType === "hotel") renderHotelList();
+  // Group size changes how many hotel rooms are needed, so every
+  // price on the step moves — redraw the options and the hotel list.
+  if (stayType !== "none") {
+    renderStayOptions(getTrailById(trailSelect.value));
+    renderStayDetails();
+  }
   updatePrice();
 }
 groupSizeInput.addEventListener("change", refreshStayForGroup);
+
+/* ADDED (Pass 3): keep Step 04's cards in step with the group size.
+
+   The awkward case is shrinking. Someone fills in six climbers, then
+   changes the party to four — two filled-in cards would vanish
+   silently. This asks first, and puts the <select> back if they say
+   no. `lastGroupSize` is tracked here rather than read from the
+   element, because by the time "change" fires the element already
+   holds the NEW value. */
+let lastGroupSize = Math.max(1, parseInt(groupSizeInput.value, 10) || 1);
+
+groupSizeInput.addEventListener("change", () => {
+  const next = Math.max(1, parseInt(groupSizeInput.value, 10) || 1);
+
+  if (next < lastGroupSize) {
+    const losing = filledCardsBeyond(next);
+    if (losing > 0) {
+      const ok = window.confirm(
+        `Reducing the group to ${next} will remove ${losing} climber ` +
+          `${losing === 1 ? "card that has" : "cards that have"} details filled in.\n\n` +
+          "Remove them?",
+      );
+      if (!ok) {
+        groupSizeInput.value = String(lastGroupSize);
+        return;
+      }
+    }
+  }
+
+  lastGroupSize = next;
+  syncClimberCards(next);
+});
+
+// One delegated listener for the whole card list, plus the first card.
+initClimbers({
+  onSameAsMe: () => fillFirstFromUser(auth.currentUser),
+});
+syncClimberCards(lastGroupSize);
+
 stayNightsSelect?.addEventListener("change", () => {
-  updateStayCheckin();
+  renderStayOptions(getTrailById(trailSelect.value));
+  renderStayDetails();
   updatePrice();
 });
-dateInput.addEventListener("input", updateStayCheckin);
-dateInput.addEventListener("change", updateStayCheckin);
+dateInput.addEventListener("input", updateStayDates);
+dateInput.addEventListener("change", updateStayDates);
 
 /* ---------- Weather forecast popup ---------- */
 
@@ -1074,6 +1529,10 @@ dateInput.addEventListener("change", () => {
   if (dateInput.value) {
     openWeatherModalForCurrentSelection();
   }
+  // ADDED: a guide free on the 20th may be packed on the 21st, so the
+  // cards are reloaded on every date change — including a cleared one,
+  // which puts every guide back to "available".
+  refreshGuideAvailability();
 });
 
 weatherModalClose.addEventListener("click", closeWeatherModal);
@@ -1122,6 +1581,12 @@ form.addEventListener("submit", async (e) => {
     showFeedback("Please choose a hike date.", true);
     return;
   }
+  // ADDED
+  if (!timeSelect?.value) {
+    showFeedback("Please choose a start time.", true);
+    timeSlotsEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
   if (pkg.requires_activity_choice && !activitySelect.value) {
     showFeedback("Please choose an activity for this package.", true);
     return;
@@ -1130,13 +1595,53 @@ form.addEventListener("submit", async (e) => {
   const stay = getStayQuote();
   if (stay.incomplete) {
     showFeedback("Please choose a hotel, or pick another accommodation option.", true);
-    stayHotelsEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+    stayDetailEl?.scrollIntoView({ behavior: "smooth", block: "center" });
     return;
   }
   const stayDates = stay.type === "none" ? null : getStayDates(stay.nights);
 
+  /* ADDED (Pass 3): Step 04 must be complete before anything is
+     written. Checked here, after the cheap checks above and before
+     the network call below, so a half-filled manifest never reaches
+     Firestore — a manifest missing one of six people is worse than
+     no manifest, because it looks complete. */
+  const climberCheck = validateClimbers();
+  if (!climberCheck.ok) {
+    showFeedback(climberCheck.message, true);
+    climberCheck.card?.scrollIntoView({ behavior: "smooth", block: "center" });
+    climberCheck.card?.querySelector("input, select")?.focus({ preventScroll: true });
+    return;
+  }
+  const climbers = readClimbers();
+
   submitBtn.disabled = true;
   submitBtn.textContent = "Booking...";
+
+  /* ADDED: one last availability check, right before writing.
+     The cards were drawn when the date was picked — someone else may
+     have taken the last slot in the minutes since. This closes most
+     of that window; it does NOT close all of it, because two people
+     can still pass this check at the same instant. See the note in
+     guide-availability.js. */
+  try {
+    guideDayCounts = await loadGuideDayCounts(dateInput.value);
+    if (!isGuideFree(guide, guideDayCounts)) {
+      renderGuideCards(guidesForCurrentTrail());
+      guideSelect.value = "";
+      syncGuideCardSelection();
+      updateSummaryPanel();
+      showFeedback(
+        `${guide.full_name} was just booked for that date. Please pick another guide.`,
+        true,
+      );
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Confirm booking";
+      return;
+    }
+  } catch (err) {
+    // Fails open — a counter we can't read shouldn't block a booking.
+    console.warn("Couldn't re-check guide availability before saving:", err);
+  }
 
   // The "Your details" step was removed from this page: name, phone and
   // emergency contact are collected in the payment section instead.
@@ -1154,6 +1659,10 @@ form.addEventListener("submit", async (e) => {
     guide_id: guide.guide_id,
     guide_name: guide.full_name,
     date: dateInput.value,
+    // ADDED. `departure_time` is the name normalizeBooking() in
+    // trailbound-data.js already reads (as `departureTime`), so the
+    // admin dashboard picks this up with no change on that side.
+    departure_time: timeSelect.value,
     group_size: groupSize,
     full_name: currentUser?.displayName || "",
     email: currentUser?.email || "",
@@ -1209,11 +1718,32 @@ form.addEventListener("submit", async (e) => {
             check_out: stayDates?.checkOut ?? null,
             price: stay.cost,
           };
+    // ADDED to this same write: the start time. createBooking() builds
+    // a fixed payload and doesn't pass extra fields through, and this
+    // follow-up updateDoc already existed for the accommodation — so
+    // the time rides along with it rather than needing a change to
+    // trailbound-data.js, which every other page depends on.
+    // ADDED to this same write again (Pass 3): the climber list.
+    // Same reasoning as departure_time — createBooking() takes a fixed
+    // set of fields, and this follow-up updateDoc already exists. One
+    // write, three fields, and firestore.rules allows exactly those
+    // three on a booking that has no accommodation yet.
     try {
-      await updateDoc(doc(db, "bookings", newBookingId), { accommodation });
+      await updateDoc(doc(db, "bookings", newBookingId), {
+        accommodation,
+        departure_time: booking.departure_time,
+        climbers,
+      });
     } catch (stayErr) {
-      console.warn("Could not save accommodation details on the booking:", stayErr);
+      console.warn(
+        "Could not save the start time / accommodation / climbers on the booking:",
+        stayErr,
+      );
     }
+
+    // ADDED: the guide now has one more group that day. Done after the
+    // booking is saved, so a failed booking never burns a slot.
+    await bumpGuideDay(booking.guide_id, booking.date);
 
     // Stage this reservation in the cart so it can be paid for at
     // checkout, alongside anything the person adds from the shop.
@@ -1239,6 +1769,13 @@ form.addEventListener("submit", async (e) => {
     trailInfo.hidden = true;
     resetPackageSelect();
     resetGuideSelect();
+    resetTimeSlots();
+    // ADDED (Pass 3). form.reset() puts the group-size <select> back to
+    // 1 but leaves the cards standing, so they are cleared here and the
+    // tracked size goes back with them.
+    resetClimbers();
+    lastGroupSize = 1;
+    guideDayCounts = new Map();
     resetStay();
     updatePrice();
     openPostBookingModal(trail.name, booking.date);

@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Schedule — Trailbound Guide</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="guide.css" />
+    <link rel="icon" href="/icons/favicon.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#1a0401" />
+  </head>
+  <body>
+    <div id="site-header-root"></div>
+    <script type="module" src="header.js"></script>
+    <script type="module" src="bootstrap-init.js"></script>
+    <script type="module" src="auth-nav.js"></script>
+
+    <main class="guide-page">
+      <div class="guide-wrap">
+
+        <!-- Shown while we work out who this is -->
+        <div id="guide-loading" class="guide-gate">
+          <p>Loading your schedule…</p>
+        </div>
+
+        <!-- Signed in, but not a guide -->
+        <div id="guide-denied" class="guide-gate" hidden>
+          <h2>This page is for Trailbound guides</h2>
+          <p>
+            Your account isn't linked to a guide profile. If you're one of our guides,
+            sign in with the email address on your guide record — the one in the
+            <code>contact</code> field — and this page will link itself the first time.
+          </p>
+          <a class="guide-btn" href="index.html">Back to Trailbound</a>
+        </div>
+
+        <!-- Recognised as a guide, but the link couldn't be written -->
+        <div id="guide-link-failed" class="guide-gate" hidden>
+          <h2>Almost there</h2>
+          <p>
+            We recognise you as <strong id="link-failed-name">a guide</strong>, but couldn't
+            save the link to your account, so your climbs can't be loaded yet.
+            This is nearly always the Firestore rules — ask your admin to check that the
+            <code>guide_accounts</code> block is deployed.
+          </p>
+          <a class="guide-btn" href="index.html">Back to Trailbound</a>
+        </div>
+
+        <!-- The schedule -->
+        <div id="guide-app" hidden>
+          <span class="guide-eyebrow">Guide</span>
+          <h1 class="guide-title" id="guide-name">My schedule</h1>
+          <p class="guide-sub">
+            Every climb booked with you. Updates live — when a hiker books or an admin
+            confirms, it changes here without a refresh.
+          </p>
+
+          <div class="guide-stats">
+            <div class="guide-stat guide-stat--today">
+              <span class="guide-stat-k">Today</span>
+              <span class="guide-stat-v" id="count-today">—</span>
+            </div>
+            <div class="guide-stat">
+              <span class="guide-stat-k">Upcoming</span>
+              <span class="guide-stat-v" id="count-upcoming">—</span>
+            </div>
+            <div class="guide-stat">
+              <span class="guide-stat-k">Hikers upcoming</span>
+              <span class="guide-stat-v" id="count-hikers">—</span>
+            </div>
+          </div>
+
+          <section class="guide-section">
+            <h2 class="guide-section-title">Today</h2>
+            <div class="guide-list" id="list-today"></div>
+          </section>
+
+          <section class="guide-section">
+            <h2 class="guide-section-title">Upcoming</h2>
+            <div class="guide-list" id="list-upcoming"></div>
+          </section>
+
+          <section class="guide-section">
+            <h2 class="guide-section-title">Past climbs</h2>
+            <div class="guide-list" id="list-past"></div>
+          </section>
+        </div>
+
+      </div>
+    </main>
+
+    <div id="site-footer-root"></div>
+    <script type="module" src="footer.js"></script>
+
+    <script type="module">
+      import { requireUser, escapeHtml } from "./trailbound-data.js";
+      import { resolveGuide, watchMyBookings, splitByDate } from "./guide-account.js";
+
+      const show = (id) => { const n = document.getElementById(id); if (n) n.hidden = false; };
+      const hide = (id) => { const n = document.getElementById(id); if (n) n.hidden = true; };
+      const setText = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v; };
+
+      /* "2026-10-24" -> { date: "Oct 24", day: "Saturday" }.
+         Parsed as local rather than UTC — `new Date("2026-10-24")` is
+         midnight UTC, which is the previous evening in Manila and
+         would show the wrong weekday. */
+      function readDate(iso) {
+        const parts = String(iso || "").split("-").map(Number);
+        if (parts.length !== 3 || parts.some(Number.isNaN)) return { date: iso || "—", day: "" };
+        const d = new Date(parts[0], parts[1] - 1, parts[2]);
+        return {
+          date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+          day: d.toLocaleDateString("en-US", { weekday: "long" }),
+        };
+      }
+
+      /* "05:00" -> "5:00 AM" */
+      function readTime(value) {
+        const m = String(value || "").match(/^(\d{1,2}):(\d{2})$/);
+        if (!m) return "";
+        const h = Number(m[1]);
+        const suffix = h < 12 ? "AM" : "PM";
+        return `${h % 12 === 0 ? 12 : h % 12}:${m[2]} ${suffix}`;
+      }
+
+      function statusClass(status) {
+        if (status === "confirmed" || status === "completed") return "climb-pill--confirmed";
+        if (status === "pending") return "climb-pill--pending";
+        return "climb-pill--other";
+      }
+
+      function climbHTML(b, isToday) {
+        const when = readDate(b.date);
+        const time = readTime(b.departureTime);
+        const pax = `${b.groupSize} ${b.groupSize === 1 ? "hiker" : "hikers"}`;
+
+        return `
+          <article class="climb${isToday ? " climb--today" : ""}">
+            <div class="climb-when">
+              <span class="climb-date">${escapeHtml(when.date)}</span>
+              <span class="climb-day">${escapeHtml(when.day)}</span>
+              ${
+                time
+                  ? `<span class="climb-time">${escapeHtml(time)}</span>`
+                  : `<span class="climb-time climb-time--none">No time set</span>`
+              }
+            </div>
+
+            <div class="climb-trail">${escapeHtml(b.trailName)}</div>
+            <div class="climb-meta">
+              ${escapeHtml(pax)}${b.packageName ? ` · ${escapeHtml(b.packageName)}` : ""}
+              · #${escapeHtml(b.orderId)}
+            </div>
+
+            <div class="climb-contact">
+              <b>${escapeHtml(b.customerName)}</b>${
+                b.phone ? ` · <a href="tel:${escapeHtml(b.phone)}">${escapeHtml(b.phone)}</a>` : ""
+              }<br>
+              ${
+                b.emergencyName || b.emergencyNumber
+                  ? `Emergency: ${escapeHtml(b.emergencyName || "—")}${
+                      b.emergencyNumber
+                        ? ` · <a href="tel:${escapeHtml(b.emergencyNumber)}">${escapeHtml(b.emergencyNumber)}</a>`
+                        : ""
+                    }`
+                  : `<span class="climb-missing">No emergency contact on file</span>`
+              }
+            </div>
+
+            <div class="climb-status">
+              <span class="climb-pill ${statusClass(b.status)}">${escapeHtml(b.statusLabel)}</span>
+            </div>
+          </article>`;
+      }
+
+      function fill(id, items, emptyText, isToday = false) {
+        const host = document.getElementById(id);
+        if (!host) return;
+        host.innerHTML = items.length
+          ? items.map((b) => climbHTML(b, isToday)).join("")
+          : `<p class="guide-empty">${escapeHtml(emptyText)}</p>`;
+      }
+
+      function render(bookings) {
+        const { today, upcoming, past } = splitByDate(bookings);
+
+        setText("count-today", today.length);
+        setText("count-upcoming", upcoming.length);
+        setText(
+          "count-hikers",
+          upcoming.reduce((sum, b) => sum + (Number(b.groupSize) || 0), 0),
+        );
+
+        fill("list-today", today, "No climbs today.", true);
+        fill("list-upcoming", upcoming, "Nothing booked with you yet.");
+        // Only the last ten — a guide looking back further can ask admin
+        fill("list-past", past.slice(0, 10), "No past climbs yet.");
+      }
+
+      requireUser(
+        async (user) => {
+          const guide = await resolveGuide(user);
+          hide("guide-loading");
+
+          if (!guide) {
+            show("guide-denied");
+            return;
+          }
+
+          if (guide.linkFailed) {
+            setText("link-failed-name", guide.fullName || "a guide");
+            show("guide-link-failed");
+            return;
+          }
+
+          setText("guide-name", guide.fullName || "My schedule");
+          show("guide-app");
+
+          watchMyBookings(guide.guideId, render, {
+            onError: () => {
+              document.getElementById("list-today").innerHTML =
+                `<p class="guide-empty">Couldn't load your climbs. If this keeps happening, ask your admin to check the booking rules.</p>`;
+            },
+          });
+        },
+        { redirect: "login.html?redirect=guide.html" },
+      );
+    </script>
+  </body>
+</html>

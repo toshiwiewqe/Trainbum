@@ -1700,3 +1700,1560 @@
     animation: none;
   }
 }
+
+/* ==========================================================
+   STEP 03 — Accommodation
+
+   THIS USED TO LIVE IN A SEPARATE booking-stay.css THAT
+   booking.html NEVER LINKED. That's why the step rendered as
+   empty bordered boxes with shouty uppercase text: with no
+   rules of its own, every card fell back to `.form-group label`
+   (small, bold, uppercase) and every radio to `.form-group input`
+   (full width, padded, bordered). It lives here now so there is
+   one stylesheet to link and nothing to forget. Delete the old
+   booking-stay.css.
+
+   The options are <button>s, not <label>+<input> — the same
+   pattern the package and guide cards already use on this page,
+   which keeps them clear of those two .form-group rules for good.
+   ========================================================== */
+
+#stay-step [hidden],
+#summary-stay-line[hidden] {
+  display: none !important;
+}
+
+/* "Included with your package" banner */
+.stay-included-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  background-color: var(--tb-green-soft);
+  border: 1px solid rgba(23, 59, 34, 0.18);
+  font-family: var(--font-body);
+  text-transform: none;
+  font-size: 0.83rem;
+  line-height: 1.45;
+  color: var(--tb-ink);
+  margin: 0;
+}
+
+.stay-included-banner strong {
+  font-weight: 700;
+}
+
+/* ---- The option rows ----
+   Stacked, not three columns: prices line up underneath each
+   other so "per person" and "per room" can actually be compared. */
+
+.stay-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.stay-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.15rem 0.9rem;
+  align-items: start;
+  width: 100%;
+  text-align: left;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--tb-border);
+  border-radius: 14px;
+  background-color: var(--tb-cream-soft);
+  font-family: var(--font-body);
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stay-option:hover:not(:disabled) {
+  border-color: var(--tb-green);
+}
+
+.stay-option[aria-checked="true"] {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green-soft);
+  box-shadow: inset 0 0 0 1px var(--tb-green);
+}
+
+.stay-option:focus-visible {
+  outline: 2px solid var(--tb-green);
+  outline-offset: 2px;
+}
+
+.stay-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Radio dot.
+   Every child needs an explicit grid-column. Without one, the two
+   items that set `grid-row` (the dot and the cost) get placed in the
+   definite-position pass BEFORE the auto-flowed title and note — so
+   the price landed in column 2 and the title was pushed to column 3. */
+.stay-option-dot {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 18px;
+  height: 18px;
+  margin-top: 0.15rem;
+  border: 1.5px solid var(--tb-border);
+  border-radius: 50%;
+  background-color: #fff;
+}
+
+.stay-option[aria-checked="true"] .stay-option-dot {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green);
+  box-shadow: inset 0 0 0 4px #fff;
+}
+
+.stay-option-title {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+}
+
+.stay-option-sub {
+  grid-column: 2;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--tb-ink-soft);
+}
+
+/* "Included" / "Free" chip next to the title */
+.stay-tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background-color: var(--tb-green-dark);
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* Price block: the big number is what THIS booking costs, the
+   small line underneath is the unit rate it came from. */
+.stay-option-cost {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.stay-option-total {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--tb-green);
+}
+
+.stay-option-total--free {
+  color: var(--tb-ink-soft);
+}
+
+.stay-option-rate {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--tb-ink-faint);
+}
+
+/* ---- Details panel for whatever is picked ---- */
+
+.stay-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--tb-border);
+  border-radius: 14px;
+  background-color: #fff;
+  font-family: var(--font-body);
+  text-transform: none;
+}
+
+.stay-detail-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+}
+
+.stay-detail-where {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--tb-ink-soft);
+}
+
+.stay-detail-where svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--tb-green);
+}
+
+.stay-info-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+  color: var(--tb-ink);
+}
+
+.stay-info-list li {
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.stay-info-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+  color: var(--tb-green);
+}
+
+/* ---- Hotel list ---- */
+
+.stay-hotel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.stay-hotel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.2rem 0.85rem;
+  align-items: start;
+  width: 100%;
+  text-align: left;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--tb-border);
+  border-radius: 12px;
+  background-color: var(--tb-cream-soft);
+  font-family: var(--font-body);
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.stay-hotel:hover {
+  border-color: var(--tb-green);
+}
+
+.stay-hotel[aria-checked="true"] {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green-soft);
+  box-shadow: inset 0 0 0 1px var(--tb-green);
+}
+
+.stay-hotel:focus-visible {
+  outline: 2px solid var(--tb-green);
+  outline-offset: 2px;
+}
+
+.stay-hotel-dot {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  width: 16px;
+  height: 16px;
+  margin-top: 0.2rem;
+  border: 1.5px solid var(--tb-border);
+  border-radius: 50%;
+  background-color: #fff;
+}
+
+.stay-hotel[aria-checked="true"] .stay-hotel-dot {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green);
+  box-shadow: inset 0 0 0 3.5px #fff;
+}
+
+.stay-hotel-name {
+  grid-column: 2;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--tb-ink);
+}
+
+.stay-hotel-address {
+  grid-column: 2;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--tb-ink-soft);
+}
+
+.stay-hotel-address svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--tb-green);
+}
+
+.stay-hotel-meta {
+  grid-column: 2;
+  font-size: 0.72rem;
+  color: var(--tb-ink-faint);
+}
+
+.stay-hotel-cost {
+  grid-column: 3;
+  grid-row: 1 / span 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* A link inside the hotel button would be a button inside a
+   button, so the map link sits under the list instead. */
+.stay-map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--tb-green);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.stay-map-link:hover {
+  color: var(--tb-green-dark);
+}
+
+/* ---- Map ---- */
+
+.stay-map {
+  height: 220px;
+  border: 1px solid var(--tb-border);
+  border-radius: 14px;
+  overflow: hidden;
+  background-color: var(--tb-green-soft);
+}
+
+.stay-map iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* ---- Nights ---- */
+
+.stay-nights-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+}
+
+.stay-nights-row label {
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: var(--tb-ink-soft);
+}
+
+.stay-nights-row select {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 0.6rem 2.2rem 0.6rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--tb-border);
+  background-color: var(--tb-cream-soft);
+  color: var(--tb-ink);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%2322281f' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.8rem center;
+}
+
+/* "Check in Oct 19 → check out Oct 20" — plain text, not a
+   fake read-only field pretending to be an input. */
+.stay-dates {
+  font-family: var(--font-body);
+  text-transform: none;
+  font-size: 0.82rem;
+  color: var(--tb-ink-soft);
+}
+
+.stay-dates strong {
+  font-weight: 600;
+  color: var(--tb-ink);
+}
+
+/* "Prefer somewhere else?" */
+.stay-google {
+  font-family: var(--font-body);
+  text-transform: none;
+  font-size: 0.8rem;
+  color: var(--tb-ink-soft);
+  margin: 0;
+}
+
+.stay-google a {
+  font-weight: 600;
+  color: var(--tb-green);
+}
+
+/* ---- Phones ---- */
+
+@media (max-width: 640px) {
+  .stay-option,
+  .stay-hotel {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 0.85rem 0.95rem;
+  }
+
+  /* Price drops under the text instead of being squeezed beside it */
+  .stay-option-cost,
+  .stay-hotel-cost {
+    grid-row: auto;
+    grid-column: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin-top: 0.3rem;
+    text-align: left;
+  }
+
+  .stay-option-dot {
+    grid-row: 1 / span 3;
+  }
+
+  .stay-info-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stay-map {
+    height: 180px;
+  }
+}
+
+/* ==========================================================
+   TRAIL SEARCH (Step 01)
+   A type-to-search box over the real <select id="trail-select">,
+   which stays in the DOM (visually hidden) so every existing
+   handler in booking.js keeps reading trailSelect.value exactly
+   as before — same pattern as the package and guide cards.
+   ========================================================== */
+
+.trail-search {
+  position: relative;
+}
+
+.trail-search-input {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 0.85rem 2.6rem 0.85rem 1.15rem;
+  border-radius: 12px;
+  border: 1px solid var(--tb-border);
+  background-color: var(--tb-cream-soft);
+  color: var(--tb-ink);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  /* magnifying glass on the right */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2322281f' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='m20 20-3.5-3.5'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 1.05rem center;
+}
+
+.trail-search-input::placeholder {
+  color: var(--tb-ink-faint);
+}
+
+.trail-search-input:focus {
+  border-color: var(--tb-green);
+  box-shadow: 0 0 0 3px var(--tb-green-soft);
+}
+
+.trail-search-list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  max-height: 17rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  border: 1px solid var(--tb-border);
+  border-radius: 12px;
+  background-color: #fff;
+  box-shadow: var(--tb-shadow-soft);
+  scrollbar-width: thin;
+}
+
+.trail-search-list[hidden] {
+  display: none;
+}
+
+.trail-search-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 9px;
+  font-family: var(--font-body);
+  text-transform: none;
+  cursor: pointer;
+}
+
+/* Both the hovered row and the arrow-key row look the same, so
+   mouse and keyboard agree on what "current" means. */
+.trail-search-option:hover,
+.trail-search-option.is-active {
+  background-color: var(--tb-green-soft);
+}
+
+.trail-search-option[aria-selected="true"] {
+  box-shadow: inset 0 0 0 1px var(--tb-green);
+}
+
+.trail-search-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--tb-ink);
+}
+
+.trail-search-meta {
+  font-size: 0.74rem;
+  color: var(--tb-ink-soft);
+}
+
+/* The typed letters are wrapped in <mark> so it's obvious why a
+   result matched — especially when it matched on location. */
+.trail-search-option mark {
+  background: none;
+  padding: 0;
+  font-weight: 700;
+  color: var(--tb-green);
+}
+
+.trail-search-empty {
+  padding: 0.85rem 0.75rem;
+  font-family: var(--font-body);
+  text-transform: none;
+  font-size: 0.82rem;
+  color: var(--tb-ink-faint);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .trail-search-input {
+    font-size: 16px; /* under 16px, iPhones zoom in when you tap it */
+    padding: 0.75rem 2.4rem 0.75rem 0.85rem;
+  }
+}
+/* ==========================================================
+   PASS 1 — start times + guide availability
+
+   Paste this at the END of booking.css.
+
+   Both pieces reuse the look the page already has: the time slots
+   are shaped like the package cards, and the availability line sits
+   under a guide card the way the specialty and rating already do.
+   ========================================================== */
+
+/* ---------- Start time (Step 02) ---------- */
+
+.time-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.6rem;
+  transition: opacity 0.2s ease;
+}
+
+.time-slots--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.time-slots-placeholder {
+  grid-column: 1 / -1;
+  font-family: var(--font-body);
+  text-transform: none;
+  font-size: 0.82rem;
+  color: var(--tb-ink-faint);
+  border: 1px dashed var(--tb-border);
+  border-radius: 14px;
+  padding: 1rem;
+  text-align: center;
+  margin: 0;
+}
+
+.time-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.8rem 1rem 0.85rem;
+  border: 1px solid var(--tb-border);
+  border-radius: 14px;
+  background-color: var(--tb-cream-soft);
+  font-family: var(--font-body);
+  /* .form-group label would otherwise make these shout */
+  text-transform: none;
+  letter-spacing: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
+}
+
+.time-slot:hover {
+  border-color: var(--tb-green);
+  transform: translateY(-1px);
+}
+
+.time-slot--selected {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green-soft);
+  box-shadow: inset 0 0 0 1px var(--tb-green);
+}
+
+.time-slot:focus-visible {
+  outline: 2px solid var(--tb-green);
+  outline-offset: 2px;
+}
+
+.time-slot-time {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+}
+
+.time-slot-note {
+  font-size: 0.72rem;
+  color: var(--tb-ink-soft);
+}
+
+/* ---------- Guide availability ---------- */
+
+/* "Available" / "1 of 2 slots left" / "Fully booked", under the
+   rating. Only rendered once a date is chosen — before that, there's
+   nothing to be available for. */
+.guide-card-availability {
+  display: inline-block;
+  margin-top: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background-color: var(--tb-green-soft);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--tb-green-dark);
+}
+
+.guide-card-availability--full {
+  background-color: rgba(177, 70, 47, 0.12);
+  color: #b1462f;
+}
+
+/* A packed guide stays on screen — hiding them would make the list
+   change length as the date moves, which reads like a bug — but it
+   can't be picked. */
+.guide-card--full {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.guide-card--full:hover {
+  border-color: var(--tb-border);
+  transform: none;
+}
+
+/* ---------- Phones ---------- */
+
+@media (max-width: 640px) {
+  .time-slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .time-slot {
+    padding: 0.7rem 0.8rem 0.75rem;
+  }
+
+  .time-slot-time {
+    font-size: 0.88rem;
+  }
+
+  .time-slot-note {
+    font-size: 0.68rem;
+  }
+
+  .guide-card-availability {
+    font-size: 0.62rem;
+    padding: 0.15rem 0.45rem;
+  }
+}
+
+@media (hover: none) {
+  .time-slot:hover {
+    transform: none;
+  }
+}
+/* ==========================================================
+   PASS 1 — start times + guide availability
+
+   Paste this at the END of booking.css.
+
+   Both pieces reuse the look the page already has: the time slots
+   are shaped like the package cards, and the availability line sits
+   under a guide card the way the specialty and rating already do.
+   ========================================================== */
+
+/* ---------- Required-field markers ----------
+   An asterisk on the six fields that can actually stop the Confirm
+   button, plus a legend at the top of the form saying what it means.
+
+   Group size isn't marked: it's a dropdown that starts on "1 person"
+   and can never be left blank, so an asterisk there would be telling
+   people to fill in something already filled in. Accommodation isn't
+   marked either — "No accommodation" is a valid answer.
+
+   The marker is decorative. What makes a field genuinely required is
+   the `required` attribute on the real inputs, and booking.js's own
+   checks on submit for the card-driven ones. ---------- */
+
+.form-required-note {
+  /* the global `p` rule in styles.css would uppercase and shrink this */
+  font-family: var(--font-body);
+  text-transform: none;
+  font-size: 0.78rem;
+  color: var(--tb-ink-faint);
+  text-align: right;
+  margin: 0 0 -0.6rem;
+}
+
+.req-star,
+.form-group label.is-required::after {
+  color: #b1462f; /* same red booking.css already uses for errors */
+}
+
+.form-group label.is-required::after {
+  content: "*";
+  /* the labels carry 0.6px letter-spacing, which would push the
+     asterisk away from the word it belongs to */
+  margin-left: 0.2rem;
+  letter-spacing: 0;
+  font-weight: 700;
+}
+
+/* ---------- Start time (Step 02) ---------- */
+
+.time-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.6rem;
+  transition: opacity 0.2s ease;
+}
+
+.time-slots--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.time-slots-placeholder {
+  grid-column: 1 / -1;
+  font-family: var(--font-body);
+  text-transform: none;
+  font-size: 0.82rem;
+  color: var(--tb-ink-faint);
+  border: 1px dashed var(--tb-border);
+  border-radius: 14px;
+  padding: 1rem;
+  text-align: center;
+  margin: 0;
+}
+
+.time-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.8rem 1rem 0.85rem;
+  border: 1px solid var(--tb-border);
+  border-radius: 14px;
+  background-color: var(--tb-cream-soft);
+  font-family: var(--font-body);
+  /* .form-group label would otherwise make these shout */
+  text-transform: none;
+  letter-spacing: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
+}
+
+.time-slot:hover {
+  border-color: var(--tb-green);
+  transform: translateY(-1px);
+}
+
+.time-slot--selected {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green-soft);
+  box-shadow: inset 0 0 0 1px var(--tb-green);
+}
+
+.time-slot:focus-visible {
+  outline: 2px solid var(--tb-green);
+  outline-offset: 2px;
+}
+
+.time-slot-time {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+}
+
+.time-slot-note {
+  font-size: 0.72rem;
+  color: var(--tb-ink-soft);
+}
+
+/* ---------- Guide availability ---------- */
+
+/* "Available" / "1 of 2 slots left" / "Fully booked", under the
+   rating. Only rendered once a date is chosen — before that, there's
+   nothing to be available for. */
+.guide-card-availability {
+  display: inline-block;
+  margin-top: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background-color: var(--tb-green-soft);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--tb-green-dark);
+}
+
+.guide-card-availability--full {
+  background-color: rgba(177, 70, 47, 0.12);
+  color: #b1462f;
+}
+
+/* A packed guide stays on screen — hiding them would make the list
+   change length as the date moves, which reads like a bug — but it
+   can't be picked. */
+.guide-card--full {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.guide-card--full:hover {
+  border-color: var(--tb-border);
+  transform: none;
+}
+
+/* ---------- Phones ---------- */
+
+@media (max-width: 640px) {
+  .time-slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .time-slot {
+    padding: 0.7rem 0.8rem 0.75rem;
+  }
+
+  .time-slot-time {
+    font-size: 0.88rem;
+  }
+
+  .time-slot-note {
+    font-size: 0.68rem;
+  }
+
+  .guide-card-availability {
+    font-size: 0.62rem;
+    padding: 0.15rem 0.45rem;
+  }
+}
+
+@media (hover: none) {
+  .time-slot:hover {
+    transform: none;
+  }
+}
+/* ==========================================================
+   PASS 1 — start times + guide availability
+
+   Paste this at the END of booking.css.
+
+   Both pieces reuse the look the page already has: the time slots
+   are shaped like the package cards, and the availability line sits
+   under a guide card the way the specialty and rating already do.
+   ========================================================== */
+
+/* ---------- Required-field markers ----------
+   An asterisk on the six fields that can actually stop the Confirm
+   button, plus a legend at the top of the form saying what it means.
+
+   Group size isn't marked: it's a dropdown that starts on "1 person"
+   and can never be left blank, so an asterisk there would be telling
+   people to fill in something already filled in. Accommodation isn't
+   marked either — "No accommodation" is a valid answer.
+
+   The marker is decorative. What makes a field genuinely required is
+   the `required` attribute on the real inputs, and booking.js's own
+   checks on submit for the card-driven ones. ---------- */
+
+.form-required-note {
+  /* the global `p` rule in styles.css would uppercase and shrink this */
+  font-family: var(--font-body);
+  text-transform: none;
+  font-size: 0.78rem;
+  color: var(--tb-ink-faint);
+  text-align: right;
+  margin: 0 0 -0.6rem;
+}
+
+.req-star,
+.form-group label.is-required::after {
+  color: #b1462f; /* same red booking.css already uses for errors */
+}
+
+.form-group label.is-required::after {
+  content: "*";
+  /* the labels carry 0.6px letter-spacing, which would push the
+     asterisk away from the word it belongs to */
+  margin-left: 0.2rem;
+  letter-spacing: 0;
+  font-weight: 700;
+}
+
+/* ---------- Start time (Step 02) ---------- */
+
+.time-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.6rem;
+  transition: opacity 0.2s ease;
+}
+
+.time-slots--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.time-slots-placeholder {
+  grid-column: 1 / -1;
+  font-family: var(--font-body);
+  text-transform: none;
+  font-size: 0.82rem;
+  color: var(--tb-ink-faint);
+  border: 1px dashed var(--tb-border);
+  border-radius: 14px;
+  padding: 1rem;
+  text-align: center;
+  margin: 0;
+}
+
+.time-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.8rem 1rem 0.85rem;
+  border: 1px solid var(--tb-border);
+  border-radius: 14px;
+  background-color: var(--tb-cream-soft);
+  font-family: var(--font-body);
+  /* .form-group label would otherwise make these shout */
+  text-transform: none;
+  letter-spacing: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
+}
+
+.time-slot:hover {
+  border-color: var(--tb-green);
+  transform: translateY(-1px);
+}
+
+.time-slot--selected {
+  border-color: var(--tb-green);
+  background-color: var(--tb-green-soft);
+  box-shadow: inset 0 0 0 1px var(--tb-green);
+}
+
+.time-slot:focus-visible {
+  outline: 2px solid var(--tb-green);
+  outline-offset: 2px;
+}
+
+.time-slot-time {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+}
+
+.time-slot-note {
+  font-size: 0.72rem;
+  color: var(--tb-ink-soft);
+}
+
+/* ---------- Guide availability ---------- */
+
+/* "Available" / "1 of 2 slots left" / "Fully booked", under the
+   rating. Only rendered once a date is chosen — before that, there's
+   nothing to be available for. */
+.guide-card-availability {
+  display: inline-block;
+  margin-top: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background-color: var(--tb-green-soft);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--tb-green-dark);
+}
+
+.guide-card-availability--full {
+  background-color: rgba(177, 70, 47, 0.12);
+  color: #b1462f;
+}
+
+/* A packed guide stays on screen — hiding them would make the list
+   change length as the date moves, which reads like a bug — but it
+   can't be picked. */
+.guide-card--full {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.guide-card--full:hover {
+  border-color: var(--tb-border);
+  transform: none;
+}
+
+/* ---------- Phones ---------- */
+
+@media (max-width: 640px) {
+  .time-slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .time-slot {
+    padding: 0.7rem 0.8rem 0.75rem;
+  }
+
+  .time-slot-time {
+    font-size: 0.88rem;
+  }
+
+  .time-slot-note {
+    font-size: 0.68rem;
+  }
+
+  .guide-card-availability {
+    font-size: 0.62rem;
+    padding: 0.15rem 0.45rem;
+  }
+}
+
+@media (hover: none) {
+  .time-slot:hover {
+    transform: none;
+  }
+}
+
+/* ==========================================================
+   WEATHER POP-UP — fixes + phone layout
+
+   Four things were actually broken, not just tight:
+
+   1. The title shouted. styles.css has a global
+      `h1, h3 { text-transform: uppercase }` and
+      .weather-modal-header h3 never overrode it, so
+      "Review your hiking date" rendered as REVIEW YOUR HIKING
+      DATE — which is also why it wrapped onto three lines and
+      ran under the close button.
+   2. The sub-text shouted for the same reason: the global
+      `p { text-transform: uppercase }`.
+   3. The card could overflow the screen sideways. It's
+      `width: 100%` inside a padded wrapper, so without
+      box-sizing: border-box its padding is added ON TOP of
+      100% — that's the dark strip down the right of the phone.
+   4. The close button held the word "Close" in a 34px circle.
+      It's an ✕ now (changed in booking.html).
+   ========================================================== */
+
+.weather-modal-card {
+  /* see note 3 */
+  box-sizing: border-box;
+}
+
+.weather-modal-header h3,
+.weather-modal-header p {
+  /* see notes 1 and 2 */
+  text-transform: none;
+}
+
+/* Centred text with a button in the corner collides on a narrow
+   screen. Equal padding on both sides keeps the title inside a
+   box the ✕ can't reach, and keeps it visually centred. */
+.weather-modal-header {
+  padding: 0 2.5rem;
+}
+
+.weather-modal-close {
+  /* the ✕ glyph sits better a touch larger, and line-height 1
+     stops it riding low in the circle */
+  font-size: 1rem;
+  line-height: 1;
+  z-index: 2;
+}
+
+/* ---------- Phones ---------- */
+
+@media (max-width: 640px) {
+  .weather-modal {
+    padding: 0.75rem;
+  }
+
+  .weather-modal-card {
+    max-height: 92vh;
+    padding: 1.35rem 1.05rem;
+    border-radius: 18px;
+    gap: 1rem;
+  }
+
+  .weather-modal-header {
+    padding: 0 2.25rem;
+  }
+
+  .weather-modal-header h3 {
+    font-size: 1.2rem;
+    line-height: 1.25;
+  }
+
+  .weather-modal-header p {
+    font-size: 0.8rem;
+  }
+
+  /* 40px is a comfortable thumb target; 34 is not */
+  .weather-modal-close {
+    top: 0.7rem;
+    right: 0.7rem;
+    width: 40px;
+    height: 40px;
+  }
+
+  .weather-modal-top {
+    gap: 0.7rem;
+  }
+
+  .weather-modal-date-box,
+  .weather-modal-now,
+  .weather-modal-hourly,
+  .weather-modal-tip {
+    padding: 0.85rem 0.9rem;
+    border-radius: 14px;
+  }
+
+  .weather-modal-date {
+    font-size: 1.05rem;
+  }
+
+  /* Temperature on its own line, the three stats in a row
+     underneath — squeezing all four across a phone is what made
+     "FEELS LIKE" and "km/h WIND" wrap mid-word. */
+  .weather-modal-now-main {
+    flex-wrap: wrap;
+    gap: 0.5rem 0.8rem;
+  }
+
+  .weather-modal-icon-big {
+    font-size: 2rem;
+  }
+
+  .weather-modal-temp-big {
+    font-size: 1.55rem;
+  }
+
+  .weather-modal-now-stats {
+    margin-left: 0;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.3rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    font-size: 0.72rem;
+  }
+
+  .weather-modal-now-stats small {
+    display: block;
+    font-size: 0.56rem;
+    line-height: 1.25;
+  }
+
+  .weather-modal-alert {
+    font-size: 0.72rem;
+  }
+
+  .weather-hourly-list {
+    grid-auto-columns: minmax(78px, 1fr);
+    gap: 0.45rem;
+  }
+
+  .weather-hour-card {
+    padding: 0.55rem 0.35rem;
+  }
+
+  .weather-modal-tip {
+    align-items: flex-start;
+    gap: 0.7rem;
+  }
+
+  .weather-modal-footnote {
+    font-size: 0.66rem;
+  }
+}
+/* ==========================================================
+   Trailbound — Step 04: Climber details        (PASS 3, NEW FILE)
+   ----------------------------------------------------------
+   PASTE THIS AT THE END OF booking.css, or link it after it.
+   Without it the cards render as a stack of unstyled boxes — the
+   same way Step 03 and the time slots did before their CSS landed.
+
+   Three global rules this has to work around, all of them already
+   responsible for a bug earlier in this project:
+
+     styles.css   p { text-transform: uppercase; font-size: .85rem }
+     booking.css  .form-group label  small / bold / UPPERCASE
+     booking.css  .form-group input  full width / padded / bordered
+
+   The cards deliberately sit OUTSIDE .form-group and use <span> for
+   their labels, so the last two can't reach them. The first is
+   overridden explicitly where a <p> is used.
+   ========================================================== */
+
+/* ---------- the "why we ask" note ---------- */
+
+.climber-why {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(23, 59, 34, 0.18);
+  border-left: 3px solid var(--tb-green);
+  border-radius: 12px;
+  background-color: var(--tb-green-soft);
+  font-family: var(--font-body);
+  /* styles.css shouts at every <p> on the site. */
+  text-transform: none;
+  font-size: 0.83rem;
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: var(--tb-ink);
+}
+
+.climber-why strong {
+  font-weight: 700;
+}
+
+/* ---------- list header ---------- */
+
+.climber-list-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+}
+
+.climber-count {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tb-ink-faint);
+}
+
+/* ---------- the cards ---------- */
+
+.climber-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.climber-card {
+  padding: 1.1rem 1.2rem 1.2rem;
+  border: 1px solid var(--tb-border);
+  border-radius: 14px;
+  background-color: var(--tb-cream-soft);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.climber-card:focus-within {
+  border-color: var(--tb-green);
+  box-shadow: 0 0 0 3px var(--tb-green-soft);
+}
+
+/* The one card that failed validation, so six cards don't all look
+   equally guilty. */
+.climber-card--invalid {
+  border-color: #b1462f;
+  box-shadow: 0 0 0 3px rgba(177, 70, 47, 0.12);
+}
+
+.climber-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+
+.climber-card-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background-color: var(--tb-green-dark);
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.climber-card-title {
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+}
+
+.climber-lead-tag {
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background-color: var(--tb-green-soft);
+  font-family: var(--font-body);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tb-green-dark);
+  white-space: nowrap;
+}
+
+.climber-same-btn {
+  margin-left: auto;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--tb-border);
+  border-radius: 999px;
+  background-color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--tb-ink-soft);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.climber-same-btn:hover {
+  border-color: var(--tb-green);
+  color: var(--tb-green);
+}
+
+.climber-same-btn:focus-visible {
+  outline: 2px solid var(--tb-green);
+  outline-offset: 2px;
+}
+
+/* ---------- fields ----------
+   Six columns so "Age" and "Sex" can sit as narrow cells next to
+   each other while everything else takes half the row. */
+
+.climber-card-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem 0.85rem;
+}
+
+.climber-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  grid-column: span 3;
+}
+
+/* Row 1: full name.
+   Row 2: age, sex, mobile — three narrow cells.
+   Row 3: emergency name + emergency number, side by side. Those two
+          belong together; split across rows they read as two
+          unrelated fields.
+   Row 4: the optional note. */
+.climber-field--wide  { grid-column: 1 / -1; }
+.climber-field--age   { grid-column: span 2; }
+.climber-field--sex   { grid-column: span 2; }
+.climber-field--phone { grid-column: span 2; }
+
+/* <span>, not <label> — see the header note. */
+.climber-label {
+  font-family: var(--font-body);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tb-ink-soft);
+}
+
+/* Same red asterisk convention as the rest of the form. */
+.climber-label--required::after {
+  content: "*";
+  margin-left: 0.25em;
+  color: #b1462f;
+  font-weight: 700;
+}
+
+.climber-field input,
+.climber-field select {
+  width: 100%;
+  min-width: 0;
+  /* Without this, the 1px borders push each cell past its column and
+     the grid overflows the card on narrow screens. */
+  box-sizing: border-box;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--tb-border);
+  border-radius: 10px;
+  background-color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--tb-ink);
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.climber-field select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%2322281f' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  padding-right: 2.2rem;
+}
+
+.climber-field input::placeholder {
+  color: var(--tb-ink-faint);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.climber-field input:focus,
+.climber-field select:focus {
+  border-color: var(--tb-green);
+  box-shadow: 0 0 0 3px var(--tb-green-soft);
+}
+
+/* Hide the number spinners — an age stepper is fiddly and ugly. */
+.climber-field input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.climber-field input[type="number"]::-webkit-outer-spin-button,
+.climber-field input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ---------- per-card error ---------- */
+
+.climber-card-error {
+  margin: 0.75rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #b1462f;
+}
+
+.climber-card-error[hidden] {
+  display: none;
+}
+
+/* ---------- phones ---------- */
+
+@media (max-width: 640px) {
+  .climber-card {
+    padding: 0.9rem 0.95rem 1rem;
+    border-radius: 12px;
+  }
+
+  .climber-card-grid {
+    gap: 0.6rem 0.6rem;
+  }
+
+  /* One field per row, except Age and Sex which stay paired —
+     three cells across is too tight for a phone, so Mobile gets a
+     row of its own. */
+  .climber-field { grid-column: 1 / -1; }
+  .climber-field--age { grid-column: span 2; }
+  .climber-field--sex { grid-column: span 4; }
+  .climber-field--phone { grid-column: 1 / -1; }
+
+  .climber-field input,
+  .climber-field select {
+    /* Under 16px, iPhones zoom the page in when a field is tapped. */
+    font-size: 16px;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .climber-card-head {
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .climber-same-btn {
+    margin-left: auto;
+  }
+}
+

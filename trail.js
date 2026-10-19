@@ -29,6 +29,15 @@
 import { watchTrails } from "./trailbound-data.js";
 import { showTrailMap, getCoords } from "./trail-map.js";
 import { directionsUrl, getDirectionSteps } from "./trail-info.js";
+// The heart next to Book Now. trail-wishlist.js owns where a saved
+// trail is kept; this file only draws the button and the little
+// message that confirms the tap.
+import {
+  isTrailSaved,
+  toggleTrailSaved,
+  isSignedIn,
+  onSavedTrailsChange,
+} from "./trail-wishlist.js";
 
 /* ---------- elements ---------- */
 const grid = document.getElementById("trails-grid");
@@ -44,6 +53,33 @@ const panelBody = document.getElementById("trail-panel-body");
 /* ---------- state ---------- */
 let allTrails = [];
 let lastFocused = null; // so focus returns to the card after closing
+let deepLinkHandled = false; // trail.html?trail=<id> opens that panel once
+
+/* ---------- the little "Added to your wishlist" message ----------
+   One element, made the first time it's needed and reused after
+   that, so tapping the heart ten times doesn't leave ten toasts
+   stacked up in the page. */
+
+let toastEl = null;
+let toastTimer = null;
+
+function showToast(message) {
+  if (!toastEl) {
+    toastEl = document.createElement("div");
+    toastEl.className = "trail-toast";
+    // role="status" means a screen reader announces it without
+    // stealing focus away from the heart button.
+    toastEl.setAttribute("role", "status");
+    toastEl.setAttribute("aria-live", "polite");
+    document.body.appendChild(toastEl);
+  }
+
+  toastEl.textContent = message;
+  toastEl.classList.add("is-visible");
+
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl?.classList.remove("is-visible"), 2400);
+}
 
 /* ---------- helpers ---------- */
 
@@ -106,6 +142,18 @@ function loadTrails() {
       // card code below keeps reading the same field names it always did.
       allTrails = items.map((t) => t._raw);
       renderTrails();
+
+      /* Opens one trail straight away when the address names it —
+         trail.html?trail=T001 — which is what the saved-trails list
+         on the account page links to. Runs once, on the first load,
+         so a later live update doesn't re-open it after someone has
+         closed it. Delete these five lines if you'd rather the link
+         just landed on the grid. */
+      if (!deepLinkHandled) {
+        deepLinkHandled = true;
+        const wanted = new URLSearchParams(window.location.search).get("trail");
+        if (wanted && getTrailById(wanted)) openPanel(wanted, null);
+      }
 
       // A trail open in the panel may have just been edited in Admin —
       // repaint it so the panel never shows stale details.
@@ -280,6 +328,42 @@ function gettingThereHTML(trail) {
   return jumpoff + stepList + button;
 }
 
+/* ---------- the heart ----------
+   Same heart path as the Wishlist icon on the account page, so the
+   two obviously mean the same thing. */
+
+function saveBtnHTML(trail) {
+  const id = String(trail.trail_id || "");
+  const on = isTrailSaved(id);
+  const label = on ? "Remove from wishlist" : "Add to wishlist";
+
+  return `
+    <button type="button"
+            class="trail-save-btn${on ? " is-saved" : ""}"
+            data-trail-id="${esc(id)}"
+            aria-pressed="${on}"
+            aria-label="${label}"
+            title="${label}">
+      <!-- width/height are set here as well as in the CSS: an inline
+           <svg> with only a viewBox collapses to 0x0, so without these
+           the heart is invisible if trail-wishlist.css hasn't been
+           pasted into trail.css yet. -->
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+        <path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.2 5 5.7 5c2 0 3.4 1.1 4.3 2.4C10.9 6.1 12.3 5 14.3 5c3.5 0 5.3 3.4 3.7 6.7C19.5 16.4 12 21 12 21z"/>
+      </svg>
+    </button>`;
+}
+
+/* Repaints one heart in place — after a tap, and also when the same
+   trail is removed somewhere else (the account page in another tab). */
+function syncSaveBtn(btn, on) {
+  const label = on ? "Remove from wishlist" : "Add to wishlist";
+  btn.classList.toggle("is-saved", on);
+  btn.setAttribute("aria-pressed", String(on));
+  btn.setAttribute("aria-label", label);
+  btn.setAttribute("title", label);
+}
+
 function panelHTML(trail) {
   const open = isTrailOpen(trail);
   const coords = getCoords(trail);
@@ -331,8 +415,16 @@ function panelHTML(trail) {
       )}
     </div>
 
-    <!-- Sticky so Book Now is reachable from anywhere in the panel -->
-    <div class="trail-panel-foot">${bookBtn}</div>
+    <!-- Sticky so Book Now is reachable from anywhere in the panel.
+         The heart sits beside it and saves the trail to the Wishlist
+         section of the account page. A closed trail can still be
+         saved for later — that's rather the point. -->
+    <div class="trail-panel-foot">
+      <div class="trail-panel-actions">
+        ${bookBtn}
+        ${saveBtnHTML(trail)}
+      </div>
+    </div>
   `;
 }
 
@@ -411,6 +503,47 @@ function init() {
 
   panelClose?.addEventListener("click", closePanel);
   panelBackdrop?.addEventListener("click", closePanel);
+
+  /* ---------- the heart ----------
+     Delegated, because panelBody's contents are replaced every time
+     a different trail is opened — a listener bound to the button
+     itself would be thrown away with it. */
+  panelBody?.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".trail-save-btn");
+    if (!btn) return;
+
+    e.preventDefault();
+
+    // Guards against a double-tap firing two writes and landing on
+    // the wrong state.
+    if (btn.disabled) return;
+    btn.disabled = true;
+    const nowSaved = await toggleTrailSaved(btn.dataset.trailId);
+    btn.disabled = false;
+
+    syncSaveBtn(btn, nowSaved);
+
+    // Restart the little pop even if it's mid-animation
+    btn.classList.remove("is-pop");
+    void btn.offsetWidth;
+    btn.classList.add("is-pop");
+
+    if (!nowSaved) {
+      showToast("Removed from your wishlist");
+    } else if (isSignedIn()) {
+      showToast("Added to your wishlist");
+    } else {
+      // Saying so beats quietly losing it when they switch devices
+      showToast("Added to your wishlist — log in to keep it");
+    }
+  });
+
+  // Kept in step if the same trail is removed from the account page
+  // in another tab while this panel is open.
+  onSavedTrailsChange(() => {
+    const btn = panelBody?.querySelector(".trail-save-btn");
+    if (btn) syncSaveBtn(btn, isTrailSaved(btn.dataset.trailId));
+  });
 
   /* ---------- making the panel actually scroll ----------
      script.js drives the GSAP hero and installs a page-wide wheel

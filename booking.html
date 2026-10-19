@@ -36,6 +36,9 @@
         <!-- Booking form -->
         <form id="booking-form" class="booking-form">
 
+          <!-- ADDED: tells people what the * means before they meet one -->
+          <p class="form-required-note"><span class="req-star" aria-hidden="true">*</span> Required</p>
+
           <div class="form-step">
             <div class="form-step-label">
               <span class="form-step-number">01</span>
@@ -46,10 +49,30 @@
             </div>
 
             <div class="form-group">
-              <label for="trail-select">Select trail</label>
-              <select id="trail-select" required>
-                  <option value="" disabled selected>Select a trail...</option>
-                </select>
+              <label for="trail-search-input" class="is-required">Select trail</label>
+
+              <!-- Type-to-search box. The real <select> below stays in
+                   the page (visually hidden) and is still what every
+                   handler in booking.js reads — same pattern as the
+                   package and guide cards. -->
+              <div class="trail-search" id="trail-search">
+                <input
+                  type="text"
+                  id="trail-search-input"
+                  class="trail-search-input"
+                  role="combobox"
+                  aria-expanded="false"
+                  aria-controls="trail-search-list"
+                  aria-autocomplete="list"
+                  autocomplete="off"
+                  placeholder="Search by trail name or location…"
+                />
+                <ul id="trail-search-list" class="trail-search-list" role="listbox" aria-label="Trails" hidden></ul>
+              </div>
+
+              <select id="trail-select" class="visually-hidden-select" tabindex="-1" aria-hidden="true" required>
+                <option value="" disabled selected>Select a trail...</option>
+              </select>
             </div>
 
             <div id="trail-info" class="trail-info" hidden>
@@ -61,7 +84,7 @@
             </div>
 
             <div class="form-group">
-              <label>Choose your package</label>
+              <label class="is-required">Choose your package</label>
               <!-- Real <select>, kept for form semantics / data-binding. Visually
                    hidden; the package-cards below drive it and stay in sync. -->
               <select id="package-select" disabled class="visually-hidden-select">
@@ -81,7 +104,7 @@
             </div>
 
             <div class="form-group" id="activity-group" hidden>
-              <label for="activity-select">Choose your activity</label>
+              <label for="activity-select" class="is-required">Choose your activity</label>
               <select id="activity-select">
                   <option value="" disabled selected>Select an activity...</option>
                   <option value="Waterfall Stop">Waterfall Stop</option>
@@ -102,7 +125,7 @@
             </div>
 
             <div class="form-group">
-              <label id="guide-label">Certified guide</label>
+              <label id="guide-label" class="is-required">Certified guide</label>
               <!-- Real <select>, kept so booking.js can read the chosen guide
                    the same way as before. Visually hidden; the guide cards
                    below drive it and stay in sync (same pattern as packages).
@@ -119,7 +142,7 @@
 
             <div class="form-row">
               <div class="form-group">
-                <label for="booking-date">Hike date</label>
+                <label for="booking-date" class="is-required">Hike date</label>
                 <input type="date" id="booking-date" required />
               </div>
               <div class="form-group">
@@ -143,6 +166,22 @@
                   </select>
               </div>
             </div>
+
+            <!-- ADDED: start time. The slots come from the trail's own
+                 `time_slots` field (see trail-time-slots.js); a trail
+                 without one falls back to a default list, so every
+                 trail works before you've filled any in.
+                 Hidden <select> + visible buttons — the same pattern
+                 the package, guide and stay options already use. -->
+            <div class="form-group" id="time-group">
+              <label id="time-label" class="is-required">Start time</label>
+              <select id="departure-time" class="visually-hidden-select" tabindex="-1" aria-hidden="true" disabled>
+                <option value="" disabled selected>Select a trail first...</option>
+              </select>
+              <div id="time-slots" class="time-slots time-slots--disabled" role="radiogroup" aria-labelledby="time-label">
+                <p class="time-slots-placeholder">Select a trail to see start times.</p>
+              </div>
+            </div>
           </div>
 
           <div class="trail-divider" aria-hidden="true"></div>
@@ -155,47 +194,76 @@
               <span class="form-step-number">03</span>
               <span class="form-step-heading">
                 <span class="form-step-title">Accommodation</span>
-                <span class="form-step-desc">Stay near the trail the night before your climb, or arrange your own.</span>
+                <span class="form-step-desc">Most climbs start before sunrise, so many hikers stay near the jump-off the night before.</span>
               </span>
             </div>
 
+            <!-- Shown only when the chosen package already covers a night -->
+            <p class="stay-included-banner" id="stay-included-banner" hidden></p>
+
             <div class="form-group">
               <label id="stay-label">Where will you stay?</label>
+              <!-- Buttons, not <label>+<input>: inside a .form-group those
+                   would inherit the uppercase field-label and bordered-input
+                   styles, which is exactly what broke this step before. -->
               <div id="stay-options" class="stay-options" role="radiogroup" aria-labelledby="stay-label">
                 <span class="package-cards-placeholder">Select a trail to see places to stay.</span>
               </div>
-              <div class="stay-google" id="stay-google" hidden>
-                Prefer somewhere else?
-                <a id="stay-google-link" href="#" target="_blank" rel="noopener">Find hotels near this trail on Google Maps</a>
-              </div>
             </div>
 
-            <!-- Basecamp details (shown when "Trailbound Basecamp" is picked) -->
-            <div id="stay-basecamp" class="stay-info" hidden></div>
-
-            <!-- Partner hotels near the chosen trail -->
-            <div class="form-group" id="stay-hotels" hidden>
-              <label id="stay-hotels-label">Choose a hotel near the trail</label>
-              <div id="stay-hotel-list" class="stay-hotel-list" role="radiogroup" aria-labelledby="stay-hotels-label"></div>
-            </div>
+            <!-- Details for whichever option is picked: basecamp inclusions,
+                 or the hotel list. Only one thing is ever shown here. -->
+            <div id="stay-detail" class="stay-detail" hidden></div>
 
             <!-- Google map of the picked hotel / basecamp area -->
             <div id="stay-map" class="stay-map" hidden></div>
 
-            <div class="form-row" id="stay-nights-row" hidden>
-              <div class="form-group">
-                <label for="stay-nights">Nights</label>
-                <select id="stay-nights">
-                  <option value="1" selected>1 night</option>
-                  <option value="2">2 nights</option>
-                  <option value="3">3 nights</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Check-in → check-out</label>
-                <span class="stay-checkin" id="stay-checkin">Pick a hike date first</span>
-              </div>
+            <div class="stay-nights-row" id="stay-nights-row" hidden>
+              <label for="stay-nights">Nights</label>
+              <select id="stay-nights">
+                <option value="1" selected>1 night</option>
+                <option value="2">2 nights</option>
+                <option value="3">3 nights</option>
+              </select>
+              <span class="stay-dates" id="stay-dates">Pick a hike date first</span>
             </div>
+
+            <p class="stay-google" id="stay-google" hidden>
+              Prefer somewhere else?
+              <a id="stay-google-link" href="#" target="_blank" rel="noopener">Find hotels near this trail on Google Maps</a>
+            </p>
+          </div>
+
+          <div class="trail-divider" aria-hidden="true"></div>
+
+          <!-- ADDED (Pass 3) — Step 04: who is actually climbing.
+               One card per person in the party, built by
+               booking-climbers.js from the group size chosen in Step
+               02. A booking used to record only "4 people"; this is
+               the list a barangay or a rescue team can act on.
+               Needs booking-pass3.css. -->
+          <div class="form-step" id="climbers-step">
+            <div class="form-step-label">
+              <span class="form-step-number">04</span>
+              <span class="form-step-heading">
+                <span class="form-step-title">Climber details</span>
+                <span class="form-step-desc">Who is going up. Change the group size in Step 02 and these cards follow.</span>
+              </span>
+            </div>
+
+            <p class="climber-why">
+              <strong>Why we ask.</strong> These names and emergency contacts go on
+              the climb manifest we hand to the barangay at the registration desk,
+              and your guide carries a copy. Only Trailbound, your guide and the
+              local officials at the trailhead see them.
+            </p>
+
+            <div class="climber-list-head">
+              <span class="climber-count" id="climber-count">1 climber</span>
+            </div>
+
+            <!-- booking-climbers.js owns everything inside here -->
+            <div id="climber-list" class="climber-list"></div>
           </div>
         </form>
 
@@ -228,6 +296,11 @@
               <div>
                 <dt>Date</dt>
                 <dd id="summary-date">—</dd>
+              </div>
+              <!-- ADDED: the chosen start time -->
+              <div>
+                <dt>Start time</dt>
+                <dd id="summary-time">—</dd>
               </div>
               <div>
                 <dt>Group size</dt>
@@ -317,7 +390,10 @@
         <div class="weather-modal-backdrop" id="weather-modal-backdrop"></div>
 
         <div class="weather-modal-card" role="dialog" aria-modal="true" aria-labelledby="weather-modal-title">
-          <button type="button" class="weather-modal-close" id="weather-modal-close" aria-label="Close">Close</button>
+          <!-- CHANGED: an ✕ instead of the word "Close". The word never
+               fitted inside the 34px circle, so it spilled over the
+               title. aria-label keeps it announced as "Close". -->
+          <button type="button" class="weather-modal-close" id="weather-modal-close" aria-label="Close">&#10005;</button>
 
           <div class="weather-modal-header">
             <h3 id="weather-modal-title">Review Your Hiking Date</h3>

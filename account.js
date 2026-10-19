@@ -35,6 +35,15 @@ import {
   signOut,
   updateProfile
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+// ADDED (Pass 4): the climbing-permit tracker shown under each
+// booking. It reads the raw booking documents itself, because
+// normalizeBooking() in trailbound-data.js doesn't carry the permit
+// fields through — and changing that file would touch every page.
+import {
+  bindMedicalToggle,
+  permitPanelHtml,
+  watchMyBookingExtras
+} from "./account-permits.js";
 
 const track = collectUnsubscribers();
 
@@ -151,6 +160,17 @@ requireUser(
       watchBookings(renderBookings, {
         uid: user.uid,
         email: user.email // also picks up bookings made before sign-up
+      })
+    );
+
+    /* ADDED (Pass 4). A second stream over the same documents, raw, so
+       the permit fields survive. It re-renders the list it already has
+       rather than holding its own copy — `lastBookings` is the one the
+       normalised stream last delivered. */
+    bindMedicalToggle(bookingsListEl);
+    track(
+      watchMyBookingExtras(user, () => {
+        if (lastBookings) renderBookings(lastBookings);
       })
     );
   },
@@ -403,7 +423,13 @@ function statusTone(status) {
   return "rgba(255,255,255,0.7)";
 }
 
+/* ADDED (Pass 4): kept so the permit stream can redraw the list
+   without asking watchBookings for it again. */
+let lastBookings = null;
+
 function renderBookings(items) {
+  lastBookings = items;
+
   if (!items.length) {
     bookingsListEl.innerHTML =
       '<p class="account-empty">You have no bookings yet. <a href="booking.html">Browse trails</a></p>';
@@ -433,6 +459,9 @@ function renderBookings(items) {
           )}">${escapeHtml(b.status)}${
         b.paymentStatus === "paid" ? " &middot; paid" : ""
       }</p>
+          ${/* ADDED (Pass 4): the permit tracker. Returns "" until the
+               raw document arrives, so this list never waits on it. */ ""}
+          ${permitPanelHtml(b.id)}
         </div>
       </div>`;
     })

@@ -25,6 +25,14 @@ import { db } from './firebase-config.js';
 import { collection, getDocs, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { CATEGORY_TREE, COLORS, SIZES } from './taxonomy.js';
 import { getCart, addProductToCart, updateCartBadge, onCartUpdated } from './cart-store.js';
+// The heart on each card. product-wishlist.js owns where a saved
+// product is kept; this file only draws the button.
+import {
+  isProductSaved,
+  toggleProductSaved,
+  isSignedIn,
+  onSavedProductsChange,
+} from './product-wishlist.js';
 
 let PRODUCTS = [];
 
@@ -344,6 +352,10 @@ function bindEvents() {
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") closeDrawer();
   });
+
+  // Repaints the hearts when the saved set changes underneath the
+  // grid — Firebase resolving the logged-in user, mainly.
+  onSavedProductsChange(syncAllSaveBtns);
 }
 
 /* ==========================================================
@@ -423,13 +435,111 @@ function productCard(p) {
       <h4>${p.name}</h4>
       <div class="product-card-footer">
         <span class="product-card-price">₱${p.price.toLocaleString()}</span>
-        <button type="button" class="product-card-btn">View</button>
+        <div class="product-card-actions">
+          <button type="button" class="product-card-btn">View</button>
+          ${saveBtnHTML(p)}
+        </div>
       </div>
     </div>
   `;
   card.querySelector(".product-card-btn").addEventListener("click", () => openDrawer(p));
   card.querySelector(".product-card-img").addEventListener("click", () => openDrawer(p));
+
+  // stopPropagation keeps a click on the heart from also counting as
+  // a click on the card, which would open the drawer every time.
+  card.querySelector(".product-save-btn").addEventListener("click", async (e) => {
+    e.stopPropagation();
+    await handleSaveClick(e.currentTarget, p);
+  });
+
   return card;
+}
+
+/* ==========================================================
+   The heart beside View
+   Same heart as the trail panel and the Wishlist menu icon, so
+   the three obviously mean the same thing.
+   ========================================================== */
+
+function saveBtnHTML(p) {
+  const on = isProductSaved(p);
+  const label = on ? "Remove from wishlist" : "Add to wishlist";
+
+  // width/height are on the <svg> as well as in the CSS: an inline
+  // SVG with only a viewBox collapses to 0x0, so these keep the
+  // heart visible even if the stylesheet hasn't loaded.
+  return `
+    <button type="button"
+            class="product-save-btn${on ? " is-saved" : ""}"
+            data-product-id="${escapeHtml(p.id)}"
+            aria-pressed="${on}"
+            aria-label="${label}"
+            title="${label}">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+        <path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.2 5 5.7 5c2 0 3.4 1.1 4.3 2.4C10.9 6.1 12.3 5 14.3 5c3.5 0 5.3 3.4 3.7 6.7C19.5 16.4 12 21 12 21z"/>
+      </svg>
+    </button>`;
+}
+
+function syncSaveBtn(btn, on) {
+  const label = on ? "Remove from wishlist" : "Add to wishlist";
+  btn.classList.toggle("is-saved", on);
+  btn.setAttribute("aria-pressed", String(on));
+  btn.setAttribute("aria-label", label);
+  btn.setAttribute("title", label);
+}
+
+async function handleSaveClick(btn, p) {
+  // Guards against a double-click firing two writes and landing on
+  // the wrong state.
+  if (btn.disabled) return;
+  btn.disabled = true;
+
+  let result;
+  try {
+    result = await toggleProductSaved(p);
+  } catch (err) {
+    console.error("Wishlist update failed:", err);
+    btn.disabled = false;
+    showToast("Couldn't update your wishlist. Please try again.", "already");
+    return;
+  }
+
+  btn.disabled = false;
+
+  // The wishlist lives under the user's account, so there's nowhere
+  // to save this until they're logged in.
+  if (result.needsLogin) {
+    showToast("Log in to save gear to your wishlist", "already");
+    return;
+  }
+
+  syncSaveBtn(btn, result.saved);
+
+  // Restart the pop even if it's mid-animation
+  btn.classList.remove("is-pop");
+  void btn.offsetWidth;
+  btn.classList.add("is-pop");
+
+  // Reuses the page's existing cart toast rather than adding a
+  // second one that could overlap it.
+  showToast(
+    result.saved ? "Added to your wishlist" : "Removed from your wishlist",
+    result.saved ? "added" : "already",
+  );
+}
+
+/* The grid is rebuilt on every keystroke, so the hearts are drawn
+   from the saved set each time. This covers the other direction:
+   the set changing (Firebase finishing its load, or a sign-in)
+   while cards are already on screen. */
+function syncAllSaveBtns() {
+  document.querySelectorAll(".product-save-btn").forEach((btn) => {
+    // Pass the whole product, not just the id — isProductSaved() can
+    // also match an older wishlist entry by name that way.
+    const p = PRODUCTS.find((item) => item.id === btn.dataset.productId);
+    syncSaveBtn(btn, isProductSaved(p || btn.dataset.productId));
+  });
 }
 
 /* ==========================================================

@@ -2,17 +2,25 @@
 // Swaps the "Log In" nav link for an account icon when signed in.
 // Include this on every page that has .site-header-nav
 // (index.html, booking.html, account.html, etc.)
+//
+// ADDED: a guide also gets a "My Schedule" link next to it. Without
+// one, a guide who is already signed in and sitting on the homepage
+// has no way to reach guide.html except by typing the address —
+// the login redirect only helps at the moment they sign in.
 // ==========================================================
 import { auth } from "./firebase-init.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+// One document read, no linking — see the note on isLinkedGuide().
+import { isLinkedGuide } from "./guide-account.js";
 
 let latestUser = undefined; // undefined = auth state not resolved yet
+let isGuide = false;        // ADDED — stays false until we know otherwise
 
 function applyNavState(user) {
   const nav = document.querySelector('.site-header-nav');
   if (!nav) return false; // header not in the DOM yet
 
-  const loginLink = nav.querySelector('a[href="login.html"]');
+  const loginLink = nav.querySelector('a[href="login.html"], a[href="account.html"]');
   if (!loginLink) return false;
 
   if (user) {
@@ -30,12 +38,48 @@ function applyNavState(user) {
     loginLink.removeAttribute('aria-label');
     loginLink.textContent = 'Log In';
   }
+
+  applyGuideLink(nav, loginLink, Boolean(user) && isGuide);
   return true;
+}
+
+// ADDED. Sits just before the account icon, so it reads as part of
+// the signed-in group rather than another site link. Plain <a>, no
+// classes — it picks up the header's own nav-link styling.
+function applyGuideLink(nav, beforeEl, show) {
+  const existing = nav.querySelector('a[href="guide.html"]');
+
+  if (!show) {
+    existing?.remove();
+    return;
+  }
+  if (existing) return; // already there
+
+  const link = document.createElement('a');
+  link.href = 'guide.html';
+  link.textContent = 'My Schedule';
+  if (window.location.pathname.endsWith('guide.html')) {
+    link.classList.add('active');
+  }
+  beforeEl.parentNode.insertBefore(link, beforeEl);
 }
 
 onAuthStateChanged(auth, (user) => {
   latestUser = user;
+  isGuide = false;        // a different person may have just signed in
   applyNavState(user);
+
+  if (!user) return;
+
+  // ADDED. Async, so the nav is painted once immediately and again if
+  // this turns out to be a guide. Never allowed to throw into the
+  // header — a failed lookup just means no extra link.
+  isLinkedGuide(user.uid)
+    .then((result) => {
+      isGuide = result;
+      if (result) applyNavState(user);
+    })
+    .catch(() => {});
 });
 
 // The header may be injected asynchronously by header.js AFTER this script

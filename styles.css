@@ -2779,3 +2779,187 @@ body:has(.products-layout) .site-header {
     align-items: flex-start;
   }
 }
+.framescene-greeting {
+  display: block;
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+  font-size: clamp(0.65rem, 1.5vw, 0.78rem);
+  font-weight: 600;
+  letter-spacing: 0.28em; /* matches the tagline under the wordmark */
+  line-height: 1.4;
+ 
+  /* The space is reserved from the start, so the hero doesn't shift
+     when the name lands a moment after the page loads. */
+  min-height: 1.4em;
+  margin-bottom: 0.9rem;
+ 
+  color: var(--base-100);
+ 
+  /* Its own gentle fade for the moment the name arrives. .fs-rise
+     handles the panel's entrance; this only covers the text being
+     written in, and the two never fight because they animate
+     different properties on different triggers. */
+  transition: color 0.3s ease;
+}
+ 
+/* A small marker before the text, echoing the dashes on
+   .booking-eyebrow so the two pages feel related. */
+.framescene-greeting {
+  display: block;
+  font-family: "PP Neue Montreal", sans-serif;
+  text-transform: uppercase;
+ 
+  /* was clamp(.65rem, 1.5vw, .78rem) — now a real line of type */
+  font-size: clamp(1.05rem, 2.6vw, 1.6rem);
+  font-weight: 600;
+  letter-spacing: 0.16em; /* tighter than the tagline: bigger type needs less */
+  line-height: 1.25;
+ 
+  /* The space is reserved from the start, so the hero doesn't shift
+     when the name lands a moment after the page loads. */
+  min-height: 1.25em;
+  margin-bottom: 1.1rem;
+ 
+  color: var(--base-100);
+ 
+  /* Its own gentle fade for the moment the name arrives. .fs-rise
+     handles the panel's entrance; this only covers the text being
+     written in, and the two never fight because they animate
+     different properties on different triggers. */
+  transition: color 0.3s ease;
+}
+ 
+/* A marker before the text, echoing the dashes on .booking-eyebrow
+   so the two pages feel related. Scaled up with the type. */
+.framescene-greeting::before {
+  content: "";
+  display: inline-block;
+  width: 2em;
+  height: 4px;
+  margin: 0 0.6em 0.28em 0;
+  background-color: currentColor;
+  opacity: 0;
+  transition: opacity 0.45s ease 0.1s;
+  vertical-align: middle;
+}
+ 
+/* greeting.js adds .is-ready once the name is written */
+.framescene-greeting.is-ready::before {
+  opacity: 0.6;
+}
+ 
+@media (max-width: 767.98px) {
+  .framescene-greeting {
+    /* a long name ("Welcome back, Christopher") has to survive 390px */
+    letter-spacing: 0.1em;
+    margin-bottom: 0.85rem;
+  }
+ 
+  .framescene-greeting::before {
+    width: 1.4em;
+    margin-right: 0.5em;
+  }
+}
+ 
+@media (prefers-reduced-motion: reduce) {
+  .framescene-greeting,
+  .framescene-greeting::before {
+    transition: none;
+  }
+}
+ .product-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+ 
+.product-save-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  padding: 0;
+  border: 1px solid rgba(78, 34, 15, 0.25);
+  border-radius: 50%;
+  background-color: transparent;
+  color: rgba(78, 34, 15, 0.55);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+ 
+/* Outline heart when it isn't saved, solid when it is — the shape
+   alone says which, so it doesn't rely on noticing the colour. */
+.product-save-btn svg {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linejoin: round;
+  transition: fill 0.2s ease;
+}
+ 
+.product-save-btn:hover {
+  border-color: var(--base-200);
+  color: var(--base-200);
+}
+ 
+.product-save-btn.is-saved {
+  border-color: var(--base-200);
+  background-color: rgba(225, 44, 26, 0.1);
+  color: var(--base-200);
+}
+ 
+.product-save-btn.is-saved svg {
+  fill: currentColor;
+}
+ 
+.product-save-btn:focus-visible {
+  outline: 2px solid var(--base-200);
+  outline-offset: 2px;
+}
+ 
+.product-save-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+ 
+/* A small pop on click, so it feels like it registered */
+@keyframes product-save-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+ 
+.product-save-btn.is-pop svg {
+  animation: product-save-pop 0.32s ease;
+}
+ 
+/* Phones: cards are narrow, and the price plus two controls can
+   run out of room on one line, so the footer wraps instead of
+   squashing the View button. */
+@media (max-width: 575.98px) {
+  .product-card-footer {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+ 
+  .product-save-btn {
+    width: 2.1rem;
+    height: 2.1rem;
+  }
+}
+ 
+@media (prefers-reduced-motion: reduce) {
+  .product-save-btn.is-pop svg {
+    animation: none;
+  }
+}
+ 

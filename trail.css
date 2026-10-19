@@ -908,3 +908,139 @@ body.trail-panel-open {
     gap: 0.35rem;
   }
 }
+.trail-panel-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+}
+ 
+/* .trail-panel-book is width: 100% on its own — inside this row it
+   should stretch to fill what's left instead. */
+.trail-panel-actions .trail-panel-book {
+  flex: 1 1 auto;
+  width: auto;
+}
+ 
+.trail-save-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  padding: 0;
+  border: 1px solid var(--base-300);
+  border-radius: 999px;
+  background-color: transparent;
+  color: var(--base-300);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+ 
+/* Outline heart when it isn't saved, solid when it is — the shape
+   alone says which, so it doesn't depend on noticing the colour. */
+.trail-save-btn svg {
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  transition: fill 0.2s ease;
+}
+ 
+.trail-save-btn:hover {
+  border-color: var(--base-200);
+  color: var(--base-200);
+}
+ 
+.trail-save-btn.is-saved {
+  border-color: var(--base-200);
+  background-color: rgba(225, 44, 26, 0.1);
+  color: var(--base-200);
+}
+ 
+.trail-save-btn.is-saved svg {
+  fill: currentColor;
+}
+ 
+.trail-save-btn:focus-visible {
+  outline: 2px solid var(--base-200);
+  outline-offset: 3px;
+}
+ 
+.trail-save-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+ 
+/* A small pop on tap, so the heart feels like it registered */
+@keyframes trail-save-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+ 
+.trail-save-btn.is-pop svg {
+  animation: trail-save-pop 0.32s ease;
+}
+ 
+/* ---- "Added to your wishlist" ----
+   z-index 1090 clears the trail panel (1070) and the cart toast
+   (1080) in styles.css, so it can't come up behind either. */
+ 
+.trail-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 2rem;
+  z-index: 1090;
+  max-width: calc(100vw - 2rem);
+  padding: 0.85rem 1.3rem;
+  border-radius: 999px;
+  background-color: var(--base-300);
+  box-shadow: 0 10px 30px rgba(26, 4, 1, 0.35);
+  font-family: "Inter", sans-serif;
+  /* the global `p`/uppercase treatment would shout this */
+  text-transform: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--base-100);
+  opacity: 0;
+  transform: translate(-50%, 1rem);
+  pointer-events: none;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+ 
+.trail-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+ 
+@media (max-width: 767.98px) {
+  .trail-save-btn {
+    width: 3.1rem;
+  }
+ 
+  .trail-toast {
+    bottom: 1.25rem;
+    font-size: 0.8rem;
+  }
+}
+ 
+@media (prefers-reduced-motion: reduce) {
+  .trail-save-btn.is-pop svg {
+    animation: none;
+  }
+ 
+  .trail-toast {
+    transition: opacity 0.01ms;
+  }
+}
+ 

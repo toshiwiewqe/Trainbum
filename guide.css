@@ -1,0 +1,417 @@
+/* ==========================================================
+   Guide schedule page (guide.html)
+
+   Its own stylesheet so it can't disturb anything else. Palette
+   matches account.css, because this is the same kind of page: a
+   signed-in person looking at their own records.
+
+   The `height: auto` / `overflow: visible` resets are here for the
+   same reason account.css has them — styles.css gives every
+   <section> height: 100svh and hides overflow, which would cut a
+   long schedule off at one screen.
+   ========================================================== */
+
+:root {
+  --gd-paper: #f6f1e7;
+  --gd-surface: #ffffff;
+  --gd-ink: #241a12;
+  --gd-ink-soft: #6b5c4c;
+  --gd-ink-faint: #a3968a;
+  --gd-line: #e2d8c4;
+  --gd-line-strong: #cdbfa6;
+  --gd-clay: #a8592f;
+  --gd-clay-soft: #fbf1e8;
+  --gd-night: #2a0f06;
+  --gd-sun: #f5f0a8;
+  --gd-forest: #33502f;
+  --gd-red: #b1462f;
+}
+
+.guide-page {
+  min-height: 100vh;
+  height: auto;
+  overflow: visible;
+  padding: 7.5rem 1.5rem 5rem;
+  box-sizing: border-box;
+  background-color: var(--gd-paper);
+  color: var(--gd-ink);
+}
+
+.guide-wrap {
+  width: min(100%, 960px);
+  margin: 0 auto;
+}
+
+.guide-page [hidden] {
+  display: none !important;
+}
+
+/* ---------- header ---------- */
+
+.guide-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+  padding: 0.42rem 0.85rem;
+  border: 1px solid rgba(168, 89, 47, 0.35);
+  border-radius: 999px;
+  background-color: var(--gd-clay-soft);
+  font-family: "Inter", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gd-clay);
+}
+
+.guide-eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--gd-clay);
+}
+
+.guide-title {
+  margin: 0 0 0.4rem;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: clamp(1.9rem, 4vw, 2.7rem);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  text-transform: none;
+  color: var(--gd-ink);
+}
+
+.guide-sub {
+  max-width: 60ch;
+  margin: 0 0 1.6rem;
+  font-family: "Inter", sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  text-transform: none;
+  color: var(--gd-ink-soft);
+}
+
+/* ---------- count tiles ---------- */
+
+.guide-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-bottom: 1.6rem;
+}
+
+.guide-stat {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--gd-line);
+  border-radius: 14px;
+  background-color: var(--gd-surface);
+}
+
+.guide-stat-k {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-family: "Inter", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gd-ink-faint);
+}
+
+.guide-stat-v {
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--gd-ink);
+}
+
+.guide-stat--today {
+  border-color: rgba(168, 89, 47, 0.45);
+  background-color: var(--gd-clay-soft);
+}
+
+.guide-stat--today .guide-stat-v {
+  color: var(--gd-clay);
+}
+
+/* ---------- sections ---------- */
+
+.guide-section {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  margin-bottom: 1.8rem;
+}
+
+.guide-section-title {
+  margin: 0 0 0.75rem;
+  font-family: "Inter", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--gd-clay);
+}
+
+.guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.guide-empty {
+  padding: 1.6rem 1.25rem;
+  border: 1px dashed var(--gd-line-strong);
+  border-radius: 14px;
+  font-family: "Inter", sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  text-align: center;
+  text-transform: none;
+  color: var(--gd-ink-soft);
+}
+
+/* ---------- one climb ---------- */
+
+.climb {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) auto;
+  gap: 0.3rem 1.1rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--gd-line);
+  border-radius: 16px;
+  background-color: var(--gd-surface);
+}
+
+.climb--today {
+  border-color: rgba(168, 89, 47, 0.5);
+  box-shadow: inset 3px 0 0 var(--gd-clay);
+}
+
+/* Date and start time, in their own column so a run of climbs
+   reads down the left edge like a timetable. */
+.climb-when {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+}
+
+.climb-date {
+  display: block;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--gd-ink);
+}
+
+.climb-day {
+  display: block;
+  font-family: "Inter", sans-serif;
+  font-size: 0.72rem;
+  color: var(--gd-ink-faint);
+}
+
+.climb-time {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background-color: var(--gd-night);
+  font-family: "Inter", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--gd-sun);
+}
+
+.climb-time--none {
+  background-color: #efe9dd;
+  color: var(--gd-ink-soft);
+}
+
+.climb-trail {
+  grid-column: 2;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--gd-ink);
+}
+
+.climb-meta {
+  grid-column: 2;
+  font-family: "Inter", sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  text-transform: none;
+  color: var(--gd-ink-soft);
+}
+
+/* Who to call. The reason this page needs customer data at all. */
+.climb-contact {
+  grid-column: 2;
+  margin-top: 0.4rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f0ebe0;
+  font-family: "Inter", sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  text-transform: none;
+  color: var(--gd-ink-soft);
+}
+
+.climb-contact b {
+  color: var(--gd-ink);
+}
+
+.climb-contact a {
+  font-weight: 600;
+  color: var(--gd-clay);
+  text-decoration: none;
+}
+
+.climb-contact a:hover {
+  text-decoration: underline;
+}
+
+.climb-missing {
+  color: var(--gd-red);
+  font-weight: 600;
+}
+
+.climb-status {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: start;
+}
+
+.climb-pill {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-family: "Inter", sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.climb-pill--confirmed { background: rgba(51, 80, 47, 0.12); color: var(--gd-forest); }
+.climb-pill--pending   { background: rgba(168, 89, 47, 0.15); color: var(--gd-clay); }
+.climb-pill--other     { background: #efe9dd; color: var(--gd-ink-soft); }
+
+/* ---------- not-a-guide / problem states ---------- */
+
+.guide-gate {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 2.25rem 1.5rem;
+  border: 1px solid var(--gd-line);
+  border-radius: 18px;
+  background-color: var(--gd-surface);
+  text-align: center;
+}
+
+.guide-gate h2 {
+  margin: 0 0 0.6rem;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  text-transform: none;
+  color: var(--gd-ink);
+}
+
+.guide-gate p {
+  margin: 0 0 1.2rem;
+  font-family: "Inter", sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  text-transform: none;
+  color: var(--gd-ink-soft);
+}
+
+.guide-gate code {
+  padding: 0.1rem 0.35rem;
+  border-radius: 5px;
+  background: var(--gd-clay-soft);
+  color: var(--gd-clay);
+  font-size: 0.85em;
+}
+
+.guide-btn {
+  display: inline-block;
+  padding: 0.85rem 1.5rem;
+  border-radius: 999px;
+  background-color: var(--gd-night);
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--gd-paper);
+}
+
+.guide-btn:hover {
+  background-color: var(--gd-clay);
+}
+
+/* ---------- phones ---------- */
+
+@media (max-width: 640px) {
+  .guide-page {
+    padding: 6rem 0.9rem 3rem;
+  }
+
+  .guide-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .guide-stat {
+    padding: 0.7rem 0.6rem;
+  }
+
+  .guide-stat-k {
+    font-size: 0.52rem;
+    letter-spacing: 0.06em;
+  }
+
+  .guide-stat-v {
+    font-size: 1.2rem;
+  }
+
+  /* The date column drops above the trail name instead of being
+     squeezed beside it */
+  .climb {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 0.8rem;
+    padding: 0.9rem 1rem;
+  }
+
+  .climb-when {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .climb-date,
+  .climb-day,
+  .climb-time {
+    display: inline-block;
+    margin-right: 0.4rem;
+  }
+
+  .climb-trail,
+  .climb-meta,
+  .climb-contact {
+    grid-column: 1 / -1;
+  }
+
+  .climb-status {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}

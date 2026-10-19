@@ -1,0 +1,429 @@
+/* ==========================================================
+   Trailbound Admin — Permit desk                (PASS 4, NEW FILE)
+   ----------------------------------------------------------
+   Linked after admin.css. Everything here is new; admin.css itself
+   is untouched, so no other admin page can be affected by it.
+
+   Cards rather than a table. A permit row carries a status, a
+   reference, a note and a climber list — that is too much to read
+   across a row, and the climber list is the whole point.
+   ========================================================== */
+
+/* ---------- filter bar ---------- */
+
+.permit-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-card);
+}
+
+.permit-bar-field {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.permit-bar-field > span {
+  color: var(--admin-text-dim);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.permit-bar-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--admin-text);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.permit-bar-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--admin-accent);
+  cursor: pointer;
+}
+
+/* ---------- cards ---------- */
+
+.permit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.permit-card {
+  padding: 1.15rem 1.25rem 1.1rem;
+  border: 1px solid var(--admin-border);
+  /* The urgency stripe. Same idea as the activity log's tone bar:
+     the fastest way to find the climb that leaves on Friday with no
+     permit, in a list of thirty. */
+  border-left: 3px solid var(--admin-border);
+  border-radius: 14px;
+  background: var(--admin-card);
+  color: var(--admin-text);
+}
+
+.permit-card--soon { border-left-color: var(--admin-yellow); }
+
+.permit-card--urgent {
+  border-left-color: var(--admin-accent);
+  background: linear-gradient(90deg, rgba(225, 44, 26, 0.07), transparent 40%),
+    var(--admin-card);
+}
+
+.permit-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.permit-card-title h3 {
+  color: var(--admin-text);
+  font-size: 1.02rem;
+  margin: 0;
+}
+
+.permit-card-when {
+  margin: 0.25rem 0 0;
+  color: var(--admin-text-dim);
+  font-size: 0.78rem;
+}
+
+.permit-countdown {
+  margin-left: 0.5rem;
+  padding: 0.12rem 0.45rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.permit-card--soon .permit-countdown {
+  border-color: rgba(250, 204, 21, 0.45);
+  color: var(--admin-yellow);
+}
+
+.permit-card--urgent .permit-countdown {
+  border-color: rgba(255, 90, 69, 0.5);
+  color: var(--admin-accent);
+}
+
+/* ---------- status badge ---------- */
+
+.permit-badge {
+  flex-shrink: 0;
+  padding: 0.32rem 0.7rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--admin-text-dim);
+}
+
+.permit-badge--submitted {
+  border-color: rgba(96, 165, 250, 0.45);
+  background: rgba(96, 165, 250, 0.13);
+  color: #9ec5fe;
+}
+
+.permit-badge--approved,
+.permit-badge--released {
+  border-color: rgba(74, 222, 128, 0.45);
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--admin-green);
+}
+
+.permit-badge--preparing {
+  border-color: rgba(250, 204, 21, 0.4);
+  background: rgba(250, 204, 21, 0.12);
+  color: var(--admin-yellow);
+}
+
+.permit-badge--attention {
+  border-color: rgba(255, 90, 69, 0.5);
+  background: rgba(255, 90, 69, 0.14);
+  color: var(--admin-accent);
+}
+
+/* ---------- facts strip ---------- */
+
+.permit-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 0 0 0.9rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: rgba(15, 5, 3, 0.35);
+}
+
+.permit-facts dt {
+  color: var(--admin-text-dim);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.permit-facts dd {
+  margin: 0.2rem 0 0;
+  color: var(--admin-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- medical + hospital line ---------- */
+
+.permit-medical {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  border-radius: 10px;
+  background: rgba(250, 204, 21, 0.07);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--admin-text);
+}
+
+.permit-medical.is-ok {
+  border-color: rgba(74, 222, 128, 0.3);
+  background: rgba(74, 222, 128, 0.07);
+}
+
+.permit-medical strong { color: var(--admin-accent); }
+.permit-medical.is-ok strong { color: var(--admin-green); }
+
+.permit-hospital {
+  color: var(--admin-text-dim);
+  font-size: 0.73rem;
+}
+
+/* ---------- climber list ---------- */
+
+.permit-climbers-wrap {
+  margin-bottom: 0.9rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: rgba(15, 5, 3, 0.3);
+}
+
+.permit-climbers-wrap summary {
+  padding: 0.6rem 0.85rem;
+  color: var(--admin-text);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.permit-climbers-wrap summary::-webkit-details-marker { display: none; }
+
+.permit-climbers-wrap summary::before {
+  content: "\25B8";
+  display: inline-block;
+  margin-right: 0.45rem;
+  color: var(--admin-accent);
+  transition: transform 0.15s ease;
+}
+
+.permit-climbers-wrap[open] summary::before {
+  transform: rotate(90deg);
+}
+
+/* The table can be wider than the card on a laptop; let it scroll
+   rather than stretching the whole page sideways. */
+.permit-climbers-wrap > table,
+.permit-climbers-wrap > p {
+  display: block;
+  margin: 0;
+  padding: 0 0.85rem 0.85rem;
+  overflow-x: auto;
+}
+
+.permit-climbers {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.permit-climbers th {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--admin-border);
+  color: var(--admin-text-dim);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.permit-climbers td {
+  padding: 0.55rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--admin-text);
+  font-size: 0.79rem;
+  vertical-align: top;
+}
+
+.permit-climbers tr:last-child td { border-bottom: none; }
+
+.permit-climber-note {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--admin-text-dim);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.permit-no-climbers {
+  color: var(--admin-text-dim);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+/* ---------- controls ---------- */
+
+.permit-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 0.9rem;
+  margin-bottom: 0.9rem;
+}
+
+.permit-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.permit-control--wide { grid-column: 1 / -1; }
+
+.permit-control > span {
+  color: var(--admin-text-dim);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.permit-control input,
+.permit-control select {
+  width: 100%;
+  min-width: 0;
+  /* Without this the 1px border puts each control past its grid
+     column and the card grows a horizontal scrollbar. */
+  box-sizing: border-box;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #4b2a23;
+  border-radius: 8px;
+  background-color: #25100d;
+  color: #f7ded1;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color-scheme: dark;
+  outline: none;
+}
+
+.permit-control input::placeholder {
+  color: var(--admin-text-faint, rgba(245, 239, 233, 0.52));
+  font-weight: 400;
+}
+
+.permit-control input:focus,
+.permit-control select:focus {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 3px rgba(255, 90, 69, 0.14);
+}
+
+/* ---------- footer ---------- */
+
+.permit-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--admin-border);
+}
+
+.permit-saved {
+  flex: 1;
+  min-width: 140px;
+  color: var(--admin-text-dim);
+  font-size: 0.7rem;
+}
+
+.permit-saved.is-error { color: var(--admin-accent); }
+
+.permit-btn {
+  padding: 0.55rem 1.1rem;
+  border: 1px solid var(--admin-accent);
+  border-radius: 8px;
+  background: var(--admin-accent);
+  color: #1a0401;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.permit-btn:hover { filter: brightness(1.08); }
+
+.permit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.permit-btn--ghost {
+  border-color: var(--admin-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--admin-text);
+}
+
+.permit-btn--ghost:hover {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+  filter: none;
+}
+
+/* ---------- narrow screens ---------- */
+
+@media (max-width: 900px) {
+  .permit-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .permit-card { padding: 0.95rem 1rem; }
+  .permit-card-head { flex-direction: column; gap: 0.6rem; }
+  .permit-facts { grid-template-columns: 1fr; }
+  .permit-controls { grid-template-columns: 1fr; }
+  .permit-card-foot .permit-btn { flex: 1; }
+}
