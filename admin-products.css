@@ -603,3 +603,719 @@
     color: var(--admin-text-faint, rgba(245, 239, 233, 0.5));
     line-height: 1.45;
 }
+/* ==========================================================
+   ADDED — stock quantity
+   ========================================================== */
+
+/* ---------- the count, inside the stock card ---------- */
+
+.admin-product-modal .admin-qty-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--admin-border);
+}
+
+/* `label` in the selector so this outranks `.admin-product-form label`
+   at (0,1,1), which would otherwise stack and uppercase it. */
+.admin-product-modal label.admin-qty-field {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    width: 150px;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.admin-product-modal .admin-qty-field span {
+    color: var(--admin-text-dim);
+    font-size: 0.72rem;
+}
+
+.admin-product-modal .admin-qty-field input {
+    width: 100%;
+    /* Tabular figures so the number does not jitter as it is stepped. */
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.admin-qty-quick {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.admin-qty-quick button {
+    min-width: 42px;
+    padding: 0.5rem 0.4rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--admin-text-dim);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-qty-quick button:hover {
+    border-color: var(--admin-accent);
+    color: var(--admin-text);
+}
+
+.admin-qty-note {
+    margin: 0.5rem 0 0;
+    color: var(--admin-text-dim);
+    font-size: 0.72rem;
+    line-height: 1.5;
+}
+
+.admin-qty-note.is-warn { color: #f2c14e; }
+
+/* The switch is held off at zero. Dimming it is what tells you the
+   control is unavailable rather than merely switched off. */
+.admin-product-modal .admin-stock-card.is-locked .admin-stock-track {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.admin-product-modal .admin-stock-card.is-locked label.admin-stock-row {
+    cursor: default;
+}
+
+/* ---------- the count, in the table ---------- */
+
+.admin-qty-cell { margin-top: 0.3rem; }
+
+.admin-qty-pill {
+    display: inline-block;
+    padding: 0.12rem 0.45rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--admin-text);
+    font-size: 0.66rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Three states that must not be confusable: a real low count, a real
+   zero, and no count at all. */
+.admin-qty-pill.is-low {
+    border-color: rgba(242, 193, 78, 0.5);
+    background: rgba(242, 193, 78, 0.14);
+    color: #f2c14e;
+}
+
+.admin-qty-pill.is-zero {
+    border-color: rgba(255, 90, 69, 0.5);
+    background: rgba(255, 90, 69, 0.14);
+    color: #ff8a7a;
+}
+
+.admin-qty-pill.is-untracked {
+    background: transparent;
+    border: 1px dashed var(--admin-border);
+    color: var(--admin-text-faint, rgba(245, 239, 233, 0.5));
+    font-style: italic;
+}
+
+/* One more action button than before. */
+.admin-product-table { min-width: 1010px; }
+
+@media (max-width: 560px) {
+    .admin-product-modal .admin-qty-row { flex-direction: column; align-items: stretch; }
+    .admin-product-modal label.admin-qty-field { width: auto; }
+    .admin-qty-quick button { flex: 1; }
+}
+
+/* ==========================================================
+   ADDED — the stock dialog
+   ----------------------------------------------------------
+   Replaces the window.prompt() that used to ask for a count.
+
+   Everything here is scoped to `.admin-stock-modal`, which is a
+   different element from `.admin-product-modal`. The product
+   modal's own stock card (.admin-stock-card, .admin-qty-row and
+   friends, further up this file) is untouched and keeps working
+   exactly as it did.
+
+   Base .admin-modal in admin.css already supplies the card, the
+   centring, the border and the 1.5rem padding, so this file only
+   styles what is inside.
+   ========================================================== */
+
+.admin-stock-modal {
+    /* Narrower than the 440px default: one number does not need the
+       width, and a tighter card reads as a quick edit rather than a
+       form. */
+    width: min(380px, calc(100vw - 2rem));
+}
+
+/* ---------- which product ---------- */
+
+.admin-stock-product {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 1.1rem 0 1.25rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-stock-thumb {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.07);
+}
+
+/* Shown when the product has no usable image, so the row keeps its
+   shape instead of collapsing to the text. */
+.admin-stock-thumb--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--admin-text-dim);
+    font-size: 1rem;
+}
+
+.admin-stock-thumb[hidden],
+.admin-stock-thumb--empty[hidden] { display: none; }
+
+.admin-stock-product-copy {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.admin-stock-product-copy strong {
+    color: var(--admin-text);
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.3;
+    /* A 120-character product name must not push the card wider than
+       the viewport. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-stock-product-copy small {
+    color: var(--admin-text-dim);
+    font-size: 0.68rem;
+}
+
+/* ---------- the dial ---------- */
+
+.admin-stock-dial {
+    display: grid;
+    grid-template-columns: 48px 1fr 48px;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.admin-stock-dial input {
+    width: 100%;
+    margin: 0;
+    padding: 0.7rem 0.5rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.22);
+    color: var(--admin-text);
+    font-family: inherit;
+    font-size: 1.75rem;
+    font-weight: 700;
+    /* Tabular figures: stepping 9 → 10 should not shift the number
+       sideways under the cursor. */
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    outline: none;
+}
+
+/* An empty box means "no count kept for this product". A greyed 0 here
+   would read as a value, and 0 is the one number that takes a product
+   off sale — so the placeholder is a dash, drawn light so it cannot be
+   mistaken for something typed. */
+.admin-stock-dial input::placeholder {
+    color: var(--admin-text-dim);
+    font-size: 1.2rem;
+    font-weight: 400;
+    opacity: 0.5;
+}
+
+.admin-stock-dial input:focus {
+    border-color: var(--admin-accent);
+    box-shadow: 0 0 0 3px rgba(255, 90, 69, 0.13);
+}
+
+/* The spinner arrows are redundant next to two 48px buttons, and they
+   sit on top of the number at this font size. */
+.admin-stock-dial input::-webkit-outer-spin-button,
+.admin-stock-dial input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.admin-stock-dial input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+.admin-stock-dial-btn {
+    border: 1px solid var(--admin-border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--admin-text);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1.2rem;
+    line-height: 1;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.admin-stock-dial-btn:hover:not(:disabled) {
+    border-color: var(--admin-accent);
+    background: rgba(255, 90, 69, 0.12);
+}
+
+/* Held off at zero rather than silently doing nothing, so the floor is
+   visible instead of being discovered. */
+.admin-stock-dial-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.admin-stock-dial-label {
+    margin: 0.5rem 0 1rem;
+    color: var(--admin-text-dim);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+/* ---------- quick steps ---------- */
+
+.admin-stock-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.admin-stock-steps button {
+    flex: 1 1 0;
+    min-width: 46px;
+    padding: 0.5rem 0.3rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--admin-text-dim);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-stock-steps button:hover {
+    border-color: var(--admin-accent);
+    color: var(--admin-text);
+}
+
+/* Taking something off sale should not look like −10. */
+.admin-stock-steps .admin-stock-zero {
+    flex: 1 1 100%;
+    border-style: dashed;
+}
+
+.admin-stock-steps .admin-stock-zero:hover {
+    border-color: #ff8a7a;
+    border-style: solid;
+    color: #ff8a7a;
+}
+
+/* ---------- what saving will do ---------- */
+
+.admin-stock-outcome {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    margin: 1rem 0 0;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--admin-border);
+    border-left-width: 3px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--admin-text-dim);
+    font-size: 0.72rem;
+    line-height: 1.55;
+    /* Three states of different lengths swap in here as you type; a
+       floor stops the buttons under it jumping line by line. */
+    min-height: 2.9rem;
+}
+
+.admin-stock-outcome::before {
+    content: "";
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    margin-top: 0.42rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.admin-stock-outcome.is-ok { border-left-color: var(--admin-green); color: var(--admin-green); }
+.admin-stock-outcome.is-low { border-left-color: #f2c14e; color: #f2c14e; }
+.admin-stock-outcome.is-zero { border-left-color: var(--admin-accent); color: #ff8a7a; }
+.admin-stock-outcome.is-bad { border-left-color: var(--admin-accent); color: #ff8a7a; }
+
+/* ---------- the relist question ---------- */
+
+.admin-stock-resume {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin: 0.75rem 0 0;
+    padding: 0.65rem 0.7rem;
+    border: 1px solid rgba(242, 193, 78, 0.45);
+    border-radius: 8px;
+    background: rgba(242, 193, 78, 0.08);
+    cursor: pointer;
+}
+
+.admin-stock-resume[hidden] { display: none; }
+
+.admin-stock-resume input {
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    margin-top: 0.1rem;
+    accent-color: var(--admin-accent);
+    cursor: pointer;
+}
+
+.admin-stock-resume span { display: grid; gap: 0.2rem; }
+.admin-stock-resume strong { color: var(--admin-text); font-size: 0.75rem; font-weight: 600; }
+.admin-stock-resume small { color: var(--admin-text-dim); font-size: 0.68rem; line-height: 1.5; }
+
+/* ---------- actions ---------- */
+
+.admin-stock-modal .admin-modal-actions {
+    margin-top: 1.25rem;
+}
+
+.admin-stock-modal .admin-modal-submit:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-stock-dial-btn,
+    .admin-stock-steps button { transition: none; }
+}
+
+@media (max-width: 420px) {
+    .admin-stock-dial { grid-template-columns: 42px 1fr 42px; }
+    .admin-stock-dial input { font-size: 1.45rem; }
+}
+
+/* ==========================================================
+   ADDED — the sale
+   ----------------------------------------------------------
+   A card in the product form, plus the sale's two appearances
+   in the Gear table.
+
+   Self-contained on purpose. Two separate symptoms earlier in
+   this project — unstyled rating chips and a broken account
+   switch — both traced to an older copy of this file being the
+   one on disk, so the switch below is its own markup rather
+   than a reuse of .admin-stock-* further up.
+   ========================================================== */
+
+/* ---------- the card ---------- */
+
+.admin-product-modal .admin-sale-card {
+    margin-top: 0.85rem;
+    padding: 0.85rem 0.95rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* On sale is a state the product is IN, so the card says so without
+   needing the switch to be read. */
+.admin-product-modal .admin-sale-card.is-on {
+    border-color: rgba(110, 222, 154, 0.38);
+    background: rgba(110, 222, 154, 0.06);
+}
+
+/* `label` in the selector so this outranks `.admin-product-form label`
+   at (0,1,1), which would otherwise stack the switch above its own
+   caption and uppercase the lot. */
+.admin-product-modal label.admin-sale-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0;
+    cursor: pointer;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.admin-sale-copy { display: grid; gap: 0.15rem; }
+
+.admin-sale-heading {
+    color: var(--admin-text);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.admin-sale-state {
+    color: var(--admin-text-dim);
+    font-size: 0.72rem;
+}
+
+.admin-sale-state.is-live { color: #6ede9a; font-weight: 600; }
+.admin-sale-state.is-warn { color: #f2c14e; }
+
+/* ---------- the switch ---------- */
+
+/* Not display:none — a hidden input is dropped from the tab order and
+   stops being reachable by keyboard, which is the whole control. */
+.admin-product-modal .admin-sale-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.admin-product-modal .admin-sale-track {
+    position: relative;
+    flex-shrink: 0;
+    width: 46px;
+    height: 26px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.admin-product-modal .admin-sale-knob {
+    position: absolute;
+    top: 50%;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #f5efe9;
+    transform: translateY(-50%);
+    transition: transform 0.18s ease;
+}
+
+.admin-product-modal .admin-sale-input:checked + .admin-sale-track {
+    border-color: rgba(110, 222, 154, 0.55);
+    background: rgba(110, 222, 154, 0.38);
+}
+
+.admin-product-modal .admin-sale-input:checked + .admin-sale-track .admin-sale-knob {
+    transform: translate(20px, -50%);
+}
+
+.admin-product-modal .admin-sale-input:focus-visible + .admin-sale-track {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+
+/* ---------- the body, shown only while the switch is on ---------- */
+
+.admin-sale-body {
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--admin-border);
+}
+
+.admin-sale-body[hidden] { display: none; }
+
+/* Two buttons, one choice. A segmented control rather than a <select>
+   because there are exactly two options and both fit on screen. */
+.admin-sale-type {
+    display: inline-flex;
+    padding: 2px;
+    border: 1px solid var(--admin-border);
+    border-radius: 9px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.admin-sale-type button {
+    min-width: 72px;
+    padding: 0.4rem 0.75rem;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--admin-text-dim);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.74rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-sale-type button.is-active {
+    background: var(--admin-accent);
+    color: #1a0401;
+    font-weight: 700;
+}
+
+.admin-sale-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+}
+
+.admin-product-modal label.admin-sale-field {
+    display: grid;
+    gap: 0.35rem;
+    flex: 1 1 150px;
+    margin: 0;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.admin-product-modal .admin-sale-field[hidden] { display: none; }
+
+.admin-product-modal .admin-sale-field > span {
+    color: var(--admin-text-dim);
+    font-size: 0.72rem;
+}
+
+.admin-product-modal .admin-sale-field input {
+    width: 100%;
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+/* ---------- the preview ---------- */
+
+.admin-sale-preview {
+    margin: 0.8rem 0 0;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--admin-border);
+    border-left-width: 3px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--admin-text);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.55;
+}
+
+.admin-sale-preview:empty { display: none; }
+
+.admin-sale-preview.is-warn { border-left-color: #f2c14e; color: #f2c14e; }
+.admin-sale-preview.is-bad { border-left-color: var(--admin-accent); color: #ff8a7a; }
+
+.admin-product-modal .admin-sale-help {
+    margin: 0.6rem 0 0;
+    color: var(--admin-text-dim);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+/* ---------- the price cell in the Gear table ---------- */
+
+.admin-price-sale {
+    display: block;
+    color: var(--admin-text);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-price-was {
+    display: block;
+    color: var(--admin-text-dim);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    /* The old price. Struck through rather than merely dimmed, because
+       dimmed alone reads as "secondary", not "no longer charged". */
+    text-decoration: line-through;
+}
+
+.admin-sale-pill {
+    display: inline-block;
+    margin-top: 0.25rem;
+    padding: 0.12rem 0.45rem;
+    border: 1px solid rgba(110, 222, 154, 0.5);
+    border-radius: 999px;
+    background: rgba(110, 222, 154, 0.14);
+    color: #6ede9a;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-product-modal .admin-sale-track,
+    .admin-product-modal .admin-sale-knob,
+    .admin-sale-type button { transition: none; }
+}
+
+@media (max-width: 560px) {
+    .admin-sale-fields { flex-direction: column; }
+    .admin-sale-type { width: 100%; }
+    .admin-sale-type button { flex: 1; }
+}
+
+/* ==========================================================
+   ADDED — a drop zone that cannot work
+   ----------------------------------------------------------
+   Applied once an upload has failed for a reason that is about
+   the bucket rather than the file. The control stops looking
+   like a button, because pressing it again cannot help.
+   ========================================================== */
+
+.admin-product-modal label.admin-dropzone.is-unavailable {
+    border-style: dashed;
+    border-color: var(--admin-border);
+    background: rgba(255, 255, 255, 0.015);
+    cursor: not-allowed;
+    opacity: 0.75;
+}
+
+/* The hover state is the main thing that reads as "this is clickable",
+   so it has to go too — the cursor alone is not enough. */
+.admin-product-modal label.admin-dropzone.is-unavailable:hover {
+    border-color: var(--admin-border);
+    border-style: dashed;
+    background: rgba(255, 255, 255, 0.015);
+}
+
+.admin-dropzone.is-unavailable .admin-dropzone-icon {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--admin-text-dim);
+}
+
+.admin-dropzone.is-unavailable .admin-dropzone-text strong {
+    color: var(--admin-text-dim);
+    font-weight: 500;
+}
+
+/* A disabled Upload button next to a working URL box: the URL box is
+   the route that does not need Storage, so it must not look disabled
+   by association. */
+.admin-row-upload:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

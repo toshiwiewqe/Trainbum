@@ -16,10 +16,10 @@ rules_version = '2';
 //
 //   trails     guides    packages   -> the booking page's three
 //                                      dropdowns. Public read.
-//   products                        -> gear in the shop. Public
+//   products                        -> Products in the shop. Public
 //                                      read when active.
 //   bookings                        -> a reserved trail slot.
-//   orders                          -> a paid gear/checkout order.
+//   orders                          -> a paid Products/checkout order.
 //   contact                         -> support messages.
 //   users  (+ wishlist, notifications)
 //   settings   activity   admins
@@ -120,8 +120,8 @@ service cloud.firestore {
     }
 
     /* ==========================================================
-       GEAR — products
-       Published gear is public so the shop renders for visitors.
+       Products — products
+       Published Products is public so the shop renders for visitors.
        Inactive items are admin-only, which is why the customer
        side filters on status server-side.
        ========================================================== */
@@ -131,7 +131,7 @@ service cloud.firestore {
     // and Firestore evaluates a list query against every document it
     // could return — so a status-based read rule would fail the WHOLE
     // query as soon as one inactive item existed, blanking the shop.
-    // Hiding inactive gear is therefore done in products.js instead;
+    // Hiding inactive Products is therefore done in products.js instead;
     // see the patch in INTEGRATION.md.
     match /products/{productId} {
       allow read: if true;

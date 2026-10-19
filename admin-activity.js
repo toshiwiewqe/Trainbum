@@ -59,7 +59,7 @@ const ACTION = {
 };
 
 const ENTITY = {
-  trail: "Trail", guide: "Guide", package: "Package", product: "Gear",
+  trail: "Trail", guide: "Guide", package: "Package", product: "Products",
   booking: "Booking", order: "Order", user: "User", settings: "Settings",
   message: "Support", system: "System"
 };

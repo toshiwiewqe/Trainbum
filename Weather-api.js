@@ -236,7 +236,7 @@ export function buildHikerTip(slots) {
   const minTemp = Math.min(...slots.map((s) => s.tempC ?? 99));
 
   if (maxRain >= 60) {
-    return "Rain likely today. Pack waterproof gear, keep dry layers handy, and stay safe on the trail.";
+    return "Rain likely today. Pack waterproof Products, keep dry layers handy, and stay safe on the trail.";
   }
   if (minTemp <= 12) {
     return "Cold conditions expected. Bring extra layers and a warm jacket.";
@@ -253,10 +253,10 @@ export function buildAlertMessage(slots, isFallback) {
   const prefix = isFallback ? "(Estimated) " : "";
 
   if (maxRain >= 60 && minTemp <= 15) {
-    return `${prefix}Expect cold and wet conditions. Bring waterproof gear and extra layers.`;
+    return `${prefix}Expect cold and wet conditions. Bring waterproof Products and extra layers.`;
   }
   if (maxRain >= 60) {
-    return `${prefix}Expect wet conditions. Bring waterproof gear.`;
+    return `${prefix}Expect wet conditions. Bring waterproof Products.`;
   }
   if (minTemp <= 12) {
     return `${prefix}Expect cold conditions. Bring extra layers.`;

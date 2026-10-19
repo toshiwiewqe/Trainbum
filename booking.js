@@ -8,7 +8,7 @@
    Once a booking is saved (status: "Pending" = slot reserved,
    not yet paid), it's added to the shared cart as a line item
    via cart-store.js, and a modal offers the person a choice:
-   add gear from the shop, or go straight to checkout. Checkout
+   add Products from the shop, or go straight to checkout. Checkout
    is what actually flips the booking to "Confirmed" once
    payment goes through — see checkout.js.
    ========================================================== */
@@ -129,7 +129,7 @@ const submitBtn = document.getElementById("booking-submit-btn");
 const postBookingBackdrop = document.getElementById("post-booking-modal-backdrop");
 const postBookingModal = document.getElementById("post-booking-modal");
 const postBookingCopy = document.getElementById("post-booking-modal-copy");
-const postBookingAddGearBtn = document.getElementById("post-booking-add-gear");
+const postBookingAddProductsBtn = document.getElementById("post-booking-add-Products");
 const postBookingCheckoutBtn = document.getElementById("post-booking-checkout");
 
 /* ---------- Booking summary panel DOM refs ---------- */
@@ -1788,12 +1788,12 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
-/* ---------- Post-booking modal: add gear or check out ---------- */
+/* ---------- Post-booking modal: add Products or check out ---------- */
 
 function openPostBookingModal(trailName, date) {
   postBookingCopy.textContent =
     `Your spot on ${trailName} for ${date} is reserved and waiting in your cart. ` +
-    `Add trail gear now, or head straight to checkout to confirm it with payment.`;
+    `Add trail Products now, or head straight to checkout to confirm it with payment.`;
   postBookingBackdrop.hidden = false;
   postBookingModal.hidden = false;
   document.body.style.overflow = "hidden";
@@ -1806,8 +1806,8 @@ function closePostBookingModal() {
 }
 
 if (postBookingBackdrop) postBookingBackdrop.addEventListener("click", closePostBookingModal);
-if (postBookingAddGearBtn) {
-  postBookingAddGearBtn.addEventListener("click", () => {
+if (postBookingAddProductsBtn) {
+  postBookingAddProductsBtn.addEventListener("click", () => {
     window.location.href = "products.html";
   });
 }

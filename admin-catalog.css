@@ -172,3 +172,31 @@
     color: var(--admin-text-faint, rgba(245, 239, 233, 0.5));
     line-height: 1.45;
 }
+
+/* ---------- a drop zone that cannot work ----------
+   Set by admin-catalog.js once an upload has failed for a reason that
+   is about the bucket rather than the file. Carried here as well as in
+   admin-products.css because this file is loaded last and must not
+   depend on that one being the newer copy — the same reasoning as the
+   header comment above. */
+
+.admin-product-modal label.admin-dropzone.is-unavailable,
+.admin-product-modal label.admin-dropzone.is-unavailable:hover {
+    border-style: dashed;
+    border-color: var(--admin-border);
+    background: rgba(255, 255, 255, 0.015);
+    cursor: not-allowed;
+    opacity: 0.75;
+}
+
+.admin-dropzone.is-unavailable .admin-dropzone-icon {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--admin-text-dim);
+}
+
+.admin-dropzone.is-unavailable .admin-dropzone-text strong {
+    color: var(--admin-text-dim);
+    font-weight: 500;
+}
+
+.admin-row-upload:disabled { opacity: 0.4; cursor: not-allowed; }

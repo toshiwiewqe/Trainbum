@@ -83,19 +83,19 @@
               <p class="admin-stat-delta" id="stat-active-bookings-delta"></p>
             </div>
             <div class="admin-stat-card">
-              <!-- Booked value across trails AND gear orders; the delta
+              <!-- Booked value across trails AND Products orders; the delta
                    below separates what has actually been collected. -->
               <p class="admin-stat-label">Total Revenue</p>
               <p class="admin-stat-value" id="stat-total-revenue">—</p>
               <!-- Was one run-on delta line: "₱468,951 collected ·
-                   ₱192,170 trails + ₱398,657 gear", which wrapped onto
+                   ₱192,170 trails + ₱398,657 Products", which wrapped onto
                    two lines and made the card the messiest on the row.
                    The collected figure is the delta; the split is its
                    own labelled pair below it. -->
               <p class="admin-stat-delta" id="stat-total-revenue-delta"></p>
               <dl class="admin-stat-split" id="stat-revenue-split" hidden>
                 <div><dt>Trails</dt><dd id="stat-revenue-trails">—</dd></div>
-                <div><dt>Gear</dt><dd id="stat-revenue-gear">—</dd></div>
+                <div><dt>Products</dt><dd id="stat-revenue-Products">—</dd></div>
               </dl>
             </div>
             <div class="admin-stat-card">
@@ -164,6 +164,14 @@
         <button class="admin-export-option" type="button" data-category="bookings"><strong>Bookings</strong><span>Booking report</span></button>
         <button class="admin-export-option" type="button" data-category="users"><strong>Users</strong><span>User report</span></button>
         <button class="admin-export-option" type="button" data-category="sales"><strong>Sales</strong><span>Sales report</span></button>
+        <button class="admin-export-option" type="button" data-category="products"><strong>Products</strong><span>Inventory report</span></button>
+        <button class="admin-export-option" type="button" data-category="guides"><strong>Guides</strong><span>Guide directory</span></button>
+        <button class="admin-export-option" type="button" data-category="trails"><strong>Trails</strong><span>Trail directory</span></button>
+        <button class="admin-export-option" type="button" data-category="packages"><strong>Packages</strong><span>Booking packages</span></button>
+        <button class="admin-export-option" type="button" data-category="orders"><strong>Orders</strong><span>Product orders</span></button>
+        <button class="admin-export-option" type="button" data-category="reviews"><strong>Reviews</strong><span>Customer reviews</span></button>
+        <button class="admin-export-option" type="button" data-category="activity-log"><strong>Activity Log</strong><span>Recent admin activity</span></button>
+        <button class="admin-export-option" type="button" data-category="support"><strong>Support</strong><span>Customer messages</span></button>
       </div>
       <p class="admin-modal-kicker">Export format</p>
       <div class="admin-export-formats" id="admin-export-formats">

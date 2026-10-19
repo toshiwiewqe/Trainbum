@@ -60,7 +60,7 @@ export default defineConfig({
       manifest: {
         name: "Trailbound — Hiking Trips & Guides",
         short_name: "Trailbound",
-        description: "Book hiking trails, certified guides, and gear in one place.",
+        description: "Book hiking trails, certified guides, and Products in one place.",
         theme_color: "#1a0401",
         background_color: "#1a0401",
         display: "standalone",

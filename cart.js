@@ -17,7 +17,7 @@ import { db } from "./firebase-config.js";
 // auth lived on the app in firebase-init.js — so Firestore never saw the
 // signed-in user and every authenticated write failed with
 // "Missing or insufficient permissions". One app, one SDK now.
-import { collection, addDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, addDoc, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getCart,
   updateQty,
@@ -33,6 +33,58 @@ const els = {};
 // UI-only state — not part of the cart-store data model.
 let selectedIds = new Set();
 let appliedPromo = null; // { code, rate }
+
+/* ==========================================================
+   STOCK AWARENESS
+   ----------------------------------------------------------
+   The cart previously knew nothing about stock: the stepper
+   stopped at a flat 10 whatever the shop actually had. It now
+   loads the count for each product line.
+
+   Loaded here rather than passed in because the cart page is
+   reachable directly, and a count read when the item was added
+   could be hours stale by the time someone checks out.
+   ========================================================== */
+
+// productId -> { quantity, tracked, name }
+let stockByProduct = new Map();
+const HARD_CAP = 10; // the existing per-line cap in cart-store.js
+
+async function loadStock() {
+  const ids = [...new Set(getCart().filter((i) => i.type === "product").map((i) => i.productId))]
+    .filter(Boolean);
+  const next = new Map();
+  await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const snap = await getDoc(doc(db, "products", id));
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const stored = data.quantity ?? data.stock ?? data.stockQuantity;
+        const tracked = typeof stored === "number" && Number.isFinite(stored);
+        next.set(id, {
+          tracked,
+          // Absent count means unlimited as far as the cart is
+          // concerned — not zero, which would empty every cart.
+          quantity: tracked ? Math.max(0, Math.trunc(stored)) : Infinity,
+          inStock: data.inStock !== false,
+          name: data.name || ""
+        });
+      } catch (err) {
+        console.error("Could not read stock for", id, err);
+      }
+    })
+  );
+  stockByProduct = next;
+}
+
+/** The most this line may hold: the lower of the shop's cap and stock. */
+function maxForLine(item) {
+  const info = stockByProduct.get(item.productId);
+  if (!info || !info.tracked) return HARD_CAP;
+  if (!info.inStock) return 0;
+  return Math.min(HARD_CAP, info.quantity);
+}
 
 const DELIVERY_FEE = 150;
 const TAX_RATE = 0.12; // PH VAT
@@ -76,11 +128,16 @@ function init() {
   syncSelectionWithCart();
   render();
 
+  // Render first with what we have, then fill in stock and re-render —
+  // a slow Firestore read must never leave the cart page blank.
+  loadStock().then(render).catch((err) => console.error("Stock load failed:", err));
+
   updateCartBadge(els.cartCount);
   onCartUpdated(() => {
     updateCartBadge(els.cartCount);
     syncSelectionWithCart();
     render();
+    loadStock().then(render).catch(() => {});
   });
 
   safeListen(els.selectAll, "change", () => {
@@ -197,8 +254,21 @@ function renderSummary() {
   if (els.summary.discount) els.summary.discount.textContent = "−" + peso(discount);
   if (els.summary.total) els.summary.total.textContent = peso(final);
 
-  const canCheckout = selected.length > 0;
-  if (els.checkoutBtn) els.checkoutBtn.disabled = !canCheckout;
+  /* A selected line that exceeds stock blocks checkout. Letting it
+     through produces an order that cannot be fulfilled, which is worse
+     for the customer than being stopped here. Unselected lines do not
+     block — they are not being bought. */
+  const blocked = selected.filter(
+    (i) => i.type === "product" && stockByProduct.get(i.productId)?.tracked && i.qty > maxForLine(i)
+  );
+
+  const canCheckout = selected.length > 0 && blocked.length === 0;
+  if (els.checkoutBtn) {
+    els.checkoutBtn.disabled = !canCheckout;
+    els.checkoutBtn.title = blocked.length
+      ? `Reduce ${blocked.map((i) => i.name).join(", ")} — not enough stock`
+      : "";
+  }
   if (els.memberBtn) els.memberBtn.disabled = !canCheckout;
 }
 
@@ -208,15 +278,35 @@ function rowSelectCheckbox(item) {
 }
 
 function productRow(item) {
+  const info = stockByProduct.get(item.productId);
+  const max = maxForLine(item);
+  // The case that matters: the line was added when there were 5, and
+  // there are now 2. The cart has to notice, because nothing else will
+  // until an admin tries to pack the order.
+  const over = info?.tracked && item.qty > max;
+
+  const stockNote = !info?.tracked
+    ? ""
+    : max === 0
+    ? '<span class="cart-row-stock cart-row-stock--out">Out of stock — remove to check out</span>'
+    : over
+    ? `<span class="cart-row-stock cart-row-stock--out">Only ${info.quantity} left — reduce to continue</span>`
+    : info.quantity <= 5
+    ? `<span class="cart-row-stock cart-row-stock--low">Only ${info.quantity} left</span>`
+    : "";
+
   const row = document.createElement("article");
-  row.className = "cart-row" + (selectedIds.has(item.cartItemId) ? "" : " cart-row--unselected");
+  row.className =
+    "cart-row" +
+    (selectedIds.has(item.cartItemId) ? "" : " cart-row--unselected") +
+    (over || max === 0 ? " cart-row--overstock" : "");
   row.innerHTML = `
     ${rowSelectCheckbox(item)}
     <div class="cart-row-img">
       <img src="${item.image || ""}" alt="${item.name}">
     </div>
     <div class="cart-row-body">
-      <span class="cart-row-tag">GEAR</span>
+      <span class="cart-row-tag">Products</span>
       <h4>${item.name}</h4>
       <div class="cart-row-attrs">
         ${item.color ? `<span class="cart-row-attr">Color : <b>${item.color}</b></span>` : ""}
@@ -231,8 +321,11 @@ function productRow(item) {
       <div class="cart-qty-stepper">
         <button type="button" class="cart-qty-btn" data-action="dec" aria-label="Decrease quantity">−</button>
         <span class="cart-qty-value">${String(item.qty).padStart(2, "0")}</span>
-        <button type="button" class="cart-qty-btn" data-action="inc" ${item.qty >= 10 ? "disabled" : ""} aria-label="Increase quantity">+</button>
+        <button type="button" class="cart-qty-btn" data-action="inc" ${
+          item.qty >= max ? "disabled" : ""
+        } aria-label="Increase quantity">+</button>
       </div>
+      ${stockNote}
       <span class="cart-row-price">${peso(lineTotal(item))}</span>
     </div>
   `;
@@ -249,12 +342,14 @@ function productRow(item) {
     else updateQty(item.cartItemId, item.qty - 1);
   });
   row.querySelector('[data-action="inc"]').addEventListener("click", () => {
+    if (item.qty + 1 > max) return;
     updateQty(item.cartItemId, item.qty + 1);
   });
   row.querySelector('[data-action="remove"]').addEventListener("click", () => {
     removeItem(item.cartItemId);
   });
   row.querySelector('[data-action="duplicate"]').addEventListener("click", () => {
+    if (item.qty + 1 > max) return;
     updateQty(item.cartItemId, item.qty + 1);
   });
 

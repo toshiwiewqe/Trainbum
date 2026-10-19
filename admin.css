@@ -185,7 +185,14 @@ h1, h3, h4, .admin-login-brand-name, .admin-sidebar-brand-name {
    ========================================================== */
 
 .admin-body {
-    background: var(--admin-bg);
+    background-color: #2a0f06;
+    background-image:
+        radial-gradient(ellipse 70% 85% at 50% 0%, rgba(168, 89, 47, 0.38), transparent 72%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 420' fill='none' stroke='%23b57b4c' stroke-opacity='.24' stroke-width='1.2'%3E%3Cg%3E%3Cpath d='M1010 120c0 30-31 48-66 48s-66-18-66-48 31-54 66-54 66 24 66 54zm48 0c0 54-50 86-114 86s-114-32-114-86 50-99 114-99 114 45 114 99zm48 0c0 78-70 125-162 125S782 198 782 120 852-17 944-17s162 59 162 137zm48 0c0 105-91 165-210 165S734 225 734 120 825-64 944-64s210 79 210 184zm48 0c0 132-111 205-258 205S686 252 686 120 797-111 944-111s258 99 258 231z'/%3E%3Cpath d='M176 330c0 22-18 36-42 36s-42-14-42-36 18-43 42-43 42 21 42 43zm48 0c0 45-38 72-90 72s-90-27-90-72 38-91 90-91 90 46 90 91zm48 0c0 68-58 108-138 108S-4 398-4 330s58-139 138-139 138 71 138 139zm48 0c0 91-78 144-186 144S-100 421-100 330s78-187 186-187 186 96 186 187zm48 0c0 114-98 180-234 180S-196 444-196 330s98-235 234-235 234 121 234 235z'/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center top;
+    background-size: 100% 100vh, max(1200px, 100%) max(420px, 100vh);
+    background-attachment: fixed;
     min-height: 100vh;
 }
 
@@ -199,7 +206,7 @@ h1, h3, h4, .admin-login-brand-name, .admin-sidebar-brand-name {
 .admin-sidebar {
     width: 260px;
     flex-shrink: 0;
-    background: var(--admin-card);
+    background: rgba(42, 20, 16, 0.88);
     border-right: 1px solid var(--admin-border);
     display: flex;
     flex-direction: column;

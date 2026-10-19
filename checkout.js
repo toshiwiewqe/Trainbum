@@ -8,13 +8,13 @@
      1. Contact details    — their name, email, phone
      2. Emergency contact  — name, country code + number, relation
      3. Shipping address   — street, city, ZIP, region + the map
-   Booking-only orders (no gear) never see the shipping popup.
+   Booking-only orders (no Products) never see the shipping popup.
 
    RULES: the customer cannot pay until
      - contact details pass checkContact(),
      - an emergency contact passes checkEmergency() and is NOT
        their own number, and
-     - for orders with gear, the address passes checkAddress()
+     - for orders with Products, the address passes checkAddress()
        AND is actually found in the Philippines by findAddress().
        If the place doesn't exist, they're blocked.
 
@@ -63,7 +63,7 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-const SHIPPING_RATES = { ncr: 100, luzon: 150, visayas: 200, mindanao: 220 }; // ₱, gear only
+const SHIPPING_RATES = { ncr: 100, luzon: 150, visayas: 200, mindanao: 220 }; // ₱, Products only
 
 const REGION_LABELS = {
   ncr: "Metro Manila (NCR)",
@@ -79,7 +79,7 @@ const EMERGENCY_IDS = ["emg-name", "emg-number", "emg-relation"];
 const SHIPPING_IDS = ["ship-address", "ship-city", "ship-zip", "ship-notes"];
 
 const els = {};
-let needsAddress = false;  // true when the cart has gear to ship
+let needsAddress = false;  // true when the cart has Products to ship
 let contact = null;        // saved contact details (null = not yet)
 let emergency = null;      // saved emergency contact (null = not yet)
 let shipping = null;       // saved shipping address (null = not yet)

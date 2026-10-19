@@ -36,6 +36,19 @@ import {
 
 let PRODUCTS = [];
 
+/* Below this, the drawer names the number. Above it, just "In stock". */
+const LOW_STOCK_SHOW_AT = 5;
+
+/** How many MORE of this product the shopper may add, counting what is
+    already sitting in their cart across every size/colour line. */
+function remainingFor(p) {
+  if (!p.stockTracked) return Infinity;
+  const inCart = getCart()
+    .filter((i) => i.type === "product" && i.productId === p.id)
+    .reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
+  return Math.max(0, p.quantity - inCart);
+}
+
 /* ---------- Load products from Firestore ---------- */
 async function loadProducts() {
   const snapshot = await getDocs(collection(db, "products"));
@@ -52,7 +65,7 @@ async function loadProducts() {
     };
   })
   // ADDED: honour the admin panel's active/inactive switch.
-  // Without this, disabling a product in Admin -> Gear changed
+  // Without this, disabling a product in Admin -> Products changed
   // nothing on the shop — this page listed every document in the
   // collection regardless of status.
   //
@@ -66,7 +79,7 @@ async function loadProducts() {
   // Defensive: several places below assume these exist
   // (p.attributes.size, p.images[0], p.specs). A product added
   // through the admin panel has none of them, which would throw
-  // and leave the grid stuck on "Loading gear…".
+  // and leave the grid stuck on "Loading Products…".
   PRODUCTS.forEach(p => {
     p.images = Array.isArray(p.images) && p.images.length
       ? p.images
@@ -76,8 +89,31 @@ async function loadProducts() {
     p.attributes.color = Array.isArray(p.attributes.color) ? p.attributes.color : [];
     p.specs = p.specs || {};
     p.price = Number(p.price) || 0;
-    p.subcategory = p.subcategory || p.category || "Gear";
+    p.subcategory = p.subcategory || p.category || "Products";
+
+    /* SALE.
+
+       `p.price` keeps meaning the product's normal price — it is what
+       gets struck through. `p.unitPrice` is what a customer is
+       actually charged, and it is what the card, the drawer, the sort,
+       the price filter and add-to-cart all use. Anything that still
+       read p.price for money would show one number and charge
+       another. */
+    const sale = salePricing(p);
+    p.onSale = sale.active;
+    p.salePrice = sale.salePrice;
+    p.saleBadge = sale.badge;
+    p.unitPrice = sale.salePrice;
     if (p.inStock === undefined) p.inStock = true;
+
+    /* Stock count. Absent is NOT zero — most products have no count
+       yet, and reading a missing field as 0 would mark the whole shop
+       sold out. `stockTracked` is what every check below keys off. */
+    const storedQty = p.quantity ?? p.stock ?? p.stockQuantity;
+    p.stockTracked = typeof storedQty === "number" && Number.isFinite(storedQty);
+    p.quantity = p.stockTracked ? Math.max(0, Math.trunc(storedQty)) : null;
+    // A tracked product at zero is sold out regardless of the flag.
+    if (p.stockTracked && p.quantity === 0) p.inStock = false;
   });
 }
 
@@ -176,7 +212,7 @@ async function init() {
   els.reviewFeedback = document.getElementById("drawer-review-feedback");
 
   els.status.hidden = false;
-  els.status.textContent = "Loading gear…";
+  els.status.textContent = "Loading Products…";
 
   // Cart badge should reflect reality immediately, and stay in sync if
   // the cart changes in another tab (e.g. removed from cart.html).
@@ -193,7 +229,7 @@ async function init() {
 
   await loadProductPopularity();
 
-  state.maxPrice = PRODUCTS.length ? Math.max(...PRODUCTS.map(p => p.price)) : 0;
+  state.maxPrice = PRODUCTS.length ? Math.max(...PRODUCTS.map(p => p.unitPrice)) : 0;
 
   buildPriceInputs();
   buildCategoryTree();
@@ -365,7 +401,10 @@ function getFilteredProducts() {
   return PRODUCTS.filter(p => {
     if (state.category !== "All" && p.category !== state.category) return false;
     if (state.subcategory !== "All" && p.subcategory !== state.subcategory) return false;
-    if (p.price < state.minPrice || p.price > state.maxPrice) return false;
+    /* Filtered on what it COSTS, not what it used to cost: a
+       ₱1,399 tent reduced to ₱899 belongs in a “under ₱1,000”
+       search, which is the whole point of putting it on sale. */
+    if (p.unitPrice < state.minPrice || p.unitPrice > state.maxPrice) return false;
 
     if (state.search) {
       const hay = `${p.name} ${p.category} ${p.subcategory}`.toLowerCase();
@@ -389,8 +428,8 @@ function getFilteredProducts() {
 function getSortedProducts(list) {
   const sorted = [...list];
   switch (state.sort) {
-    case "price-asc": sorted.sort((a, b) => a.price - b.price); break;
-    case "price-desc": sorted.sort((a, b) => b.price - a.price); break;
+    case "price-asc": sorted.sort((a, b) => a.unitPrice - b.unitPrice); break;
+    case "price-desc": sorted.sort((a, b) => b.unitPrice - a.unitPrice); break;
     case "name-asc": sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
     case "newest": sorted.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded)); break;
     case "popularity":
@@ -412,12 +451,55 @@ function render() {
 
   if (filtered.length === 0) {
     els.status.hidden = false;
-    els.status.textContent = "No gear matches those filters yet. Try widening your search.";
+    els.status.textContent = "No Products matches those filters yet. Try widening your search.";
     return;
   }
   els.status.hidden = true;
 
   filtered.forEach(p => els.grid.appendChild(productCard(p)));
+}
+
+/* The corner badges.
+
+   A product can be on sale AND low on stock, so these stack rather
+   than compete for one slot — the old markup could only ever show one
+   and the sale would have silently lost to "Only 3 left".
+
+   A sold-out product leads with Sold Out and still carries its sale
+   badge. The first version of this hid the sale badge there, on the
+   grounds that flashing a discount at someone who cannot buy is a
+   tease — but the card goes on showing the reduced price with the old
+   one struck through, so hiding only the badge left the card
+   contradicting itself. Both or neither; both is the honest pair, and
+   the badge simply disappears when stock returns.
+
+   The low-stock badge IS dropped there: "Only 0 left" says nothing
+   that "Sold Out" has not already said, louder. */
+function badgeStack(p) {
+  const badges = [];
+
+  if (!p.inStock) {
+    badges.push('<span class="product-badge product-badge--out">Sold Out</span>');
+    if (p.onSale) badges.push(`<span class="product-badge product-badge--sale">${p.saleBadge}</span>`);
+    return `<div class="product-badge-stack">${badges.join("")}</div>`;
+  }
+
+  if (p.onSale) badges.push(`<span class="product-badge product-badge--sale">${p.saleBadge}</span>`);
+  if (p.stockTracked && p.quantity <= LOW_STOCK_SHOW_AT) {
+    badges.push(`<span class="product-badge product-badge--low">Only ${p.quantity} left</span>`);
+  }
+
+  return badges.length ? `<div class="product-badge-stack">${badges.join("")}</div>` : "";
+}
+
+/* The price, with the old one struck through beside it when there is a
+   sale. The badge alone would be a claim with no evidence — the
+   crossed-out number is the evidence. */
+function priceMarkup(p) {
+  const now = `₱${p.unitPrice.toLocaleString()}`;
+  return p.onSale
+    ? `${now} <s class="product-card-was">₱${p.price.toLocaleString()}</s>`
+    : now;
 }
 
 function productCard(p) {
@@ -428,7 +510,7 @@ function productCard(p) {
   card.innerHTML = `
     <div class="product-card-img">
       <img src="${p.images[0]}" alt="${p.name}" loading="lazy">
-      ${!p.inStock ? '<span class="product-badge product-badge--out">Sold Out</span>' : ""}
+      ${badgeStack(p)}
     </div>
     <div class="product-card-body">
       <span class="product-card-cat">${p.subcategory}</span>
@@ -558,13 +640,48 @@ function openDrawer(p) {
 
   els.drawerTitle.textContent = p.name;
   els.drawerCategory.textContent = `${p.category} — ${p.subcategory}`;
-  els.drawerPrice.textContent = "₱" + p.price.toLocaleString();
+  /* innerHTML rather than textContent, because a sale price is two
+     numbers. Everything in here is built from figures, not from
+     anything a customer typed, so there is nothing to escape. Written
+     through the existing #drawer-price element so products.html needs
+     no new markup. */
+  els.drawerPrice.innerHTML = p.onSale
+    ? `₱${p.unitPrice.toLocaleString()}` +
+      ` <s class="drawer-price-was">₱${p.price.toLocaleString()}</s>` +
+      ` <span class="drawer-price-save">${p.saleBadge}</span>`
+    : `₱${p.price.toLocaleString()}`;
   els.drawerDesc.textContent = p.description;
-  els.drawerStock.textContent = p.inStock ? "In stock" : "Currently sold out";
-  els.drawerStock.className = "drawer-stock" + (p.inStock ? "" : " drawer-stock--out");
-  els.drawerAddBtn.disabled = !p.inStock;
-  els.drawerAddBtn.textContent = p.inStock ? "Add to Cart" : "Sold Out";
+  /* Stock line. The exact number is only worth showing when it is low
+     enough to matter — "only 3 left" moves someone along, "412 left"
+     is noise and tells a competitor your inventory. */
+  const remaining = remainingFor(p);
+  if (!p.inStock) {
+    els.drawerStock.textContent = "Currently sold out";
+  } else if (p.stockTracked && p.quantity <= LOW_STOCK_SHOW_AT) {
+    els.drawerStock.textContent =
+      remaining <= 0
+        ? `Only ${p.quantity} left — all of them already in your cart`
+        : `Only ${p.quantity} left`;
+  } else {
+    els.drawerStock.textContent = "In stock";
+  }
+  els.drawerStock.className =
+    "drawer-stock" +
+    (!p.inStock ? " drawer-stock--out" : p.stockTracked && p.quantity <= LOW_STOCK_SHOW_AT ? " drawer-stock--low" : "");
+
+  const canAdd = p.inStock && (!p.stockTracked || remaining > 0);
+  els.drawerAddBtn.disabled = !canAdd;
+  els.drawerAddBtn.textContent = !p.inStock
+    ? "Sold Out"
+    : canAdd
+    ? "Add to Cart"
+    : "All in your cart";
+
   els.drawerQty.value = 1;
+  // Hard cap on the stepper, so the quantity box cannot be used to ask
+  // for more than exists.
+  if (p.stockTracked) els.drawerQty.max = Math.max(1, remaining);
+  else els.drawerQty.removeAttribute("max");
 
   renderDrawerImages();
   renderDrawerSpecs();
@@ -659,7 +776,26 @@ function renderDrawerAttributes() {
 
 function addActiveToCart() {
   if (!activeProduct || !activeProduct.inStock) return;
-  const qty = Math.max(1, Number(els.drawerQty.value) || 1);
+
+  /* Clamp against what is actually left, counting the cart. Doing it
+     here rather than trusting the input is what stops someone typing
+     99 into the quantity box, and it also catches the case where the
+     count dropped while the drawer was open. */
+  const asked = Math.max(1, Number(els.drawerQty.value) || 1);
+  const left = remainingFor(activeProduct);
+  if (left <= 0) {
+    showToast(
+      activeProduct.stockTracked && activeProduct.quantity > 0
+        ? `You already have all ${activeProduct.quantity} of these in your cart`
+        : "That product is out of stock",
+      "already"
+    );
+    return;
+  }
+  const qty = Math.min(asked, left);
+  if (qty < asked) {
+    showToast(`Only ${left} left — added ${qty} instead of ${asked}`, "already");
+  }
 
   // addProductToCart() silently merges into an existing line when the
   // same product+size+color combo is already in the cart (see
@@ -677,7 +813,9 @@ function addActiveToCart() {
   addProductToCart({
     productId: activeProduct.id,
     name: activeProduct.name,
-    price: activeProduct.price,
+    // The sale price, not the list price. A badge on the card and
+    // the full price in the cart is the worst of both.
+    price: activeProduct.unitPrice,
     qty,
     image: activeProduct.images[0],
     size: selectedSize,
@@ -705,12 +843,17 @@ function addActiveToCart() {
 let addBtnResetTimer = null;
 function flashAddButton(label) {
   const btn = els.drawerAddBtn;
-  const originalLabel = activeProduct.inStock ? "Add to Cart" : "Sold Out";
+  const originalLabel = !activeProduct.inStock
+    ? "Sold Out"
+    : remainingFor(activeProduct) > 0
+    ? "Add to Cart"
+    : "All in your cart";
   btn.textContent = label;
   btn.classList.add("drawer-add-btn--flash");
   clearTimeout(addBtnResetTimer);
   addBtnResetTimer = setTimeout(() => {
     btn.textContent = originalLabel;
+    btn.disabled = originalLabel !== "Add to Cart";
     btn.classList.remove("drawer-add-btn--flash");
   }, 1600);
 }

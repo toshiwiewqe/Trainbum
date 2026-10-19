@@ -145,9 +145,86 @@
                   <input type="checkbox" id="product-instock" class="admin-stock-input">
                   <span class="admin-stock-track" aria-hidden="true"><span class="admin-stock-knob"></span></span>
                 </label>
-                <p class="admin-stock-help">This is the field the shop reads. Switching it off leaves the
-                  product listed with a &ldquo;Sold Out&rdquo; badge and the Add to Cart button disabled.</p>
+
+                <!-- ADDED. The count lives INSIDE the stock card rather
+                     than up with price, because the two are one decision:
+                     a quantity of 0 forces the switch off, and the card
+                     has to show that happening rather than surprising you
+                     after save. -->
+                <div class="admin-qty-row">
+                  <label class="admin-qty-field" for="product-quantity">
+                    <span>Units in stock</span>
+                    <input id="product-quantity" type="number" min="0" step="1" inputmode="numeric"
+                           placeholder="not tracked">
+                  </label>
+                  <div class="admin-qty-quick" role="group" aria-label="Adjust quantity">
+                    <button type="button" data-qty-step="-10">&minus;10</button>
+                    <button type="button" data-qty-step="-1">&minus;1</button>
+                    <button type="button" data-qty-step="1">+1</button>
+                    <button type="button" data-qty-step="10">+10</button>
+                  </div>
+                </div>
+                <p class="admin-qty-note" id="product-qty-note"></p>
+
+                <p class="admin-stock-help">The switch is the field the shop reads &mdash; off leaves the
+                  product listed with a &ldquo;Sold Out&rdquo; badge and Add to Cart disabled.
+                  Leave the count <strong>empty</strong> to not track units for this product;
+                  empty is not the same as zero.</p>
               </div>
+
+              <!-- ADDED — the sale.
+                   Its own card rather than a field next to Price,
+                   because a sale is a second price that exists
+                   alongside the first: Price stays what the product
+                   normally costs, and turning the sale off has to
+                   bring that number straight back. -->
+              <!-- data-sale-MODE, not data-sale-type: the two buttons
+                   below carry data-sale-type, and a click handler using
+                   closest("[data-sale-type]") would match this element
+                   too — so pressing the switch would silently reset the
+                   discount kind to percent. -->
+              <div class="admin-sale-card" id="product-sale-card" data-sale-mode="percent">
+                <label class="admin-sale-row" for="product-sale-on">
+                  <span class="admin-sale-copy">
+                    <span class="admin-sale-heading">Sale</span>
+                    <span class="admin-sale-state" id="product-sale-state">Not on sale</span>
+                  </span>
+                  <input type="checkbox" id="product-sale-on" class="admin-sale-input">
+                  <span class="admin-sale-track" aria-hidden="true"><span class="admin-sale-knob"></span></span>
+                </label>
+
+                <div class="admin-sale-body" id="product-sale-body">
+                  <div class="admin-sale-type" role="group" aria-label="Kind of discount">
+                    <button type="button" data-sale-type="percent" class="is-active">% off</button>
+                    <button type="button" data-sale-type="amount">&#8369; off</button>
+                  </div>
+
+                  <div class="admin-sale-fields">
+                    <label class="admin-sale-field" for="product-sale-value">
+                      <span id="product-sale-value-label">Percent off</span>
+                      <input id="product-sale-value" type="number" min="0" step="any"
+                             inputmode="decimal" placeholder="25" autocomplete="off">
+                    </label>
+                    <!-- Percent only. A cap on a flat peso discount
+                         would mean "₱200 off, up to ₱50", which is just
+                         ₱50 off written twice. -->
+                    <label class="admin-sale-field" for="product-sale-cap" id="product-sale-cap-field">
+                      <span>Cap &mdash; most it can take off</span>
+                      <input id="product-sale-cap" type="number" min="0" step="1"
+                             inputmode="numeric" placeholder="no limit" autocomplete="off">
+                    </label>
+                  </div>
+
+                  <!-- The arithmetic, done where you can see it. A cap
+                       that quietly changes what "25% off" means is the
+                       thing most worth showing before saving. -->
+                  <p class="admin-sale-preview" id="product-sale-preview"></p>
+                </div>
+
+                <p class="admin-sale-help">Price above stays the product&rsquo;s normal price &mdash; switching the sale
+                  off brings it straight back. The shop shows the old price struck through beside the new one.</p>
+              </div>
+
               <label>Description<textarea id="product-description" rows="3" placeholder="Freestanding shelter built for fast pitching..."></textarea></label>
             </div>
           </section>
@@ -175,8 +252,8 @@
                        actually reach. It says what WILL happen and what to
                        do meanwhile. -->
                   <small>PNG, JPG or WebP &middot; up to 5&nbsp;MB each</small>
-                  <small class="admin-dropzone-note">Goes to Firebase Storage. If that isn't set up on
-                    this project yet, paste a URL instead &mdash; it works either way.</small>
+                  <small class="admin-dropzone-note">Large photos are shrunk to 1600px before sending.
+                    Where they go is set in image-upload-config.js &mdash; pasting a URL works either way.</small>
                 </span>
               </label>
               <p class="admin-upload-error" id="product-upload-error" hidden></p>
@@ -233,6 +310,89 @@
         </div>
       </form>
     </section>
+
+    <!-- ==========================================================
+         STOCK DIALOG
+         ----------------------------------------------------------
+         Replaces window.prompt(). A browser prompt cannot show the
+         product you are editing, cannot say what the number you are
+         typing will DO, and cannot be styled at all — it renders in
+         the browser's chrome, not the page.
+
+         It is deliberately NOT the product modal: this is one field,
+         and opening a twelve-section form to change a count is the
+         long way round. Same card, header and buttons as every other
+         admin dialog, so it is recognisably part of the panel.
+         ========================================================== -->
+    <div class="admin-modal-backdrop" id="stock-modal-backdrop" hidden></div>
+    <section class="admin-modal admin-stock-modal" id="stock-modal" role="dialog" aria-modal="true"
+             aria-labelledby="stock-modal-title" hidden>
+      <div class="admin-modal-header">
+        <div>
+          <p class="admin-modal-kicker">Inventory</p>
+          <h2 id="stock-modal-title">Units in stock</h2>
+        </div>
+        <button class="admin-modal-close" id="stock-modal-close" type="button" aria-label="Close">&times;</button>
+      </div>
+
+      <form id="stock-form" novalidate>
+        <!-- Which product. The prompt could only put the name in a
+             sentence; 63 products in the table makes "did I press the
+             right row?" a real question. -->
+        <div class="admin-stock-product">
+          <img class="admin-stock-thumb" id="stock-thumb" alt="" hidden>
+          <span class="admin-stock-thumb admin-stock-thumb--empty" id="stock-thumb-empty" aria-hidden="true">&#9634;</span>
+          <span class="admin-stock-product-copy">
+            <strong id="stock-product-name">&mdash;</strong>
+            <small id="stock-product-meta">&mdash;</small>
+          </span>
+        </div>
+
+        <!-- The dial. A number input between two big steppers: most
+             stock changes are "one came back" or "ten arrived", and
+             those should not require selecting text and retyping. -->
+        <div class="admin-stock-dial">
+          <button type="button" class="admin-stock-dial-btn" data-stock-step="-1" aria-label="One fewer">&minus;</button>
+          <input id="stock-quantity" type="number" min="0" step="1" inputmode="numeric"
+                 autocomplete="off" placeholder="&mdash;" aria-label="Units in stock">
+          <button type="button" class="admin-stock-dial-btn" data-stock-step="1" aria-label="One more">+</button>
+        </div>
+        <p class="admin-stock-dial-label">
+          Units in stock &middot; <span id="stock-was">no count kept yet</span>
+        </p>
+
+        <div class="admin-stock-steps" role="group" aria-label="Adjust the count">
+          <button type="button" data-stock-step="-10">&minus;10</button>
+          <button type="button" data-stock-step="-5">&minus;5</button>
+          <button type="button" data-stock-step="5">+5</button>
+          <button type="button" data-stock-step="10">+10</button>
+          <button type="button" class="admin-stock-zero" data-stock-set="0">Set to 0</button>
+        </div>
+
+        <!-- Says what saving will do, before you save it. The zero case
+             is the one that matters: it takes the product off sale, and
+             the prompt only mentioned that in a line of grey text. -->
+        <p class="admin-stock-outcome" id="stock-outcome"></p>
+
+        <!-- Was a second window.confirm() stacked on top of the prompt.
+             It is a condition of this edit, so it belongs in the dialog
+             making the edit. Hidden unless it actually applies. -->
+        <label class="admin-stock-resume" id="stock-resume-row" hidden>
+          <input type="checkbox" id="stock-resume" checked>
+          <span>
+            <strong>Put it back on sale</strong>
+            <small>This product has units but is marked out of stock. Untick to change the
+              count and leave it off sale.</small>
+          </span>
+        </label>
+
+        <div class="admin-modal-actions">
+          <button class="admin-modal-cancel" id="stock-modal-cancel" type="button">Cancel</button>
+          <button class="admin-modal-submit" type="submit" id="stock-modal-save">Save count <span aria-hidden="true">›</span></button>
+        </div>
+      </form>
+    </section>
+
     <script type="module" src="admin-products.js"></script>
   </body>
 </html>

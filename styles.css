@@ -2779,6 +2779,7 @@ body:has(.products-layout) .site-header {
     align-items: flex-start;
   }
 }
+<<<<<<< HEAD
 .framescene-greeting {
   display: block;
   font-family: "PP Neue Montreal", sans-serif;
@@ -2963,3 +2964,190 @@ body:has(.products-layout) .site-header {
   }
 }
  
+=======
+
+/* ==========================================================
+   STOCK SIGNALS  (shop grid, product drawer, cart rows)
+   ----------------------------------------------------------
+   The classes below are written by products.js and cart.js once
+   a product carries a quantity. Products with no quantity field
+   are untracked and never get any of these — absent is not zero.
+
+   Two colours are used throughout and nothing else:
+     amber  = low, still buyable
+     clay   = cannot be bought / must be fixed before checkout
+   Red for "only 2 left" would read as an error; the shop is
+   working exactly as intended at that point.
+
+   Cart rules live here rather than in cart.css because
+   cart.html loads styles.css first and cart.css second — none
+   of these class names exist in cart.css, so there is nothing
+   for the later file to overrule.
+   ========================================================== */
+
+:root {
+  --stock-low: #9a6a0f;       /* amber, dark enough to read on white */
+  --stock-low-bg: #f0c14b;
+  --stock-low-ink: #3d2b00;
+}
+
+/* ---- Shop grid: the corner badge ----
+   Shares its position with the Sold Out badge, so only the
+   colours change. Dark text on amber rather than white on
+   amber: the badge is 0.64rem bold caps and white would fall
+   under the contrast floor at that size. */
+
+.product-badge--low {
+  background-color: var(--stock-low-bg);
+  color: var(--stock-low-ink);
+}
+
+/* ---- Product drawer: the stock line ----
+   .drawer-stock draws its dot from currentColor, so recolouring
+   the text recolours the dot with it. */
+
+.drawer-stock--low {
+  color: var(--stock-low);
+}
+
+/* ---- Cart rows ----
+   The note sits in .cart-row-side, under the quantity stepper.
+   That column is align-items:flex-end on desktop, so the text
+   needs no alignment of its own there — but it does once the
+   column turns into a row on phones (further down). */
+
+.cart-row-stock {
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: right;
+  max-width: 21ch;   /* wraps to two lines instead of stretching the row's last column */
+}
+
+.cart-row-stock--low {
+  color: var(--stock-low);
+}
+
+.cart-row-stock--out {
+  color: var(--tb-danger, #a3402e);
+}
+
+/* A line that can't be checked out: tinted, with a clay edge down
+   the left so it is findable in a long cart without reading every
+   row. The padding is what the inset shadow sits in — without it
+   the bar would run under the checkbox. */
+
+.cart-row--overstock {
+  padding-left: 0.75rem;
+  background: rgba(163, 64, 46, 0.05);
+  box-shadow: inset 3px 0 0 var(--tb-danger, #a3402e);
+  border-radius: 6px 0 0 6px;
+}
+
+/* An unselected row is dimmed to 0.55 by cart.css. A row that
+   blocks checkout should stay legible even while unselected —
+   it is the reason checkout is blocked. */
+
+.cart-row--overstock.cart-row--unselected {
+  opacity: 0.8;
+}
+
+/* ---- Phones ----
+   At this width cart.css turns .cart-row-side into a row with
+   space-between, which would wedge the note between the stepper
+   and the price. order:1 sends it past the price and the 100%
+   basis puts it on a line of its own, leaving the buttons /
+   stepper / price row exactly as it was. */
+
+@media (max-width: 560px) {
+  .cart-row-side {
+    flex-wrap: wrap;
+  }
+
+  .cart-row-stock {
+    order: 1;
+    flex: 1 0 100%;
+    max-width: none;
+  }
+}
+
+/* ==========================================================
+   SALE  (shop grid + product drawer)
+   ----------------------------------------------------------
+   Written by products.js from the product's `sale` map. The
+   price shown here is the one add-to-cart uses, so the badge
+   and the till agree.
+   ========================================================== */
+
+/* A product can be on sale AND low on stock. The old markup had one
+   absolutely-positioned badge slot, so the second would have sat on
+   top of the first; they stack instead. */
+.product-badge-stack {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.65rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+
+/* Inside the stack the badges are laid out by flex, so they must give
+   up the absolute positioning .product-badge carries for its own use
+   elsewhere. */
+.product-badge-stack .product-badge {
+  position: static;
+  top: auto;
+  left: auto;
+}
+
+/* The loudest badge on the card, and deliberately not the same red as
+   Sold Out — one is an invitation, the other is a dead end. */
+.product-badge--sale {
+  background-color: #d12410;
+  color: #fff;
+}
+
+/* ---- the price on the card ---- */
+
+/* The crossed-out number is the evidence for the badge's claim, so it
+   sits right beside the new price rather than anywhere else. */
+.product-card-was {
+  margin-left: 0.3rem;
+  color: var(--shop-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: line-through;
+}
+
+/* ---- the price in the drawer ---- */
+
+.drawer-price-was {
+  margin-left: 0.4rem;
+  color: var(--shop-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-decoration: line-through;
+}
+
+.drawer-price-save {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background-color: #d12410;
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  /* The drawer price is 1.35rem; without this the pill drags the whole
+     line's baseline down. */
+  vertical-align: 0.22em;
+}
+
+@media (max-width: 767.98px) {
+  .product-card-was { font-size: 0.74rem; }
+}
+>>>>>>> 33f3fc10829155f069a0c787ce1d10e0dc1e0502
