@@ -64,7 +64,7 @@ export const IMAGE_UPLOAD = {
   provider: "imgbb",
 
   imgbb: {
-    apiKey: "25c1ae25b86f5ff76bb2826180d2b256"            // <-- API key
+    apiKey: "401fd1458b38407edd82e8c6098897ba"            // <-- API key
   },
 
   cloudinary: {

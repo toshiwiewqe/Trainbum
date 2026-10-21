@@ -15,7 +15,7 @@
    as a cache so the heart is filled in instantly on the next visit
    instead of blinking empty while Firebase loads.
 
-   Nothing here touches the gear wishlist that account.js already
+   Nothing here touches the Products wishlist that account.js already
    handles — different field, different code, no overlap.
    ========================================================== */
 

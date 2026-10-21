@@ -2,7 +2,7 @@
    Saved trails on the account page
 
    An add-on, not a rewrite: account.js keeps doing exactly what it
-   does with the gear wishlist (#wishlist-list), and this file adds
+   does with the Products wishlist (#wishlist-list), and this file adds
    a "Saved trails" block underneath it. Nothing in account.js or
    account.css is touched — the cards reuse the .wishlist-* classes
    that are already there, so the two lists look like one thing.
@@ -19,7 +19,7 @@ import {
 } from "./trail-wishlist.js";
 
 const PANEL_ID = "panel-wishlist";
-const GEAR_LIST_ID = "wishlist-list";
+const Products_LIST_ID = "wishlist-list";
 
 let allTrails = [];
 let listEl = null;
@@ -62,17 +62,17 @@ function injectStyles() {
 
 function build() {
   const panel = document.getElementById(PANEL_ID);
-  const gearList = document.getElementById(GEAR_LIST_ID);
-  if (!panel || !gearList || document.getElementById("saved-trails-list")) return false;
+  const ProductsList = document.getElementById(Products_LIST_ID);
+  if (!panel || !ProductsList || document.getElementById("saved-trails-list")) return false;
 
   injectStyles();
 
-  // A heading over the gear list too, so "Saved trails" below it
+  // A heading over the Products list too, so "Saved trails" below it
   // doesn't look like a label that arrived out of nowhere.
-  const gearHead = document.createElement("h4");
-  gearHead.className = "account-subheading";
-  gearHead.textContent = "Gear";
-  gearList.parentNode.insertBefore(gearHead, gearList);
+  const ProductsHead = document.createElement("h4");
+  ProductsHead.className = "account-subheading";
+  ProductsHead.textContent = "Products";
+  ProductsList.parentNode.insertBefore(ProductsHead, ProductsList);
 
   const head = document.createElement("h4");
   head.className = "account-subheading saved-trails-head";
@@ -83,7 +83,7 @@ function build() {
   listEl.id = "saved-trails-list";
   listEl.innerHTML = `<p class="account-empty">Loading saved trails...</p>`;
 
-  gearList.insertAdjacentElement("afterend", head);
+  ProductsList.insertAdjacentElement("afterend", head);
   head.insertAdjacentElement("afterend", listEl);
   return true;
 }

@@ -169,7 +169,7 @@ export { salePricing, summariseSale };
  * product.specs, product.inStock, product.subcategory,
  * product.popularity and product.hasStatusField. None of them existed
  * here, so `Object.keys(product.specs)` ran against undefined and the
- * Gear page threw on its first render. The write path had the matching
+ * Products page threw on its first render. The write path had the matching
  * hole: saveProduct() accepted those keys from the form and wrote none
  * of them.
  *
@@ -429,7 +429,7 @@ export function normalizePackage(id, raw = {}) {
   };
 }
 
-/* ---------- gear orders + support ---------- */
+/* ---------- Products orders + support ---------- */
 
 export function normalizeOrder(id, raw = {}) {
   return {
@@ -737,7 +737,7 @@ export function watchProducts(
     ref,
     (snap) => {
       let items = snap.docs.map((d) => normalizeProduct(d.id, d.data()));
-      // Archived gear stays in Firestore but leaves every list.
+      // Archived Products stays in Firestore but leaves every list.
       if (!includeArchived) items = items.filter((p) => !p.archived);
       items.sort((a, b) => a.name.localeCompare(b.name));
       callback(items);
@@ -874,7 +874,7 @@ export function watchPackages(callback, { includeArchived = false, onError = nul
   );
 }
 
-/* ---------- gear orders + support inbox (admin) ---------- */
+/* ---------- Products orders + support inbox (admin) ---------- */
 
 const byNewest = (a, b) =>
   (toDate(b.createdAt)?.getTime() ?? 0) - (toDate(a.createdAt)?.getTime() ?? 0);
@@ -1747,7 +1747,7 @@ export async function setProductQuantity(product, nextQuantity, { resume = true 
 }
 
 /**
- * The stock toggle on the Gear table.
+ * The stock toggle on the Products table.
  *
  * CHANGED — it takes a fourth argument, which admin-products.js has
  * been passing all along to a function that did not accept it.

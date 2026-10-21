@@ -360,7 +360,7 @@ const field = (label, id, attrs = "", type = "input") =>
     : `<label>${label}<input id="${id}" ${attrs}></label>`;
 
 /* ADDED — an image field that accepts a FILE as well as a URL.
-   Same control as the one on the Gear modal: the file is uploaded to
+   Same control as the one on the Products modal: the file is uploaded to
    Firebase Storage and the resulting download URL is written into the
    same text input the field always had, so nothing downstream changes
    and pasted URLs keep working exactly as before. */

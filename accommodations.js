@@ -29,7 +29,7 @@ export const BASECAMP = {
     "Tent or bunk bed",
     "Dinner and breakfast",
     "Pre-dawn wake-up call",
-    "Gear storage while you climb",
+    "Products storage while you climb",
   ],
 };
 

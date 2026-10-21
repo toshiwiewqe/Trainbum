@@ -608,7 +608,7 @@ async function handleSaveClick(btn, p) {
   // The wishlist lives under the user's account, so there's nowhere
   // to save this until they're logged in.
   if (result.needsLogin) {
-    showToast("Log in to save gear to your wishlist", "already");
+    showToast("Log in to save Products to your wishlist", "already");
     return;
   }
 

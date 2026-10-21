@@ -1,11 +1,11 @@
 /* ==========================================================
-   Admin — Gear orders
+   Admin — Products orders
    ----------------------------------------------------------
    checkout.js has been writing to the `orders` collection since
    the Maya integration went in, and nothing ever read it back.
    This is that missing view.
 
-   An order carries both gear lines AND `booking_ids` — the trail
+   An order carries both Products lines AND `booking_ids` — the trail
    slots staged in the same cart. So marking an order Paid here
    also confirms those bookings, which is what turns a reserved
    slot into a real one on the customer's account page.
@@ -175,9 +175,9 @@ function render() {
 
   el.body.innerHTML = rows
     .map((o) => {
-      const gearCount = o.items.reduce((sum, i) => sum + (Number(i.qty) || 1), 0);
+      const ProductsCount = o.items.reduce((sum, i) => sum + (Number(i.qty) || 1), 0);
       const parts = [];
-      if (gearCount) parts.push(`${gearCount} gear`);
+      if (ProductsCount) parts.push(`${ProductsCount} Products`);
       if (o.bookingIds.length) parts.push(`${o.bookingIds.length} booking`);
 
       return `<tr>
@@ -275,7 +275,7 @@ function openOrder(order) {
 
       ${
         order.items.length
-          ? `<p class="admin-form-subheading">Gear</p>
+          ? `<p class="admin-form-subheading">Products</p>
              ${order.items
                .map(
                  (i) =>
@@ -367,7 +367,7 @@ function openOrder(order) {
           linked.length
             ? "Setting this to Paid also confirms the trail bookings above. "
             : "The customer is notified when this changes. "
-        }Shipped or Completed takes the gear off stock; Cancelled or Refunded puts it back.${
+        }Shipped or Completed takes the Products off stock; Cancelled or Refunded puts it back.${
           order.stockDeductedAt ? " Stock has already been deducted for this order." : ""
         }
       </p>
@@ -500,7 +500,7 @@ const csvCell = (v) => `"${String(v ?? "").replaceAll('"', '""')}"`;
 
 el.exportBtn?.addEventListener("click", () => {
   const rows = [
-    ["Order ID", "Customer", "Email", "Phone", "Gear items", "Bookings", "Subtotal", "Shipping", "Total", "Status", "Payment", "Method", "Checkout ID", "Ship to", "Placed"],
+    ["Order ID", "Customer", "Email", "Phone", "Products items", "Bookings", "Subtotal", "Shipping", "Total", "Status", "Payment", "Method", "Checkout ID", "Ship to", "Placed"],
     ...visible().map((o) => [
       o.orderId,
       o.customerName,

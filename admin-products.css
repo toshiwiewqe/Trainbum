@@ -1029,7 +1029,7 @@
    ADDED — the sale
    ----------------------------------------------------------
    A card in the product form, plus the sale's two appearances
-   in the Gear table.
+   in the Products table.
 
    Self-contained on purpose. Two separate symptoms earlier in
    this project — unstyled rating chips and a broken account
@@ -1233,7 +1233,7 @@
     text-transform: none;
 }
 
-/* ---------- the price cell in the Gear table ---------- */
+/* ---------- the price cell in the Products table ---------- */
 
 .admin-price-sale {
     display: block;

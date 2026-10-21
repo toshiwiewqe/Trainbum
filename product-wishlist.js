@@ -1,5 +1,5 @@
 /* ==========================================================
-   Saved gear (the heart on a product card)
+   Saved Products (the heart on a product card)
 
    REWRITTEN to use the wishlist you already have.
 
@@ -139,6 +139,6 @@ onAuthStateChanged(auth, (user) => {
     });
     if (typeof unsubscribe === "function") stopWatching = unsubscribe;
   } catch (err) {
-    console.error("[saved gear] couldn't watch the wishlist:", err);
+    console.error("[saved Products] couldn't watch the wishlist:", err);
   }
 });

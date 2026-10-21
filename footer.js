@@ -45,7 +45,7 @@ if (root) {
 
           <nav class="site-footer-col" aria-label="Shop and help">
             <span class="site-footer-label">Shop &amp; help</span>
-            <a href="products.html">Hiking gear</a>
+            <a href="products.html">Hiking Products</a>
             <a href="cart.html">Your cart</a>
             <a href="contact.html">Contact &amp; support</a>
           </nav>

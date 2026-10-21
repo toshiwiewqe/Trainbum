@@ -2067,10 +2067,10 @@ body:has(.products-layout) .site-header {
 }
 
 /* ==========================================================
-   HOMEPAGE — Featured trails + Featured gear
+   HOMEPAGE — Featured trails + Featured Products
    Sit right after the hero. Cards are built by home-featured.js
    from Firestore; until then the grey .is-loading cards hold the
-   space. Trails sit on the hero's brown, gear on the shop's sand,
+   space. Trails sit on the hero's brown, Products on the shop's sand,
    so the page steps from the brand into the store.
    ========================================================== */
 
@@ -2340,25 +2340,25 @@ body:has(.products-layout) .site-header {
   display: none;
 }
 
-/* ---------- Featured gear (sand, like the shop) ---------- */
+/* ---------- Featured Products (sand, like the shop) ---------- */
 
-.home-gear {
+.home-Products {
   background-color: var(--shop-bg);
   color: var(--shop-ink);
 }
 
-.home-gear .home-eyebrow { color: var(--shop-clay); }
-.home-gear .home-title { color: var(--base-300); }
-.home-gear .home-more { color: var(--base-300); }
-.home-gear .home-more:hover { color: var(--shop-clay); }
+.home-Products .home-eyebrow { color: var(--shop-clay); }
+.home-Products .home-title { color: var(--base-300); }
+.home-Products .home-more { color: var(--base-300); }
+.home-Products .home-more:hover { color: var(--shop-clay); }
 
-.home-gear-grid {
+.home-Products-grid {
   display: grid;
   grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
   gap: 1.25rem;
 }
 
-.home-gear-card {
+.home-Products-card {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--shop-line);
@@ -2370,12 +2370,12 @@ body:has(.products-layout) .site-header {
   transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
 }
 
-.home-gear-card:focus-visible {
+.home-Products-card:focus-visible {
   outline: 2px solid var(--base-300);
   outline-offset: 3px;
 }
 
-.home-gear-media {
+.home-Products-media {
   position: relative;
   display: block;
   aspect-ratio: 1 / 1;
@@ -2383,7 +2383,7 @@ body:has(.products-layout) .site-header {
   background-color: var(--shop-tile);
 }
 
-.home-gear-media img {
+.home-Products-media img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -2392,14 +2392,14 @@ body:has(.products-layout) .site-header {
   transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.home-gear-media.no-photo {
+.home-Products-media.no-photo {
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234E220F' stroke-opacity='.25' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 5V3h8v2'/%3E%3Crect x='4' y='5' width='16' height='16' rx='3'/%3E%3Cpath d='M4 11h16M10 11v3h4v-3'/%3E%3C/svg%3E")
       center / 34% no-repeat,
     var(--shop-tile);
 }
 
-.home-gear-badge {
+.home-Products-badge {
   position: absolute;
   top: 0.7rem;
   left: 0.7rem;
@@ -2414,7 +2414,7 @@ body:has(.products-layout) .site-header {
   color: #fff;
 }
 
-.home-gear-body {
+.home-Products-body {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -2422,7 +2422,7 @@ body:has(.products-layout) .site-header {
   padding: 0.95rem 1.05rem 1.1rem;
 }
 
-.home-gear-cat {
+.home-Products-cat {
   font-family: "Inter", sans-serif;
   font-size: 0.68rem;
   font-weight: 600;
@@ -2431,7 +2431,7 @@ body:has(.products-layout) .site-header {
   color: var(--shop-clay);
 }
 
-.home-gear-card .home-gear-name {
+.home-Products-card .home-Products-name {
   margin: 0;
   font-family: "Inter", sans-serif;
   font-size: 1rem;
@@ -2443,7 +2443,7 @@ body:has(.products-layout) .site-header {
 }
 
 /* Price + "View" stay on the bottom line, even when names wrap */
-.home-gear-foot {
+.home-Products-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2452,14 +2452,14 @@ body:has(.products-layout) .site-header {
   padding-top: 0.6rem;
 }
 
-.home-gear-price {
+.home-Products-price {
   font-family: "Inter", sans-serif;
   font-size: 1.02rem;
   font-weight: 700;
   color: var(--base-300);
 }
 
-.home-gear-view {
+.home-Products-view {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -2471,23 +2471,23 @@ body:has(.products-layout) .site-header {
 }
 
 @media (hover: hover) {
-  .home-gear-card:hover {
+  .home-Products-card:hover {
     border-color: transparent;
     box-shadow: 0 16px 34px rgba(30, 20, 12, 0.12);
     transform: translateY(-3px);
   }
 
-  .home-gear-card:hover .home-gear-media img {
+  .home-Products-card:hover .home-Products-media img {
     transform: scale(1.05);
   }
 
-  .home-gear-card:hover .home-gear-view {
+  .home-Products-card:hover .home-Products-view {
     color: var(--base-300);
   }
 }
 
 /* Loading placeholders */
-.home-gear-card.is-loading .home-gear-media,
+.home-Products-card.is-loading .home-Products-media,
 .home-skel-line {
   background: linear-gradient(100deg, #ebe6db 30%, #f5f1e8 50%, #ebe6db 70%) 0 0 / 200% 100%;
   animation: home-shimmer 1.4s linear infinite;
@@ -2505,7 +2505,7 @@ body:has(.products-layout) .site-header {
 
 @media (prefers-reduced-motion: reduce) {
   .home-trail-card.is-loading,
-  .home-gear-card.is-loading .home-gear-media,
+  .home-Products-card.is-loading .home-Products-media,
   .home-skel-line {
     animation: none;
   }
@@ -2515,7 +2515,7 @@ body:has(.products-layout) .site-header {
 
 @media (max-width: 1100px) {
   .home-trails-grid,
-  .home-gear-grid {
+  .home-Products-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2571,19 +2571,19 @@ body:has(.products-layout) .site-header {
     aspect-ratio: 4 / 5;
   }
 
-  .home-gear-grid {
+  .home-Products-grid {
     gap: 0.75rem;
   }
 
-  .home-gear-body {
+  .home-Products-body {
     padding: 0.75rem 0.8rem 0.9rem;
   }
 
-  .home-gear-card .home-gear-name {
+  .home-Products-card .home-Products-name {
     font-size: 0.9rem;
   }
 
-  .home-gear-view {
+  .home-Products-view {
     display: none;
   }
 }

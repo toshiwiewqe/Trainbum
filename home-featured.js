@@ -1,11 +1,11 @@
 /* ==========================================================
-   Homepage — Featured trails + Featured gear
+   Homepage — Featured trails + Featured Products
    Reads the same Firestore collections as trail.html and
    products.html, so the homepage always matches what's live.
 
    WHICH ONES SHOW UP
      Trails: open trails that have a photo, up to 4.
-     Gear:   products that have a photo, most popular first, up to 4.
+     Products:   products that have a photo, most popular first, up to 4.
    To hand-pick instead, add a boolean field  featured = true  to a
    trail or product in Firestore; featured ones always come first.
 
@@ -17,12 +17,12 @@ import { db } from "./firebase-config.js";
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const MAX_TRAILS = 4;
-const MAX_GEAR = 4;
+const MAX_Products = 4;
 
 const trailsSection = document.getElementById("featured-trails");
 const trailsGrid = document.getElementById("featured-trails-grid");
-const gearSection = document.getElementById("featured-gear");
-const gearGrid = document.getElementById("featured-gear-grid");
+const ProductsSection = document.getElementById("featured-Products");
+const ProductsGrid = document.getElementById("featured-Products-grid");
 
 const ARROW =
   '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" ' +
@@ -138,32 +138,32 @@ async function loadTrails() {
   }
 }
 
-/* ---------- gear ---------- */
+/* ---------- Products ---------- */
 
-function gearCard(p) {
+function ProductsCard(p) {
   const img = productImage(p);
   const soldOut = p.inStock === false;
   const category = p.subcategory || p.category || "";
 
   return `
-    <a class="home-gear-card" href="products.html">
-      <span class="home-gear-media" data-photo>
+    <a class="home-Products-card" href="products.html">
+      <span class="home-Products-media" data-photo>
         ${img ? `<img src="${escapeHtml(img)}" alt="" loading="lazy" />` : ""}
-        ${soldOut ? '<span class="home-gear-badge">Sold out</span>' : ""}
+        ${soldOut ? '<span class="home-Products-badge">Sold out</span>' : ""}
       </span>
-      <span class="home-gear-body">
-        ${category ? `<span class="home-gear-cat">${escapeHtml(category)}</span>` : ""}
-        <h3 class="home-gear-name">${escapeHtml(p.name || "Gear")}</h3>
-        <span class="home-gear-foot">
-          <span class="home-gear-price">${formatPrice(p.price)}</span>
-          <span class="home-gear-view">View ${ARROW}</span>
+      <span class="home-Products-body">
+        ${category ? `<span class="home-Products-cat">${escapeHtml(category)}</span>` : ""}
+        <h3 class="home-Products-name">${escapeHtml(p.name || "Products")}</h3>
+        <span class="home-Products-foot">
+          <span class="home-Products-price">${formatPrice(p.price)}</span>
+          <span class="home-Products-view">View ${ARROW}</span>
         </span>
       </span>
     </a>`;
 }
 
-async function loadGear() {
-  if (!gearGrid) return;
+async function loadProducts() {
+  if (!ProductsGrid) return;
   try {
     const snap = await getDocs(collection(db, "products"));
     const products = snap.docs
@@ -174,19 +174,19 @@ async function loadGear() {
         if (featured) return featured;
         return (Number(b.popularity) || -1) - (Number(a.popularity) || -1);
       })
-      .slice(0, MAX_GEAR);
+      .slice(0, MAX_Products);
 
-    if (products.length === 0) return hide(gearSection);
+    if (products.length === 0) return hide(ProductsSection);
 
-    gearGrid.style.setProperty("--cols", products.length);
-    gearGrid.innerHTML = products.map(gearCard).join("");
-    gearGrid.setAttribute("aria-busy", "false");
-    handleBrokenImages(gearGrid);
+    ProductsGrid.style.setProperty("--cols", products.length);
+    ProductsGrid.innerHTML = products.map(ProductsCard).join("");
+    ProductsGrid.setAttribute("aria-busy", "false");
+    handleBrokenImages(ProductsGrid);
   } catch (err) {
-    console.warn("Featured gear could not load:", err);
-    hide(gearSection);
+    console.warn("Featured Products could not load:", err);
+    hide(ProductsSection);
   }
 }
 
 loadTrails();
-loadGear();
+loadProducts();
