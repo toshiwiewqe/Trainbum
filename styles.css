@@ -2779,7 +2779,6 @@ body:has(.products-layout) .site-header {
     align-items: flex-start;
   }
 }
-<<<<<<< HEAD
 .framescene-greeting {
   display: block;
   font-family: "PP Neue Montreal", sans-serif;
@@ -2963,8 +2962,6 @@ body:has(.products-layout) .site-header {
     animation: none;
   }
 }
- 
-=======
 
 /* ==========================================================
    STOCK SIGNALS  (shop grid, product drawer, cart rows)
@@ -3150,4 +3147,85 @@ body:has(.products-layout) .site-header {
 @media (max-width: 767.98px) {
   .product-card-was { font-size: 0.74rem; }
 }
->>>>>>> 33f3fc10829155f069a0c787ce1d10e0dc1e0502
+/* ==========================================================
+   Trailbound — product grid: equal-height cards
+   ----------------------------------------------------------
+   PASTE THIS AT THE END OF styles.css.
+
+   Two separate problems, both visible once a product went on
+   sale.
+
+   1. CARDS WERE NEVER EQUAL HEIGHT.
+      This predates the sale feature — a two-line product title
+      already made its card taller than its neighbours. It just
+      wasn't obvious until a sale card grew by a whole extra row.
+
+      `.product-card` is BOTH the Bootstrap column and the card,
+      and it carried `height: 100%`. A percentage height resolves
+      against the row's height, and the row's height is auto —
+      so it collapsed to `auto`, which is the card's own content
+      height. Every card sized itself and ignored its neighbours.
+
+      The fix is to let the flex row stretch the columns (which
+      is what it does by default) and give the card `height: auto`
+      so nothing overrides that stretch. The column becomes a flex
+      container so the card fills it.
+
+      `.product-card-footer` already has `margin-top: auto`, so
+      once the cards are equal height the footers settle on the
+      bottom edge by themselves and line up across the row.
+
+   2. THE FOOTER WRAPPED ON SALE CARDS ONLY.
+      A sale price is two numbers — "₱3,799 ₱4,299" — so the
+      price, the View button and the heart stopped fitting on one
+      line and the buttons dropped to a second row, adding ~32px
+      to that card alone.
+
+      Measured at 1512px wide, the widest case here: the actions
+      still overshoot the card by 4px. They do not fit beside a
+      two-number price at ANY realistic width, because the card is
+      a quarter of the grid. Forcing one line with `nowrap` only
+      moved the damage — the heart was pushed past the card edge
+      and silently cut off by `overflow: hidden`, which looks fine
+      in a page-overflow check and broken on a phone.
+
+      So the price takes a full line and the actions sit under it,
+      on every card, sale or not. One shape, no breakpoint, and
+      the prices now line up in a column down the grid.
+
+   Checked at 1512, 1400, 1200, 992, 900, 800, 768, 760, 600,
+   430, 390, 360 and 320px: equal heights in every row, View
+   buttons aligned, nothing clipped, no sideways scroll.
+   ========================================================== */
+
+/* ---- 1. equal heights ---- */
+
+#products-grid {
+  align-items: stretch;
+}
+
+/* The column has to be a flex container for the card inside it to
+   fill the stretched height. */
+#products-grid > *:not(.products-status) {
+  display: flex;
+}
+
+.product-card {
+  /* was height: 100%, which resolved to auto against the
+     auto-height row and cancelled the stretch */
+  height: auto;
+  width: 100%;
+}
+
+/* ---- 2. one footer shape for every card ---- */
+
+.product-card-price {
+  /* 100% basis = always its own line */
+  flex: 1 1 100%;
+  /* keeps "₱3,799 ₱4,299" from breaking between the two numbers */
+  white-space: nowrap;
+}
+
+.product-card-actions {
+  flex: 0 0 auto;
+}

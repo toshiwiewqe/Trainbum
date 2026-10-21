@@ -1236,3 +1236,403 @@
         grid-template-columns: 1fr;
     }
 }
+/* ==========================================================
+   Trailbound — climbing permit tracker (My Bookings)
+   ----------------------------------------------------------
+   PASTE THIS AT THE END OF account.css.
+
+   WHY THE PAGE LOOKED LIKE THAT: this file had never been
+   pasted in, so the panel was inheriting the site-wide rules
+   from styles.css and nothing else —
+
+     p { text-transform: uppercase; font-size: .85rem;
+         line-height: 1.1 }
+
+   which is what turned every sentence into a shout, and the
+   browser's default <ol>, which is what turned the five-stage
+   rail into "1. 2. 3. 4. 5.". The link was unstyled, so it fell
+   back to browser blue on a cream page.
+
+   The reset block below is therefore not defensive padding —
+   each line undoes a specific global rule.
+   ========================================================== */
+
+/* ---------- undo the globals, once ---------- */
+
+.permit-track p,
+.permit-track span,
+.permit-track label,
+.permit-track strong,
+.permit-track em,
+.permit-track a {
+    font-family: "Inter", sans-serif;
+    /* styles.css shouts every <p> on the site */
+    text-transform: none;
+    letter-spacing: normal;
+    /* and pins them to .85rem / 1.1, which is too tight to read */
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.permit-track {
+    /* one place to change the whole panel's text size */
+    font-size: 0.875rem;
+    line-height: 1.55;
+}
+
+/* ---------- the panel ---------- */
+
+.permit-track {
+    margin-top: 1.1rem;
+    padding: 1.15rem 1.25rem 1.2rem;
+    border: 1px solid var(--acct-line);
+    border-radius: 16px;
+    background: linear-gradient(180deg, #fffdf9 0%, var(--acct-surface) 58%);
+    color: var(--acct-ink);
+}
+
+/* ---------- header: what this status is about, and what it is ---------- */
+
+.permit-track-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: 0 0 1.1rem;
+}
+
+/* Not decoration: the card already carries a BOOKING status
+   ("Confirmed · paid"), so "Approved" on its own is ambiguous.
+   This says which of the two you are looking at. */
+.permit-track-kicker {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--acct-ink-soft);
+}
+
+.permit-track-head strong {
+    flex-shrink: 0;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid rgba(168, 89, 47, 0.28);
+    border-radius: 999px;
+    background: var(--acct-clay-soft);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--acct-clay);
+    white-space: nowrap;
+}
+
+/* ---------- the rail ----------
+   The one place this panel raises its voice. A climbing permit
+   really is a fixed five-stage sequence, so a stepped rail is
+   describing the content rather than dressing it up. */
+
+.permit-steps {
+    display: flex;
+    margin: 0 0 1.05rem;
+    /* kills the "1. 2. 3." the browser was drawing */
+    padding: 0;
+    list-style: none;
+}
+
+.permit-step {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    text-align: center;
+}
+
+/* The connecting track, drawn as two half-segments per step so
+   each one can be coloured independently — no need to know the
+   active index in CSS. 7px is the dot's vertical centre. */
+.permit-step::before,
+.permit-step::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    height: 2px;
+    background: var(--acct-line);
+}
+
+.permit-step::before { left: 0; right: 50%; }
+.permit-step::after  { left: 50%; right: 0; }
+
+/* The two ends have nothing to connect to. */
+.permit-step:first-child::before,
+.permit-step:last-child::after { display: none; }
+
+.permit-step.is-done::before,
+.permit-step.is-done::after,
+.permit-step.is-now::before { background: var(--acct-clay); }
+
+.permit-step-dot {
+    position: relative;
+    z-index: 1;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--acct-line-strong);
+    border-radius: 50%;
+    background: var(--acct-surface);
+}
+
+.permit-step.is-done .permit-step-dot {
+    border-color: var(--acct-clay);
+    background: var(--acct-clay);
+}
+
+/* Where you are now: a filled core inside a ring, so it reads as
+   a position rather than another completed stage. */
+.permit-step.is-now .permit-step-dot {
+    border-color: var(--acct-clay);
+    background: var(--acct-surface);
+    box-shadow: inset 0 0 0 3px var(--acct-clay);
+}
+
+.permit-step-label {
+    font-size: 0.68rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--acct-ink-faint);
+    overflow-wrap: anywhere;
+}
+
+.permit-step.is-done .permit-step-label { color: var(--acct-ink-soft); }
+
+.permit-step.is-now .permit-step-label {
+    font-weight: 700;
+    color: var(--acct-clay);
+}
+
+/* ---------- what it means, in a sentence ---------- */
+
+.permit-track-copy {
+    margin: 0;
+    color: var(--acct-ink);
+}
+
+/* The admin's own words, so they are marked as quoted rather
+   than blended into Trailbound's voice. */
+.permit-track-note {
+    margin: 0.7rem 0 0;
+    padding: 0.55rem 0.8rem;
+    border-left: 3px solid var(--acct-clay);
+    border-radius: 0 8px 8px 0;
+    background: var(--acct-clay-soft);
+    color: var(--acct-ink);
+}
+
+.permit-track-ref {
+    margin: 0.6rem 0 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+    font-size: 0.74rem;
+    letter-spacing: 0.02em !important;
+    color: var(--acct-ink-soft);
+}
+
+/* ---------- the one thing the hiker has to do ---------- */
+
+.permit-medical-check {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin: 1.1rem 0 0;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--acct-line-strong);
+    border-radius: 12px;
+    background: var(--acct-surface);
+    font-weight: 500;
+    color: var(--acct-ink);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.permit-medical-check:hover { border-color: var(--acct-clay); }
+
+.permit-medical-check.is-done {
+    border-color: rgba(51, 80, 47, 0.45);
+    background: #f1f5ef;
+}
+
+.permit-medical-check input {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    border: 2px solid var(--acct-line-strong);
+    border-radius: 6px;
+    background: var(--acct-surface);
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.permit-medical-check input:checked {
+    border-color: var(--acct-forest);
+    background: var(--acct-forest)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E")
+        center / 13px no-repeat;
+}
+
+.permit-medical-check input:focus-visible {
+    outline: 2px solid var(--acct-clay);
+    outline-offset: 2px;
+}
+
+.permit-medical-hint {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
+    color: var(--acct-ink-soft);
+}
+
+/* ---------- safety detail, set apart ---------- */
+
+.permit-hospital-line {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.2rem 0.5rem;
+    margin: 1rem 0 0;
+    padding-top: 0.9rem;
+    border-top: 1px dashed var(--acct-line);
+}
+
+.permit-hospital-line > span {
+    font-size: 0.8rem;
+    color: var(--acct-ink-soft);
+}
+
+.permit-hospital-line a {
+    font-weight: 600;
+    color: var(--acct-clay);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(168, 89, 47, 0.35);
+}
+
+.permit-hospital-line a:hover {
+    border-bottom-color: var(--acct-clay);
+}
+
+.permit-hospital-line em {
+    font-size: 0.8rem;
+    font-style: normal;
+    color: var(--acct-ink-soft);
+}
+
+/* ---------- needs attention ---------- */
+
+.permit-track--attention {
+    border-color: rgba(179, 38, 30, 0.35);
+    background: #fdf3f2;
+}
+
+.permit-track--attention .permit-track-head strong {
+    border-color: rgba(179, 38, 30, 0.3);
+    background: #fbe4e2;
+    color: var(--acct-error);
+}
+
+/* ==========================================================
+   The booking card around it
+   ----------------------------------------------------------
+   account.js reuses the notification markup for bookings, so
+   these rows were inheriting a notification's look. Scoped to
+   #bookings-list so real notifications are untouched.
+   ========================================================== */
+
+#bookings-list .notification-item {
+    display: block;
+    padding: 1.2rem 1.3rem 1.3rem;
+    border-radius: 18px;
+}
+
+#bookings-list .notification-title {
+    margin-bottom: 0.35rem;
+    font-family: "PP Neue Montreal", sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+#bookings-list .notification-message {
+    margin-bottom: 0.5rem;
+    font-size: 0.86rem;
+    color: var(--acct-ink-soft);
+}
+
+/* account.js sets this one's colour INLINE — green for confirmed,
+   red for cancelled, and white-70% for everything else. Those were
+   picked for a dark panel, so on a white card "Pending" came out
+   near-invisible.
+   An inline style can't be overridden without !important, so rather
+   than fight it the pill gets a dark ground and all three of those
+   colours land on it properly. */
+#bookings-list .notification-date {
+    display: inline-block;
+    padding: 0.26rem 0.7rem;
+    border-radius: 999px;
+    background: var(--acct-night);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+}
+
+/* ==========================================================
+   PHONES
+   Five labels will not sit side by side on a 360px screen, so
+   the rail stands up and the labels move beside the dots. The
+   connectors become vertical with it.
+   ========================================================== */
+
+@media (max-width: 560px) {
+    .permit-track {
+        padding: 1rem 1rem 1.1rem;
+        border-radius: 14px;
+    }
+
+    .permit-track-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 0.95rem;
+    }
+
+    .permit-steps {
+        flex-direction: column;
+        gap: 0.1rem;
+        margin-bottom: 0.95rem;
+    }
+
+    .permit-step {
+        flex: none;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.7rem;
+        min-height: 32px;
+        text-align: left;
+    }
+
+    /* vertical connectors: swap the axes */
+    .permit-step::before,
+    .permit-step::after {
+        top: auto;
+        left: 6px;
+        right: auto;
+        width: 2px;
+        height: 50%;
+    }
+
+    .permit-step::before { top: 0; }
+    .permit-step::after { bottom: 0; }
+
+    .permit-step-label { font-size: 0.8rem; }
+
+    .permit-medical-check {
+        align-items: flex-start;
+        line-height: 1.45;
+    }
+}

@@ -24,6 +24,17 @@ import { db } from './firebase-config.js';
 // "Missing or insufficient permissions". One app, one SDK now.
 import { collection, getDocs, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { CATEGORY_TREE, COLORS, SIZES } from './taxonomy.js';
+// FIXED (merge casualty): loadProducts() below calls salePricing() but
+// nothing imported it, so the very first product threw
+// "salePricing is not defined", loadProducts() rejected, and init()
+// stopped at its catch — no cards, no hearts, just "Couldn't load the
+// catalog right now."
+//
+// Imported rather than copied in. The admin panel computes the sale
+// with this same function; a second copy here is how a shop ends up
+// showing one number and charging another the day someone edits only
+// one of them.
+import { salePricing } from './trailbound-data.js';
 import { getCart, addProductToCart, updateCartBadge, onCartUpdated } from './cart-store.js';
 // The heart on each card. product-wishlist.js owns where a saved
 // product is kept; this file only draws the button.
@@ -516,7 +527,12 @@ function productCard(p) {
       <span class="product-card-cat">${p.subcategory}</span>
       <h4>${p.name}</h4>
       <div class="product-card-footer">
-        <span class="product-card-price">₱${p.price.toLocaleString()}</span>
+        <!-- FIXED (merge casualty): this printed p.price — the price
+             BEFORE any discount — while the corner badge said "25% off".
+             priceMarkup() was already written for exactly this and was
+             never called. It shows what the customer pays, with the old
+             price struck through beside it. -->
+        <span class="product-card-price">${priceMarkup(p)}</span>
         <div class="product-card-actions">
           <button type="button" class="product-card-btn">View</button>
           ${saveBtnHTML(p)}
