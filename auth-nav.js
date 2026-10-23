@@ -94,7 +94,7 @@ const observer = new MutationObserver(() => {
 observer.observe(headerRoot, { childList: true, subtree: true });
 
 function getAccountIconHTML(user) {
-  // Use the user's real profile photo if available (Google/Facebook provide one)
+  // Use the user's real profile photo if available (Google provides one)
   if (user.photoURL) {
     return `<img src="${user.photoURL}" alt="Account" class="nav-avatar-img">`;
   }

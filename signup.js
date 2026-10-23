@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const confirmPasswordInput = document.getElementById('confirm-password');
   const submitBtn             = document.getElementById('submit');
   const googleBtn             = document.querySelector('.google-btn');
-  const facebookBtn           = document.querySelector('.facebook-btn');
 
   // ----------------------------------------------------------
   // 1. Inline validation helpers (same pattern as login.js)
@@ -124,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function getFriendlyError(code) {
     switch (code) {
       case 'auth/email-already-in-use':
-        return 'That email already has an account — try logging in instead, or use Google/Facebook below if you signed up that way.';
+        return 'That email already has an account — try logging in instead, or use Google below if you signed up that way.';
       case 'auth/weak-password':
         return 'Password should be at least 6 characters.';
       case 'auth/invalid-email':
@@ -137,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ----------------------------------------------------------
-  // 3. Google / Facebook sign-up
+  // 3. Google sign-up
   // ----------------------------------------------------------
   googleBtn?.addEventListener('click', () => {
     if (typeof signInWithGoogle === 'function') {
@@ -147,11 +146,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  facebookBtn?.addEventListener('click', () => {
-    if (typeof signInWithFacebook === 'function') {
-      signInWithFacebook();
-    } else {
-      console.warn('Facebook auth not connected yet — see Firebase setup guide.');
-    }
-  });
 });

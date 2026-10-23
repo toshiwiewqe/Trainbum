@@ -231,8 +231,7 @@
     height: 18px;
 }
 
-.google-btn .social-icon,
-.facebook-btn .social-icon {
+.google-btn .social-icon {
     background: #fff;
     border-radius: 50%;
     padding: 2px;

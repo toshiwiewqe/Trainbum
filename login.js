@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitBtn       = document.getElementById('submit');
   const rememberCheck   = document.getElementById('check');
   const googleBtn       = document.querySelector('.google-btn');
-  const facebookBtn     = document.querySelector('.facebook-btn');
 
   // ----------------------------------------------------------
   // 1. Remember Me — persist email locally (never store passwords!)
@@ -221,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'auth/user-not-found':
         return "We couldn't sign you in with that email and password. "
              + "If you're new, create an account first \u2014 and if you originally "
-             + "signed up with Google or Facebook, use that button instead.";
+             + "signed up with Google, use that button instead.";
       case 'auth/email-already-in-use':
         return 'That email is already registered with a different password.';
       case 'auth/too-many-requests':
@@ -250,11 +249,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  facebookBtn?.addEventListener('click', () => {
-    if (typeof signInWithFacebook === 'function') {
-      signInWithFacebook();
-    } else {
-      console.warn('Facebook auth not connected yet — see Firebase setup guide.');
-    }
-  });
 });
